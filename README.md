@@ -19,6 +19,8 @@
 
 </div>
 
+![IDE Logo](readme_foto.png)
+
 ---
 
 ## What is IDE Embedded?
