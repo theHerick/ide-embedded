@@ -1974,7 +1974,7 @@ MathFormulaDialog::MathFormulaDialog(const QString& initialFormula, const QVecto
     : QDialog(parent), m_formula(initialFormula), m_vars(vars) {
     setWindowTitle("Criador de Fórmulas Avançadas - LCD");
     resize(850, 580);
-    setStyleSheet("QDialog { background-color: #F1F5F9; }");
+    setStyleSheet("QDialog { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #E0F2FE, stop:0.6 #BAE6FD, stop:1 #F0FDFA); }");
     buildUI();
     updatePreview();
 }
@@ -1992,23 +1992,37 @@ void MathFormulaDialog::buildUI() {
     leftLay->setSpacing(8);
 
     auto* varLbl = new QLabel("<b>VARIÁVEIS EXPOSTAS</b>", this);
-    varLbl->setStyleSheet("color: #475569; font-size: 11px;");
+    varLbl->setStyleSheet("color: #0369A1; font-size: 11px; font-weight: bold; font-family: 'Segoe UI', Arial;");
     leftLay->addWidget(varLbl);
 
     m_varListWidget = new QListWidget(this);
     m_varListWidget->setStyleSheet(
         "QListWidget { "
-        "  background: white; "
-        "  border: 1px solid #CBD5E1; "
-        "  border-radius: 8px; "
-        "  padding: 5px; "
-        "  color: #1E293B; "
+        "  background: rgba(255, 255, 255, 0.7); "
+        "  border: 2px solid rgba(255, 255, 255, 0.8); "
+        "  border-radius: 12px; "
+        "  padding: 8px; "
+        "  color: #0F172A; "
         "  font-family: 'Segoe UI', sans-serif; "
-        "  font-weight: 600; "
+        "  font-size: 12px; "
+        "  font-weight: bold; "
         "} "
-        "QListWidget::item { padding: 6px 10px; border-radius: 4px; } "
-        "QListWidget::item:hover { background: #F1F5F9; color: #2563EB; } "
-        "QListWidget::item:selected { background: #DBEAFE; color: #1D4ED8; }"
+        "QListWidget::item { "
+        "  padding: 8px 12px; "
+        "  border-radius: 8px; "
+        "  margin-bottom: 2px; "
+        "  color: #1E293B; "
+        "} "
+        "QListWidget::item:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgba(56, 189, 248, 0.35), stop:0.45 rgba(56, 189, 248, 0.2), stop:0.46 rgba(14, 165, 233, 0.3), stop:1 rgba(14, 165, 233, 0.5)); "
+        "  border: 1px solid rgba(14, 165, 233, 0.6); "
+        "  color: #0369A1; "
+        "} "
+        "QListWidget::item:selected { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgba(14, 165, 233, 0.7), stop:0.45 rgba(14, 165, 233, 0.5), stop:0.46 rgba(2, 132, 199, 0.6), stop:1 rgba(2, 132, 199, 0.85)); "
+        "  border: 1.5px solid rgba(2, 132, 199, 0.9); "
+        "  color: white; "
+        "}"
     );
 
     for (const auto& v : m_vars) {
@@ -2039,10 +2053,13 @@ void MathFormulaDialog::buildUI() {
     m_lcdScreen->setFixedHeight(140);
     m_lcdScreen->setStyleSheet(
         "QTextBrowser { "
-        "  background-color: #CAD3C8; " // Classic green-grey LCD screen
-        "  border: 3px solid #64748B; "
-        "  border-radius: 10px; "
-        "  padding: 12px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #10B981, stop:0.45 #059669, stop:0.46 #047857, stop:1 #065F46); " // Emerald Glass Screen
+        "  border: 3px solid rgba(255, 255, 255, 0.8); "
+        "  border-radius: 14px; "
+        "  padding: 14px; "
+        "  color: #ECFDF5; "
+        "  font-family: 'Consolas', 'Segoe UI', monospace; "
+        "  font-weight: bold; "
         "}"
     );
     rightLay->addWidget(m_lcdScreen);
@@ -2053,15 +2070,18 @@ void MathFormulaDialog::buildUI() {
     m_formulaEdit->setText(m_formula);
     m_formulaEdit->setStyleSheet(
         "QLineEdit { "
-        "  background: white; "
-        "  border: 1.5px solid #CBD5E1; "
-        "  border-radius: 8px; "
-        "  padding: 8px 12px; "
+        "  background: rgba(255, 255, 255, 0.85); "
+        "  border: 2px solid rgba(255, 255, 255, 0.9); "
+        "  border-radius: 10px; "
+        "  padding: 10px 14px; "
         "  font-family: 'Consolas', monospace; "
-        "  font-size: 13px; "
+        "  font-size: 14px; "
         "  color: #0F172A; "
+        "} "
+        "QLineEdit:focus { "
+        "  border: 2.5px solid #0EA5E9; "
+        "  background: #FFFFFF; "
         "}"
-        "QLineEdit:focus { border: 2px solid #EC4899; }"
     );
     rightLay->addWidget(m_formulaEdit);
 
@@ -2132,18 +2152,62 @@ void MathFormulaDialog::buildUI() {
         
         if (btn.style == "func") {
             button->setStyleSheet(
-                "QPushButton { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 6px; color: #1D4ED8; font-weight: bold; font-size: 11px; } "
-                "QPushButton:hover { background: #DBEAFE; }"
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F0F9FF, stop:0.45 #E0F2FE, stop:0.46 #BAE6FD, stop:1 #7DD3FC); "
+                "  border: 1.5px solid #38BDF8; "
+                "  border-radius: 8px; "
+                "  color: #0369A1; "
+                "  font-weight: bold; "
+                "  font-size: 11px; "
+                "} "
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E0F2FE, stop:0.45 #BAE6FD, stop:0.46 #7DD3FC, stop:1 #38BDF8); "
+                "  border-color: #0284C7; "
+                "  color: #075985; "
+                "} "
+                "QPushButton:pressed { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #7DD3FC, stop:1 #0284C7); "
+                "  color: white; "
+                "}"
             );
         } else if (btn.style == "clear") {
             button->setStyleSheet(
-                "QPushButton { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 6px; color: #DC2626; font-weight: bold; font-size: 11px; } "
-                "QPushButton:hover { background: #FEE2E2; }"
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFF5F5, stop:0.45 #FED7D7, stop:0.46 #FEB2B2, stop:1 #FCA5A5); "
+                "  border: 1.5px solid #F87171; "
+                "  border-radius: 8px; "
+                "  color: #991B1B; "
+                "  font-weight: bold; "
+                "  font-size: 11px; "
+                "} "
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FED7D7, stop:0.45 #FEB2B2, stop:0.46 #FCA5A5, stop:1 #F87171); "
+                "  border-color: #DC2626; "
+                "  color: #7F1D1D; "
+                "} "
+                "QPushButton:pressed { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FCA5A5, stop:1 #DC2626); "
+                "  color: white; "
+                "}"
             );
         } else {
             button->setStyleSheet(
-                "QPushButton { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; color: #334155; font-weight: bold; font-size: 12px; } "
-                "QPushButton:hover { background: #F8FAFC; border-color: #CBD5E1; }"
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F8FAFC, stop:0.46 #F1F5F9, stop:1 #E2E8F0); "
+                "  border: 1.5px solid #CBD5E1; "
+                "  border-radius: 8px; "
+                "  color: #1E293B; "
+                "  font-weight: bold; "
+                "  font-size: 12px; "
+                "} "
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F8FAFC, stop:0.45 #F1F5F9, stop:0.46 #E2E8F0, stop:1 #CBD5E1); "
+                "  border-color: #94A3B8; "
+                "  color: #0F172A; "
+                "} "
+                "QPushButton:pressed { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E2E8F0, stop:1 #94A3B8); "
+                "}"
             );
         }
 
@@ -2173,21 +2237,43 @@ void MathFormulaDialog::buildUI() {
     actionLay->addStretch();
     
     auto* cancelBtn = new QPushButton("Cancelar", this);
+    cancelBtn->setStyleSheet(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F8FAFC, stop:0.46 #F1F5F9, stop:1 #E2E8F0); "
+        "  border: 1.5px solid #CBD5E1; "
+        "  border-radius: 8px; "
+        "  color: #475569; "
+        "  font-weight: bold; "
+        "  padding: 8px 24px; "
+        "} "
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F8FAFC, stop:0.45 #F1F5F9, stop:0.46 #E2E8F0, stop:1 #CBD5E1); "
+        "  border-color: #94A3B8; "
+        "  color: #334155; "
+        "} "
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E2E8F0, stop:1 #94A3B8); "
+        "}"
+    );
     connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
     actionLay->addWidget(cancelBtn);
 
     auto* confirmBtn = new QPushButton("Confirmar Fórmula", this);
     confirmBtn->setStyleSheet(
         "QPushButton { "
-        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #10B981, stop:1 #059669); "
-        "  border: 1px solid #047857; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #A7F3D0, stop:0.45 #34D399, stop:0.46 #059669, stop:1 #047857); "
+        "  border: 1.5px solid #059669; "
         "  border-radius: 8px; "
         "  color: white; "
         "  font-weight: bold; "
         "  padding: 8px 24px; "
         "} "
         "QPushButton:hover { "
-        "  background: #059669; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #34D399, stop:0.45 #059669, stop:0.46 #047857, stop:1 #065F46); "
+        "  border-color: #047857; "
+        "} "
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #047857, stop:1 #064E3B); "
         "}"
     );
     connect(confirmBtn, &QPushButton::clicked, this, &MathFormulaDialog::onConfirm);
