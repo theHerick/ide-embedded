@@ -2386,6 +2386,7 @@ void MainWindow::onComponentAdded(ComponentItem* comp) {
         auto* esp = static_cast<ESP32Item*>(comp);
         connect(esp, &ESP32Item::resetTriggered, this, [this]() {
             if (m_simulator && m_simulator->isRunning()) {
+                m_simulator->updateEventStorage(m_blockEditor->getEventBlockStorage());
                 m_simulator->resetSimulation();
             }
         });

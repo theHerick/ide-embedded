@@ -16,6 +16,7 @@ public:
     void startSimulation(WorkspaceScene* scene, const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage);
     void stopSimulation();
     void resetSimulation();
+    void updateEventStorage(const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage);
     bool isRunning() const { return m_isRunning; }
     void triggerComponentEvent(const QString& compId, const QString& eventName);
     void triggerLoopEvents();

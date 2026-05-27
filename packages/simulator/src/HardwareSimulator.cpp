@@ -117,7 +117,29 @@ void HardwareSimulator::resetSimulation() {
     
     // Clear volatile states but NOT m_eeprom
     m_ledStates.clear();
+    m_buttonStates.clear();
+    m_motorSpeeds.clear();
     m_simVariables.clear();
+    
+    // Reset all component visual states to their default (off)
+    for (auto* comp : m_scene->components()) {
+        if (comp->componentType() == "led") {
+            auto* led = static_cast<LEDItem*>(comp);
+            led->setOn(false);
+        } else if (comp->componentType() == "buzzer") {
+            auto* buzzer = static_cast<BuzzerItem*>(comp);
+            buzzer->setActive(false);
+        } else if (comp->componentType() == "motor") {
+            auto* motor = static_cast<MotorItem*>(comp);
+            motor->setCurrentAngle(0);
+        } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
+            if (custom->category() == "digital_actuator") {
+                custom->setOn(false);
+            } else if (custom->category() == "active_actuator") {
+                custom->setActive(false);
+            }
+        }
+    }
     
     // Scan all event blocks for EEPROM keys to initialize them as variables
     for (auto it = m_eventStorage.begin(); it != m_eventStorage.end(); ++it) {
@@ -135,12 +157,16 @@ void HardwareSimulator::resetSimulation() {
         m_simVariables[it.key()] = it.value();
     }
     
-    // Re-trigger boot event
+    // Re-trigger boot event (setup)
     for (auto* comp : m_scene->components()) {
         if (comp->componentType() == "esp32") {
             triggerComponentEvent(comp->id(), "aoIniciar");
         }
     }
+}
+
+void HardwareSimulator::updateEventStorage(const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage) {
+    m_eventStorage = eventBlockStorage;
 }
 
 void HardwareSimulator::stopSimulation() {
