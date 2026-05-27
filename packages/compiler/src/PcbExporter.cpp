@@ -181,46 +181,47 @@ QImage PcbExporter::generateLaserImage(const QVector<ComponentItem*>& components
         }
     }
 
+    // B - White cores for better visibility/drill guides
+    double coreTrackWidth = std::max(1.0, trackWidthPx - 2.0 * lineWidthPx);
+    double corePadRadius  = std::max(1.0, outerPadRadius - lineWidthPx);
+    double innerDrillRadius = 0.8 * 3.937 / 2.0;
+    QPen whitePen(Qt::white, coreTrackWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    for (auto* cable : cables) {
+        if (!cable || cable->path().isEmpty() || gndCables.contains(cable)) continue;
+        QPainterPath p = cable->path();
+        if (cable->sourceComponent()) {
+            for (const auto& pin : cable->sourceComponent()->pins()) {
+                if (pin.name == cable->sourcePinName()) {
+                    QPointF realPos = getRealPinScenePos(cable->sourceComponent(), pin);
+                    QPointF visualPos = cable->sourceComponent()->getPinScenePos(pin);
+                    if (realPos != visualPos) { p.moveTo(visualPos); p.lineTo(realPos); }
+                    break;
+                }
+            }
+        }
+        if (cable->targetComponent()) {
+            for (const auto& pin : cable->targetComponent()->pins()) {
+                if (pin.name == cable->targetPinName()) {
+                    QPointF realPos = getRealPinScenePos(cable->targetComponent(), pin);
+                    QPointF visualPos = cable->targetComponent()->getPinScenePos(pin);
+                    if (realPos != visualPos) { p.moveTo(visualPos); p.lineTo(realPos); }
+                    break;
+                }
+            }
+        }
+        painter.strokePath(p, whitePen);
+    }
+    painter.setBrush(Qt::white);
+    for (auto* comp : components) {
+        if (!comp || comp->componentType() == "gnd") continue;
+        for (const auto& pin : comp->pins()) {
+            if (gndPins.contains({comp, pin.name})) continue;
+            QPointF realPos = getRealPinScenePos(comp, pin);
+            if (!comp->property("isSMD").toBool()) painter.drawEllipse(realPos, corePadRadius, corePadRadius);
+        }
+    }
+
     if (drawDrills) {
-        // B - White cores for better visibility/drill guides
-        double coreTrackWidth = std::max(1.0, trackWidthPx - 2.0 * lineWidthPx);
-        double corePadRadius  = std::max(1.0, outerPadRadius - lineWidthPx);
-        double innerDrillRadius = 0.8 * 3.937 / 2.0;
-        QPen whitePen(Qt::white, coreTrackWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        for (auto* cable : cables) {
-            if (!cable || cable->path().isEmpty() || gndCables.contains(cable)) continue;
-            QPainterPath p = cable->path();
-            if (cable->sourceComponent()) {
-                for (const auto& pin : cable->sourceComponent()->pins()) {
-                    if (pin.name == cable->sourcePinName()) {
-                        QPointF realPos = getRealPinScenePos(cable->sourceComponent(), pin);
-                        QPointF visualPos = cable->sourceComponent()->getPinScenePos(pin);
-                        if (realPos != visualPos) { p.moveTo(visualPos); p.lineTo(realPos); }
-                        break;
-                    }
-                }
-            }
-            if (cable->targetComponent()) {
-                for (const auto& pin : cable->targetComponent()->pins()) {
-                    if (pin.name == cable->targetPinName()) {
-                        QPointF realPos = getRealPinScenePos(cable->targetComponent(), pin);
-                        QPointF visualPos = cable->targetComponent()->getPinScenePos(pin);
-                        if (realPos != visualPos) { p.moveTo(visualPos); p.lineTo(realPos); }
-                        break;
-                    }
-                }
-            }
-            painter.strokePath(p, whitePen);
-        }
-        painter.setBrush(Qt::white);
-        for (auto* comp : components) {
-            if (!comp || comp->componentType() == "gnd") continue;
-            for (const auto& pin : comp->pins()) {
-                if (gndPins.contains({comp, pin.name})) continue;
-                QPointF realPos = getRealPinScenePos(comp, pin);
-                if (!comp->property("isSMD").toBool()) painter.drawEllipse(realPos, corePadRadius, corePadRadius);
-            }
-        }
         // Final drill black holes
         painter.setPen(QPen(Qt::black, 0.75, Qt::SolidLine)); painter.setBrush(Qt::NoBrush);
         for (auto* comp : components) {
