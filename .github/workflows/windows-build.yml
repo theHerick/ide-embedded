@@ -21,12 +21,32 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Install Cppcheck (Static Analysis)
-        run: choco install cppcheck -y
+        shell: powershell
+        run: |
+          $cppcheckMsi = Join-Path $env:RUNNER_TEMP 'cppcheck-2.14.0-x64-Setup.msi'
+          Invoke-WebRequest -Uri 'https://github.com/cppcheck-opensource/cppcheck/releases/download/2.14.0/cppcheck-2.14.0-x64-Setup.msi' -OutFile $cppcheckMsi
+          Start-Process msiexec.exe -Wait -ArgumentList @('/i', $cppcheckMsi, '/qn', '/norestart')
+
+          $cppcheckExe = (Get-Command cppcheck -ErrorAction SilentlyContinue).Source
+          if (-not $cppcheckExe) {
+            foreach ($candidate in @('C:\Program Files\Cppcheck\cppcheck.exe', 'C:\Program Files (x86)\Cppcheck\cppcheck.exe')) {
+              if (Test-Path $candidate) {
+                $cppcheckExe = $candidate
+                break
+              }
+            }
+          }
+
+          if (-not $cppcheckExe) {
+            throw 'Cppcheck executable was not found after installing the official MSI.'
+          }
+
+          [System.IO.File]::AppendAllText($env:GITHUB_PATH, (Split-Path $cppcheckExe) + [Environment]::NewLine)
+          & $cppcheckExe --version
 
       - name: Run Code Quality & Static Analysis (Cppcheck)
         shell: powershell
         run: |
-          subst R: "$env:GITHUB_WORKSPACE\cppcheck_cfg"
           cppcheck --enable=warning,performance --std=c++17 --inline-suppr --suppress=missingIncludeSystem packages/ apps/
 
       - name: Install Qt6
