@@ -1433,14 +1433,17 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
 
     } else if (block.type == LogicBlockType::EVENT_CREATE) {
         auto* nameEdit = new QLineEdit(w);
-        nameEdit->setPlaceholderText("ex: aoDetectar()");
+        nameEdit->setPlaceholderText("aoClicar");
         nameEdit->setText(block.actionTarget);
         nameEdit->setStyleSheet(
-            "QLineEdit { background: #FFFFFF; border: 1.5px solid #F0ABFC; border-radius: 8px; color: #701A75; font-size: 11px; font-weight: bold; padding: 4px 8px; min-width: 200px; }"
+            "QLineEdit { background: #FFFFFF; border: 1.5px solid #F0ABFC; border-radius: 8px; color: #701A75; font-size: 11px; font-weight: bold; padding: 4px 8px; min-width: 150px; }"
         );
 
-        auto* label = new QLabel("Nome do Evento:", w);
-        label->setStyleSheet("color: white; font-weight: bold;");
+        auto* labelVoid = new QLabel("void", w);
+        labelVoid->setStyleSheet("color: #FFFFFF; font-weight: bold; font-family: 'Consolas', monospace; font-size: 12px;");
+
+        auto* labelParens = new QLabel("()", w);
+        labelParens->setStyleSheet("color: #FFFFFF; font-weight: bold; font-family: 'Consolas', monospace; font-size: 12px;");
 
         auto saveParams = [this, index, nameEdit]() {
             m_activeBlocks[index].actionTarget = nameEdit->text();
@@ -1449,8 +1452,9 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
 
         connect(nameEdit, &QLineEdit::textChanged, this, saveParams);
 
-        lay->addWidget(label);
+        lay->addWidget(labelVoid);
         lay->addWidget(nameEdit);
+        lay->addWidget(labelParens);
     }
 
     lay->addStretch();
@@ -1834,7 +1838,7 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             EventLogicBlock b;
             b.id = QUuid::createUuid().toString();
             b.type = LogicBlockType::EVENT_CREATE;
-            b.actionTarget = "aoDetectar()";
+            b.actionTarget = "aoDetectar";
             m_activeBlocks.append(b);
             refreshListDisplay();
             emit blocksChanged();
