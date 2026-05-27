@@ -2053,12 +2053,13 @@ void MathFormulaDialog::buildUI() {
     m_lcdScreen->setFixedHeight(140);
     m_lcdScreen->setStyleSheet(
         "QTextBrowser { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #10B981, stop:0.45 #059669, stop:0.46 #047857, stop:1 #065F46); " // Emerald Glass Screen
-        "  border: 3px solid rgba(255, 255, 255, 0.8); "
-        "  border-radius: 14px; "
+        "  background-color: #FFFFFF; "
+        "  border: 2px solid #CBD5E1; "
+        "  border-radius: 10px; "
         "  padding: 14px; "
-        "  color: #ECFDF5; "
+        "  color: #0F172A; "
         "  font-family: 'Consolas', 'Segoe UI', monospace; "
+        "  font-size: 13px; "
         "  font-weight: bold; "
         "}"
     );
