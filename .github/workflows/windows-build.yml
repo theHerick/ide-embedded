@@ -23,14 +23,14 @@ jobs:
       - name: Install Cppcheck (Static Analysis)
         run: choco install cppcheck -y
 
-      - name: Prepare Cppcheck Config Path
+      - name: Run Code Quality & Static Analysis (Cppcheck)
         shell: powershell
         run: |
           cmd /c "subst R: /D 2>nul"
           subst R: "$env:GITHUB_WORKSPACE\cppcheck_cfg"
-
-      - name: Run Code Quality & Static Analysis (Cppcheck)
-        run: |
+          if (!(Test-Path 'R:\winlibs64ucrt_stage\inst_cppcheck-2.14.0\share\Cppcheck\cfg\std.cfg')) {
+            throw 'Cppcheck std.cfg was not found at the expected R: path.'
+          }
           cppcheck --enable=warning,performance --std=c++17 --inline-suppr --suppress=missingIncludeSystem packages/ apps/
 
       - name: Install Qt6

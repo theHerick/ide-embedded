@@ -21,10 +21,29 @@ if %ERRORLEVEL% neq 0 (
     exit /b %ERRORLEVEL%
 )
 
+if exist build\apps\ide\ide-embedded.exe (
+    if not exist bin mkdir bin
+    copy /Y build\apps\ide\ide-embedded.exe bin\ide-embedded.exe >nul
+    echo Executavel gerado em: bin\ide-embedded.exe
+) else (
+    echo [ERRO] O build concluiu, mas o executavel nao foi encontrado em build\apps\ide\ide-embedded.exe
+    exit /b 1
+)
+
 echo ==========================================
 echo [2/3] Build concluido com sucesso!
 echo Preparando commit automatico...
 echo ==========================================
+
+for /f "usebackq delims=" %%b in (`git branch --show-current`) do set CURRENT_BRANCH=%%b
+if not "%CURRENT_BRANCH%"=="main" (
+    echo [AVISO] Branch atual: %CURRENT_BRANCH%.
+    echo [AVISO] Commit e push automaticos foram ignorados para evitar falha fora da branch main.
+    echo ==========================================
+    echo [3/3] Processo finalizado com sucesso!
+    echo ==========================================
+    exit /b 0
+)
 
 :: Verifica se ha alteracoes para commitar
 git status --porcelain | findstr /R "^" >nul
