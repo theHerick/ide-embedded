@@ -1159,6 +1159,21 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
         connect(editMC, &QAction::triggered, this, [this, comp]() {
             editMicrocontroller(comp);
         });
+
+        menu.addSeparator();
+
+        QAction* actClearEeprom = menu.addAction("🗑️ Limpar EEPROM");
+        connect(actClearEeprom, &QAction::triggered, this, [this]() {
+            auto res = QMessageBox::question(this, "Limpar EEPROM",
+                "Tem certeza que deseja apagar todos os dados salvos na EEPROM simulada?\n\n"
+                "Esta ação não pode ser desfeita.",
+                QMessageBox::Yes | QMessageBox::No);
+            if (res == QMessageBox::Yes) {
+                m_simulator->clearEeprom();
+                logMessage("EEPROM simulada limpa com sucesso.", "SUCCESS");
+                statusBar()->showMessage("EEPROM limpa!", 3000);
+            }
+        });
     } else if (comp->componentType() == "led") {
         QAction* act = menu.addAction("Evento: Ao Ligar LED (aoLigar)");
         connect(act, &QAction::triggered, this, [this, comp]() {
@@ -1507,6 +1522,7 @@ void MainWindow::clearScene() {
         m_scene->blockSignals(prevSceneSignals);
     }
     m_selectedComponent = nullptr;
+    m_simulator->clearEeprom();
     compileCode();
     logMessage("Workspace limpo pelo usuário. Todos os componentes e cabos foram removidos.", "WARNING");
     statusBar()->showMessage("Workspace limpo!");
@@ -1559,6 +1575,22 @@ bool MainWindow::saveProjectToFile(const QString& filePath) {
         blocks.append(entry);
     }
     root["eventBlocks"] = blocks;
+
+    // Save EEPROM persistent data
+    QJsonObject eepromObj;
+    const QMap<QString, QVariant> eepromData = m_simulator->getEepromData();
+    for (auto it = eepromData.cbegin(); it != eepromData.cend(); ++it) {
+        QJsonObject entry;
+        if (it.value().typeId() == QMetaType::QString) {
+            entry["type"] = "string";
+            entry["value"] = it.value().toString();
+        } else {
+            entry["type"] = "number";
+            entry["value"] = it.value().toDouble();
+        }
+        eepromObj[it.key()] = entry;
+    }
+    root["eeprom"] = eepromObj;
 
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
@@ -1655,6 +1687,21 @@ bool MainWindow::loadProjectFromFile(const QString& filePath) {
             blocks.append(deserializeEventLogicBlock(blockValue.toObject()));
         }
         m_blockEditor->setEventBlocks(compId, eventName, blocks);
+    }
+
+    // Load EEPROM persistent data
+    if (root.contains("eeprom")) {
+        QMap<QString, QVariant> eepromData;
+        const QJsonObject eepromObj = root["eeprom"].toObject();
+        for (auto it = eepromObj.begin(); it != eepromObj.end(); ++it) {
+            QJsonObject entry = it.value().toObject();
+            if (entry["type"].toString() == "string") {
+                eepromData[it.key()] = entry["value"].toString();
+            } else {
+                eepromData[it.key()] = entry["value"].toDouble();
+            }
+        }
+        m_simulator->setEepromData(eepromData);
     }
 
     m_currentProjectPath = filePath;

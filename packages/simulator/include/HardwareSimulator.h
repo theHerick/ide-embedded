@@ -21,6 +21,11 @@ public:
     void triggerComponentEvent(const QString& compId, const QString& eventName);
     void triggerLoopEvents();
 
+    // EEPROM persistence
+    QMap<QString, QVariant> getEepromData() const { return m_eeprom; }
+    void setEepromData(const QMap<QString, QVariant>& data) { m_eeprom = data; }
+    void clearEeprom() { m_eeprom.clear(); }
+
 signals:
     void activeComponentChanged(const QString& compId, bool isActive);
     void simulationStopped();
