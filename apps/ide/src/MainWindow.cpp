@@ -745,7 +745,7 @@ void MainWindow::buildToolbar() {
     // Info action: show project/firmware information (placed as last toolbar button)
     auto* infoAction = toolbar->addAction("");
     infoAction->setToolTip("Informações do Software");
-    infoAction->setIcon(style()->standardIcon(QStyle::SP_MessageBoxInformation));
+    infoAction->setIcon(style()->standardIcon(QStyle::SP_MessageBoxQuestion));
     connect(infoAction, &QAction::triggered, this, &MainWindow::showFirmwareInfo);
 
     // Project menu at the top
