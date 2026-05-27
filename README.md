@@ -19,7 +19,9 @@
 
 </div>
 
-![IDE Logo](readme_foto.png)
+<p align="center">
+  <img src="readme_foto.png" width="700"/>
+</p>
 
 ---
 
