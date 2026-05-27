@@ -91,6 +91,7 @@ IDE Embedded separates raw physical hardware signals from your core business log
 ### Prerequisites
 
 You need a fully functional C++ compiler supporting C++17 (e.g. GCC/MinGW) and the Qt6 SDK.
+For the in-app PDF preview, install the optional **Qt6Pdf** module; without it the PDF tab shows a placeholder.
 
 ### Build and Launch (Windows)
 
