@@ -1840,7 +1840,6 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
 
         QString text = textVal.trimmed().toLower();
 
-        // Prioritize event creation before generic variable creation
         if (text.contains("eventcreate") || text.contains("criar evento") || text.contains("aodetectar")) {
             EventLogicBlock b;
             b.id = QUuid::createUuid().toString();
@@ -1849,7 +1848,7 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             m_activeBlocks.append(b);
             refreshListDisplay();
             emit blocksChanged();
-        } else if ((text.contains("criar") || text.contains("declar") || text.contains("create") || text.contains("new")) && !text.contains("eventcreate")) {
+        } else if (text.contains("criar") || text.contains("declar") || text.contains("create") || text.contains("new")) {
             addCreateVarBlock();
         } else if (text.contains("atrib") || text.contains("defin") || text.contains("assign") || text == "=") {
             addAssignmentBlock();
