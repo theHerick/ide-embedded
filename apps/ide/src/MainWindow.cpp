@@ -20,7 +20,9 @@
 #include <QScrollBar>
 #include <QDialog>
 #include <QScrollArea>
+#ifdef IDE_EMBEDDED_HAS_QT_PDF
 #include <QPdfDocument>
+#endif
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -3889,6 +3891,7 @@ void MainWindow::showFirmwareInfo() {
 
     bookLayout->addWidget(previewContainer);
 
+#ifdef IDE_EMBEDDED_HAS_QT_PDF
     // Initialize PDF Document and load file
     auto* pdfDoc = new QPdfDocument(bookWidget);
     QString pdfPath = QCoreApplication::applicationDirPath() + "/ide.pdf";
@@ -3962,6 +3965,13 @@ void MainWindow::showFirmwareInfo() {
         tracker->index++;
         renderPage();
     });
+#else
+    pdfPageLabel->setText("Prévia do PDF indisponível.\nInstale o módulo Qt6Pdf para habilitar.");
+    pdfPageLabel->setWordWrap(true);
+    lblPageIndicator->setText("Qt6Pdf não instalado");
+    btnPrevPage->setEnabled(false);
+    btnNextPage->setEnabled(false);
+#endif
 
     // Right Column: Book Info & Details
     auto* infoLayout = new QVBoxLayout();
@@ -5051,5 +5061,3 @@ void MainWindow::showComponentModeling(ComponentItem* comp) {
 
     dialog.exec();
 }
-
-
