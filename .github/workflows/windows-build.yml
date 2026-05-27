@@ -20,6 +20,13 @@ jobs:
       - name: Set up MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Install Cppcheck (Static Analysis)
+        run: choco install cppcheck -y
+
+      - name: Run Code Quality & Static Analysis (Cppcheck)
+        run: |
+          cppcheck --enable=warning,performance --std=c++17 --inline-suppr --suppress=missingIncludeSystem packages/ apps/
+
       - name: Install Qt6
         uses: jurplel/install-qt-action@v3
         with:
