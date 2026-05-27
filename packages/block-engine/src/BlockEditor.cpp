@@ -487,6 +487,18 @@ void BlockEditor::refreshPalette() {
         delete child;
     }
 
+    if (m_currentEventName == "monitor") {
+        auto* helpHeader = new QLabel("PALETA DE VARIÁVEIS", this);
+        helpHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #64748B; padding-left: 2px; padding-top: 4px; background: transparent;");
+        m_paletteLayout->addWidget(helpHeader);
+
+        auto* helpDesc = new QLabel("Use <b>duplo clique</b> na área à direita para adicionar blocos do tipo <b>eventCreate</b> para cada evento desejado.", this);
+        helpDesc->setWordWrap(true);
+        helpDesc->setStyleSheet("font-size: 11px; color: #475569; padding-left: 2px; line-height: 1.4;");
+        m_paletteLayout->addWidget(helpDesc);
+        return;
+    }
+
     // Section 1: Variables
     auto* varHeader = new QLabel("VARIÁVEIS DO ESCOPO", this);
     varHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #64748B; padding-left: 2px; padding-top: 4px; background: transparent;");
@@ -1675,28 +1687,31 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
                      << "🟢 Ou (||)"
                      << "🟢 Não (!)";
     } else {
-        logicOptions << "Criar Variável (Declara nova variável)"
-                     << "Atribuir (Define valor de variável)"
-                     << "Se (if - Bloco Condicional SE)"
-                     << "Senão Se (elseif - Condicional Alternativa)"
-                     << "Senão (else - Bloco Padrão)"
-                     << "Enquanto (while - Repete enquanto verdadeiro)"
-                     << "Repetir Para (for - Loop com contador)"
-                     << "Fim (Fecha bloco condicional ou loop)"
-                     << "Ação (Controla hardware / pino)"
-                     << "Calcular Bateria (Lê o ADC e calcula carga)"
-                     << "Chamar Função (executa função C++)"
-                     << "Girar Motor (Ajusta ângulo do servo ou DC)"
-                     << "Retornar (return - Devolve valor de função)"
-                     << "Matemática (Contas e operadores)"
-                     << "Escrever (digitalWrite)" 
-                     << "Aguardar (delay)" 
-                     << "Alternar (toggle)"
-                     << "Salvar na EEPROM (Persistir estado/variável)"
-                     << "Restaurar da EEPROM (Recuperar estado/variável)"
-                     << "Serial Print (Escrever na Serial)"
-                     << "eventCreate (Criar Evento Customizado)";
-
+        if (m_currentEventName == "monitor") {
+            logicOptions << "eventCreate (Criar Evento Customizado)";
+        } else {
+            logicOptions << "Criar Variável (Declara nova variável)"
+                         << "Atribuir (Define valor de variável)"
+                         << "Se (if - Bloco Condicional SE)"
+                         << "Senão Se (elseif - Condicional Alternativa)"
+                         << "Senão (else - Bloco Padrão)"
+                         << "Enquanto (while - Repete enquanto verdadeiro)"
+                         << "Repetir Para (for - Loop com contador)"
+                         << "Fim (Fecha bloco condicional ou loop)"
+                         << "Ação (Controla hardware / pino)"
+                         << "Calcular Bateria (Lê o ADC e calcula carga)"
+                         << "Chamar Função (executa função C++)"
+                         << "Girar Motor (Ajusta ângulo do servo ou DC)"
+                         << "Retornar (return - Devolve valor de função)"
+                         << "Matemática (Contas e operadores)"
+                         << "Escrever (digitalWrite)" 
+                         << "Aguardar (delay)" 
+                         << "Alternar (toggle)"
+                         << "Salvar na EEPROM (Persistir estado/variável)"
+                         << "Restaurar da EEPROM (Recuperar estado/variável)"
+                         << "Serial Print (Escrever na Serial)"
+                         << "eventCreate (Criar Evento Customizado)";
+        }
     }
 
     logicOptions.sort(Qt::CaseInsensitive);
