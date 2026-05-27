@@ -27,7 +27,6 @@
 </td>
 </tr>
 </table>
----
 
 ## What is IDE Embedded?
 
