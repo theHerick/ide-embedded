@@ -23,6 +23,12 @@ jobs:
       - name: Install Cppcheck (Static Analysis)
         run: choco install cppcheck -y
 
+      - name: Prepare Cppcheck Config Path
+        shell: powershell
+        run: |
+          cmd /c "subst R: /D 2>nul"
+          subst R: "$env:GITHUB_WORKSPACE\cppcheck_cfg"
+
       - name: Run Code Quality & Static Analysis (Cppcheck)
         run: |
           cppcheck --enable=warning,performance --std=c++17 --inline-suppr --suppress=missingIncludeSystem packages/ apps/
