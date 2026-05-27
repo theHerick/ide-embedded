@@ -21,15 +21,11 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Install Cppcheck (Static Analysis)
-        run: choco install cppcheck --version=2.14.0 -y
+        run: choco install cppcheck -y
 
       - name: Run Code Quality & Static Analysis (Cppcheck)
         shell: powershell
         run: |
-          subst R: "$env:GITHUB_WORKSPACE\cppcheck_cfg"
-          if (!(Test-Path 'R:\winlibs64ucrt_stage\inst_cppcheck-2.14.0\share\Cppcheck\cfg\std.cfg')) {
-            throw 'Cppcheck std.cfg was not found at the expected R: path.'
-          }
           cppcheck --enable=warning,performance --std=c++17 --inline-suppr --suppress=missingIncludeSystem packages/ apps/
 
       - name: Install Qt6
