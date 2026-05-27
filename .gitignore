@@ -1,0 +1,22 @@
+# Build directory
+build/
+bin/
+obj/
+
+# IDE / Editor settings
+.vs/
+.vscode/
+*.user
+*.suo
+*.useros
+*.cmake.user
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporary files
+*.tmp
+*.log
+*.bak

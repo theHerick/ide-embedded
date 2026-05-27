@@ -1,0 +1,13 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/">
+    <file alias="icon.png">../../assets/icon.ico</file>
+    <file>icons/edit.svg</file>
+    <file>icons/search.svg</file>
+    <file>icons/play.svg</file>
+    <file>icons/stop.svg</file>
+    <file>icons/build.png</file>
+    <file>icons/modelar.png</file>
+    <file>icons/undo_on.png</file>
+    <file>icons/undo_off.png</file>
+</qresource>
+</RCC>

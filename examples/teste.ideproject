@@ -1,0 +1,124 @@
+{
+    "cables": [
+        {
+            "sourceComponent": "led_4",
+            "sourcePin": "Cathode",
+            "startHFirst": true,
+            "targetComponent": "resistor_5",
+            "targetPin": "1"
+        },
+        {
+            "sourceComponent": "esp32_1",
+            "sourcePin": "GND",
+            "startHFirst": true,
+            "targetComponent": "resistor_5",
+            "targetPin": "2"
+        },
+        {
+            "sourceComponent": "led_4",
+            "sourcePin": "Anode",
+            "startHFirst": true,
+            "targetComponent": "esp32_1",
+            "targetPin": "GPIO2",
+            "waypoints": [
+                {
+                    "x": -110,
+                    "y": 80
+                }
+            ]
+        },
+        {
+            "sourceComponent": "button_2",
+            "sourcePin": "A1",
+            "startHFirst": true,
+            "targetComponent": "esp32_1",
+            "targetPin": "GPIO8"
+        },
+        {
+            "sourceComponent": "button_2",
+            "sourcePin": "B2",
+            "startHFirst": true,
+            "targetComponent": "resistor_5",
+            "targetPin": "2",
+            "waypoints": [
+                {
+                    "x": 240,
+                    "y": 120
+                },
+                {
+                    "x": -120,
+                    "y": 170
+                },
+                {
+                    "x": -130,
+                    "y": -60
+                },
+                {
+                    "x": -20,
+                    "y": -60
+                },
+                {
+                    "x": 0,
+                    "y": -60
+                }
+            ]
+        }
+    ],
+    "components": [
+        {
+            "id": "esp32_1",
+            "name": "Controlador ESP32",
+            "state": {
+                "microcontrollerConfig": "{\"board\":\"esp32-c3-devkitm-1\",\"board_size\":{\"height_mm\":22.5,\"width_mm\":18},\"core\":\"arduino\",\"pin_pitch_mm\":2.54,\"pins\":[{\"name\":\"5V\",\"pin\":\"5V\",\"role\":\"5V\",\"side\":\"left\"},{\"name\":\"GND\",\"pin\":\"GND\",\"role\":\"GND\",\"side\":\"left\"},{\"name\":\"3V3\",\"pin\":\"3V3\",\"role\":\"3V3\",\"side\":\"left\"},{\"name\":\"GPIO4\",\"pin\":\"4\",\"role\":\"GPIO4\",\"side\":\"left\"},{\"name\":\"GPIO3\",\"pin\":\"3\",\"role\":\"GPIO3\",\"side\":\"left\"},{\"name\":\"GPIO2\",\"pin\":\"2\",\"role\":\"GPIO2\",\"side\":\"left\"},{\"name\":\"GPIO1\",\"pin\":\"1\",\"role\":\"GPIO1\",\"side\":\"left\"},{\"name\":\"GPIO0\",\"pin\":\"0\",\"role\":\"GPIO0\",\"side\":\"left\"},{\"name\":\"GPIO5\",\"pin\":\"5\",\"role\":\"GPIO5\",\"side\":\"right\"},{\"name\":\"GPIO6\",\"pin\":\"6\",\"role\":\"GPIO6\",\"side\":\"right\"},{\"name\":\"GPIO7\",\"pin\":\"7\",\"role\":\"GPIO7\",\"side\":\"right\"},{\"name\":\"GPIO8\",\"pin\":\"8\",\"role\":\"GPIO8\",\"side\":\"right\"},{\"name\":\"GPIO9\",\"pin\":\"9\",\"role\":\"GPIO9\",\"side\":\"right\"},{\"name\":\"GPIO10\",\"pin\":\"10\",\"role\":\"GPIO10\",\"side\":\"right\"},{\"name\":\"GPIO20\",\"pin\":\"20\",\"role\":\"GPIO20\",\"side\":\"right\"},{\"name\":\"GPIO21\",\"pin\":\"21\",\"role\":\"GPIO21\",\"side\":\"right\"}],\"upload_port\":\"Auto-Detect\",\"upload_speed\":\"Auto\"}"
+            },
+            "type": "esp32",
+            "x": 60,
+            "y": 50
+        },
+        {
+            "id": "button_2",
+            "name": "Botão Gatilho",
+            "state": {
+                "pressed": false
+            },
+            "type": "button",
+            "x": 200,
+            "y": 60
+        },
+        {
+            "id": "led_4",
+            "name": "LED Status",
+            "state": {
+                "on": false
+            },
+            "type": "led",
+            "x": -100,
+            "y": -30
+        },
+        {
+            "id": "resistor_5",
+            "name": "Resistor 10k",
+            "state": {
+                "resistance": 10000
+            },
+            "type": "resistor",
+            "x": -30,
+            "y": 0
+        }
+    ],
+    "customComponents": [],
+    "eventBlocks": [
+        {
+            "blocks": [
+            ],
+            "key": "button_2:aoClicar"
+        },
+        {
+            "blocks": [
+            ],
+            "key": "esp32_1:aoLoop"
+        }
+    ],
+    "projectName": "teste",
+    "version": 1
+}
