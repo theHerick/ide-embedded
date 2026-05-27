@@ -11,6 +11,5 @@ if (!(Test-Path (Join-Path $cfgDir 'std.cfg'))) {
 }
 
 Write-Output "Mapeando unidade R:..."
-cmd /c "subst R: /D 2>nul"
 subst R: $cppcheckRoot
 Write-Output "Unidade R: mapeada com sucesso!"
