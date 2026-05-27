@@ -1813,7 +1813,15 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
 
         QString text = textVal.trimmed().toLower();
 
-        if (text.contains("criar") || text.contains("declar") || text.contains("create") || text.contains("new")) {
+        if (text.contains("eventcreate") || text.contains("criar evento") || text.contains("aodetectar")) {
+            EventLogicBlock b;
+            b.id = QUuid::createUuid().toString();
+            b.type = LogicBlockType::EVENT_CREATE;
+            b.actionTarget = "aoDetectar";
+            m_activeBlocks.append(b);
+            refreshListDisplay();
+            emit blocksChanged();
+        } else if (text.contains("criar") || text.contains("declar") || text.contains("create") || text.contains("new")) {
             addCreateVarBlock();
         } else if (text.contains("atrib") || text.contains("defin") || text.contains("assign") || text == "=") {
             addAssignmentBlock();
@@ -1849,14 +1857,6 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             addBlock("toggle");
         } else if (text.contains("chamar") || text.contains("call function") || text.contains("invocar")) {
             addBlock("callFunction");
-        } else if (text.contains("eventcreate") || text.contains("criar evento") || text.contains("aodetectar")) {
-            EventLogicBlock b;
-            b.id = QUuid::createUuid().toString();
-            b.type = LogicBlockType::EVENT_CREATE;
-            b.actionTarget = "aoDetectar";
-            m_activeBlocks.append(b);
-            refreshListDisplay();
-            emit blocksChanged();
         } else if (text.contains("calcular bateria") || text.contains("bateria") || text.contains("calc bat")) {
             EventLogicBlock b;
             b.id = QUuid::createUuid().toString();
