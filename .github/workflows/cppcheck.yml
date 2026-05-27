@@ -1,0 +1,26 @@
+name: Cppcheck
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  static-analysis:
+    name: Static Analysis
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Cppcheck
+        shell: powershell
+        run: choco install cppcheck -y
+
+      - name: Rodar Cppcheck
+        shell: powershell
+        run: cppcheck --enable=warning,performance --std=c++17 --inline-suppr --suppress=missingIncludeSystem packages/ apps/
