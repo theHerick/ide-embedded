@@ -40,6 +40,8 @@
 #include <QJsonObject>
 #include <QFile>
 #include <QFileInfo>
+#include <QDesktopServices>
+#include <QUrl>
 #include <QSettings>
 #include <QHash>
 #include <QDir>
@@ -3606,42 +3608,308 @@ void MainWindow::viewCompiledCodeModal() {
 
 void MainWindow::showFirmwareInfo() {
     QDialog dialog(this);
-    dialog.setWindowTitle("Sobre o Software");
-    dialog.resize(550, 480);
+    dialog.setWindowTitle("Ajuda e Documentação — IDE Embedded");
+    dialog.resize(880, 640);
     dialog.setStyleSheet(
         "QDialog { background-color: #FFFFFF; border: 1px solid #E2E8F0; }"
         "QLabel { font-family: 'Segoe UI', Arial; color: #334155; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: #fff; padding: 10px 18px; font-weight: 700; font-size: 12px; }"
+        "QTabWidget::pane { border: 1px solid #E2E8F0; background: #FFFFFF; border-radius: 8px; }"
+        "QTabBar::tab { background: #F1F5F9; border: 1px solid #E2E8F0; border-bottom: none; "
+        "  border-top-left-radius: 6px; border-top-right-radius: 6px; "
+        "  padding: 8px 16px; font-weight: 600; font-size: 12px; color: #475569; }"
+        "QTabBar::tab:selected { background: #FFFFFF; border-color: #E2E8F0; "
+        "  color: #1D4ED8; font-weight: bold; }"
+        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: #fff; padding: 10px 18px; font-weight: bold; font-size: 12px; }"
         "QPushButton:hover { background: #1E40AF; }"
         "QPushButton#sec { background: #F1F5F9; border: 1px solid #E2E8F0; color: #475569; }"
         "QPushButton#sec:hover { background: #E2E8F0; color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
-    layout->setContentsMargins(24, 24, 24, 24);
-    layout->setSpacing(14);
+    layout->setContentsMargins(20, 20, 20, 20);
+    layout->setSpacing(12);
 
-    auto* title = new QLabel("IDE Embedded", &dialog);
-    title->setStyleSheet("font-size: 18px; font-weight: 800; color: #1E293B;");
-    layout->addWidget(title);
+    auto* header = new QLabel("Central de Ajuda e Documentação", &dialog);
+    header->setStyleSheet("font-size: 16px; font-weight: 800; color: #0F172A;");
+    layout->addWidget(header);
 
-    QString version = QCoreApplication::applicationVersion();
-    if (version.isEmpty()) version = "1.0.0 (estudos)";
-    auto* subTitle = new QLabel(QString("Versão %1  |  Copyright © 2026 Herick B. Tiburski").arg(version), &dialog);
-    subTitle->setStyleSheet("font-size: 11px; color: #64748B; font-weight: 600;");
-    layout->addWidget(subTitle);
+    auto* tabs = new QTabWidget(&dialog);
 
-    auto* desc = new QLabel(&dialog);
-    desc->setWordWrap(true);
-    desc->setText(
-        "Uma IDE nativa de alta performance para modelagem visual de circuitos, simulação "
-        "interativa em tempo real e geração automatizada de código C++ / Arduino para sistemas embarcados."
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAB 1: COMANDOS
+    // ─────────────────────────────────────────────────────────────────────────
+    auto* cmdWidget = new QWidget();
+    auto* cmdLayout = new QVBoxLayout(cmdWidget);
+    cmdLayout->setContentsMargins(16, 16, 16, 16);
+    cmdLayout->setSpacing(10);
+
+    auto* cmdIntro = new QLabel("Referência Rápida de Blocos e Sintaxe de Código", cmdWidget);
+    cmdIntro->setStyleSheet("font-size: 13px; font-weight: bold; color: #0F172A;");
+    cmdLayout->addWidget(cmdIntro);
+
+    auto* table = new QTableWidget(cmdWidget);
+    table->setColumnCount(4);
+    table->setHorizontalHeaderLabels({"Categoria", "Bloco / Comando", "Código C++ Gerado", "Descrição"});
+    table->setAlternatingRowColors(true);
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; gridline-color: #F1F5F9; }"
+        "QHeaderView::section { background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 6px; font-weight: bold; color: #475569; }"
+        "QTableWidget::item { padding: 6px; font-size: 11px; }"
     );
-    desc->setStyleSheet("font-size: 12px; line-height: 1.5; color: #475569;");
-    layout->addWidget(desc);
+
+    struct CommandInfo {
+        QString category;
+        QString name;
+        QString cppSyntax;
+        QString description;
+    };
+    QVector<CommandInfo> commands = {
+        {"Eventos", "aoIniciar()", "void setup() { ... }", "Ponto de partida da simulação, executado uma única vez ao iniciar."},
+        {"Eventos", "aoLoop()", "void loop() { ... }", "Executado continuamente em loop enquanto a simulação estiver ativa."},
+        {"Eventos", "aoClicar(Botão)", "monitor_Botao_aoClicar()", "Disparado instantaneamente no exato momento em que o botão é pressionado."},
+        {"Eventos", "aoSoltar(Botão)", "monitor_Botao_aoSoltar()", "Disparado no instante em que o botão é solto pelo usuário."},
+        {"Atuadores", "ligar(LED)", "digitalWrite(LED_PIN, HIGH);", "Envia sinal HIGH para acender o LED conectado no pino correspondente."},
+        {"Atuadores", "desligar(LED)", "digitalWrite(LED_PIN, LOW);", "Envia sinal LOW para apagar o LED conectado no pino correspondente."},
+        {"Atuadores", "definirVelocidade(Motor, V)", "analogWrite(MOTOR_PIN, V);", "Define a velocidade do motor usando modulação PWM (valores de 0 a 255)."},
+        {"Atuadores", "tocarSom(Buzzer, F, D)", "tone(BUZZER_PIN, F, D);", "Emite som com frequência F (Hz) e duração D (ms) no Buzzer."},
+        {"Atuadores", "pararSom(Buzzer)", "noTone(BUZZER_PIN);", "Interrompe imediatamente qualquer som emitido pelo Buzzer."},
+        {"Sensores", "lerSensorAnalogico(S)", "analogRead(SENSOR_PIN);", "Lê o valor analógico atual do sensor (retorna valores de 0 a 4095)."},
+        {"Sensores", "lerEstadoBotao(B)", "digitalRead(BUTAO_PIN);", "Lê o estado físico direto do botão (HIGH ou LOW)."},
+        {"Tempo", "aguardar(T)", "delay(T);", "Pausa a execução do fluxo da simulação por T milissegundos."},
+        {"Comunicação", "escreverSerial(Texto)", "Serial.println(Texto);", "Envia um bloco de texto formatado via porta Serial para depuração."}
+    };
+
+    table->setRowCount(commands.size());
+    for (int i = 0; i < commands.size(); ++i) {
+        const auto& cmd = commands[i];
+        
+        auto* itemCat = new QTableWidgetItem(cmd.category);
+        itemCat->setFont(QFont("Segoe UI", 9, QFont::Bold));
+        if (cmd.category == "Eventos") itemCat->setForeground(QColor("#2563EB"));
+        else if (cmd.category == "Atuadores") itemCat->setForeground(QColor("#059669"));
+        else if (cmd.category == "Sensores") itemCat->setForeground(QColor("#D97706"));
+        
+        auto* itemName = new QTableWidgetItem(cmd.name);
+        itemName->setFont(QFont("Consolas", 9, QFont::Bold));
+        itemName->setForeground(QColor("#0F172A"));
+        
+        auto* itemCpp = new QTableWidgetItem(cmd.cppSyntax);
+        itemCpp->setFont(QFont("Consolas", 9));
+        itemCpp->setForeground(QColor("#475569"));
+        
+        auto* itemDesc = new QTableWidgetItem(cmd.description);
+        
+        table->setItem(i, 0, itemCat);
+        table->setItem(i, 1, itemName);
+        table->setItem(i, 2, itemCpp);
+        table->setItem(i, 3, itemDesc);
+    }
+    
+    table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    table->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
+
+    cmdLayout->addWidget(table);
+    tabs->addTab(cmdWidget, "📖 Comandos (Sintaxe)");
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAB 2: LIVRO (PDF)
+    // ─────────────────────────────────────────────────────────────────────────
+    auto* bookWidget = new QWidget();
+    auto* bookLayout = new QVBoxLayout(bookWidget);
+    bookLayout->setContentsMargins(30, 30, 30, 30);
+    bookLayout->setSpacing(16);
+    bookLayout->setAlignment(Qt::AlignCenter);
+
+    auto* bookCard = new QFrame(bookWidget);
+    bookCard->setFixedWidth(520);
+    bookCard->setFixedHeight(240);
+    bookCard->setStyleSheet(
+        "QFrame { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #1E3A8A, stop:1 #3B82F6); "
+        "  border: 1px solid #2563EB; "
+        "  border-radius: 12px; "
+        "}"
+    );
+    
+    auto* bcLayout = new QVBoxLayout(bookCard);
+    bcLayout->setContentsMargins(24, 24, 24, 24);
+    bcLayout->setAlignment(Qt::AlignCenter);
+
+    auto* bcMainLabel = new QLabel("LIVRO OFICIAL", bookCard);
+    bcMainLabel->setStyleSheet("color: #FFFFFF; font-size: 20px; font-weight: 900; letter-spacing: 2px; background: transparent;");
+    bcMainLabel->setAlignment(Qt::AlignCenter);
+    bcLayout->addWidget(bcMainLabel);
+
+    auto* bcSubLabel = new QLabel("Programação Orientada a Eventos para Sistemas Embarcados", bookCard);
+    bcSubLabel->setWordWrap(true);
+    bcSubLabel->setStyleSheet("color: #EFF6FF; font-size: 12px; font-weight: 700; background: transparent;");
+    bcSubLabel->setAlignment(Qt::AlignCenter);
+    bcLayout->addWidget(bcSubLabel);
+
+    bcLayout->addSpacing(10);
+
+    auto* bcAuthorLabel = new QLabel("Por Herick B. Tiburski", bookCard);
+    bcAuthorLabel->setStyleSheet("color: #93C5FD; font-size: 11px; font-weight: 600; font-style: italic; background: transparent;");
+    bcAuthorLabel->setAlignment(Qt::AlignCenter);
+    bcLayout->addWidget(bcAuthorLabel);
+
+    bookLayout->addWidget(bookCard);
+
+    auto* bookDesc = new QLabel(
+        "Este livro é o guia oficial de estudos e treinamento prático que acompanha o IDE Embedded.\n"
+        "O material cobre os princípios de eletrônica, o modelo de blocos lógicos e detalha "
+        "a arquitetura inovadora 'Event Sandwich' criada para otimizar microcontroladores.", bookWidget);
+    bookDesc->setWordWrap(true);
+    bookDesc->setAlignment(Qt::AlignCenter);
+    bookDesc->setFixedWidth(600);
+    bookDesc->setStyleSheet("font-size: 12px; line-height: 1.5; color: #475569;");
+    bookLayout->addWidget(bookDesc);
+
+    auto* bookFileHint = new QLabel("Arquivo esperado: <b>ide.pdf</b> no diretório principal do software", bookWidget);
+    bookFileHint->setStyleSheet("font-size: 11px; color: #64748B;");
+    bookLayout->addWidget(bookFileHint);
+
+    auto* btnOpenPdf = new QPushButton("📖  Abrir Livro Oficial (PDF)", bookWidget);
+    btnOpenPdf->setFixedWidth(260);
+    btnOpenPdf->setStyleSheet(
+        "QPushButton { background-color: #10B981; border: none; border-radius: 6px; "
+        "  color: #fff; padding: 12px; font-weight: bold; font-size: 12px; }"
+        "QPushButton:hover { background-color: #059669; }"
+    );
+    bookLayout->addWidget(btnOpenPdf);
+    
+    QDialog* dlgPtr = &dialog;
+    connect(btnOpenPdf, &QPushButton::clicked, this, [this, dlgPtr]() {
+        // Tenta achar o PDF na pasta do executavel ou na pasta de execucao
+        QString pdfPath = QCoreApplication::applicationDirPath() + "/ide.pdf";
+        if (!QFile::exists(pdfPath)) {
+            pdfPath = "ide.pdf";
+        }
+        if (QFile::exists(pdfPath)) {
+            QDesktopServices::openUrl(QUrl::fromLocalFile(pdfPath));
+            logMessage(QString("Livro PDF aberto: %1").arg(pdfPath), "SUCCESS");
+        } else {
+            QMessageBox::warning(dlgPtr, "Livro Não Encontrado", 
+                "O arquivo 'ide.pdf' não foi encontrado no diretório do software.\n\n"
+                "Por favor, certifique-se de colocar o arquivo 'ide.pdf' no diretório principal do projeto para abri-lo automaticamente!");
+            logMessage("Erro: Livro 'ide.pdf' não encontrado no diretório.", "ERROR");
+        }
+    });
+
+    tabs->addTab(bookWidget, "📚 Livro (PDF)");
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAB 3: LICENÇA (Side-by-Side)
+    // ─────────────────────────────────────────────────────────────────────────
+    auto* licWidget = new QWidget();
+    auto* licLayout = new QVBoxLayout(licWidget);
+    licLayout->setContentsMargins(16, 16, 16, 16);
+    licLayout->setSpacing(10);
+
+    auto* licTitle = new QLabel("Termos de Uso e Licenciamento Acadêmico/Educacional", licWidget);
+    licTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #0F172A;");
+    licLayout->addWidget(licTitle);
+
+    auto* licHLayout = new QHBoxLayout();
+    licHLayout->setSpacing(14);
+
+    // Left Column: Visual summary
+    auto* summaryFrame = new QFrame(licWidget);
+    summaryFrame->setFixedWidth(250);
+    summaryFrame->setStyleSheet(
+        "QFrame { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; }"
+        "QLabel#sect { font-weight: 800; font-size: 10px; text-transform: uppercase; color: #475569; margin-top: 6px; }"
+        "QLabel#item { font-size: 11px; color: #334155; font-weight: 600; }"
+    );
+    auto* sLayout = new QVBoxLayout(summaryFrame);
+    sLayout->setContentsMargins(14, 14, 14, 14);
+    sLayout->setSpacing(8);
+
+    auto* sTitle = new QLabel("Resumo Simplificado", summaryFrame);
+    sTitle->setStyleSheet("font-size: 12px; font-weight: bold; color: #0F172A; margin-bottom: 2px;");
+    sLayout->addWidget(sTitle);
+
+    auto* allowedTitle = new QLabel("✔ O QUE É PERMITIDO:", summaryFrame);
+    allowedTitle->setObjectName("sect"); allowedTitle->setStyleSheet("color: #16A34A;"); sLayout->addWidget(allowedTitle);
+    auto* a1 = new QLabel("• Estudos e uso acadêmico", summaryFrame); a1->setObjectName("item"); sLayout->addWidget(a1);
+    auto* a2 = new QLabel("• Modificações para uso pessoal", summaryFrame); a2->setObjectName("item"); sLayout->addWidget(a2);
+    auto* a3 = new QLabel("• Compartilhamento educacional", summaryFrame); a3->setObjectName("item"); sLayout->addWidget(a3);
+
+    auto* forbiddenTitle = new QLabel("❌ O QUE É PROIBIDO:", summaryFrame);
+    forbiddenTitle->setObjectName("sect"); forbiddenTitle->setStyleSheet("color: #DC2626;"); sLayout->addWidget(forbiddenTitle);
+    auto* f1 = new QLabel("• Comercialização do software", summaryFrame); f1->setObjectName("item"); sLayout->addWidget(f1);
+    auto* f2 = new QLabel("• Uso em produtos de lucro", summaryFrame); f2->setObjectName("item"); sLayout->addWidget(f2);
+    auto* f3 = new QLabel("• Distribuição comercial", summaryFrame); f3->setObjectName("item"); sLayout->addWidget(f3);
+
+    auto* reqTitle = new QLabel("★ OBRIGAÇÕES:", summaryFrame);
+    reqTitle->setObjectName("sect"); reqTitle->setStyleSheet("color: #2563EB;"); sLayout->addWidget(reqTitle);
+    auto* r1 = new QLabel("• Atribuir autoria a Herick B. Tiburski", summaryFrame); r1->setObjectName("item"); sLayout->addWidget(r1);
+    auto* r2 = new QLabel("• Reconhecer o pioneirismo", summaryFrame); r2->setObjectName("item"); sLayout->addWidget(r2);
+
+    sLayout->addStretch();
+    licHLayout->addWidget(summaryFrame);
+
+    // Right Column: License legal text
+    auto* licenseEdit = new QPlainTextEdit(licWidget);
+    licenseEdit->setReadOnly(true);
+    licenseEdit->setStyleSheet(
+        "QPlainTextEdit { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;"
+        "  color: #334155; font-family: Consolas, monospace; font-size: 10px; padding: 10px; }"
+    );
+    
+    QString licenseText;
+    QFile licenseFile("LICENSE");
+    if (licenseFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        licenseText = licenseFile.readAll();
+    } else {
+        licenseText = 
+            "Educational and Non-Commercial Research License\n\n"
+            "Copyright (c) 2026 Herick B. Tiburski\n"
+            "All rights reserved.\n\n"
+            "The creator and author of this software, Herick B. Tiburski, is recognized as the pioneer of this style of visual event-oriented programming of components for embedded systems.\n\n"
+            "Redistribution and use of this software, with or without modification, are permitted solely for educational, academic, or personal study purposes, provided that the following conditions are met:\n\n"
+            "1. Redistributions of source code must retain the above copyright notice, this list of conditions, the pioneer acknowledgement, and the following disclaimer.\n"
+            "2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions, the pioneer acknowledgement, and the following disclaimer in the documentation and/or other materials provided with the distribution.\n"
+            "3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.\n"
+            "4. Commercial use, reproduction, distribution, or licensing of this software, in whole or in part, is strictly prohibited. Commercial use includes, but is not limited to, selling, using this software in a commercial product, using this software for commercial training, or using it in a profit-generating context.";
+    }
+    licenseEdit->setPlainText(licenseText);
+    licHLayout->addWidget(licenseEdit, 1);
+
+    licLayout->addLayout(licHLayout, 1);
+    tabs->addTab(licWidget, "⚖ Licença");
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAB 4: SOBRE
+    // ─────────────────────────────────────────────────────────────────────────
+    auto* aboutWidget = new QWidget();
+    auto* aboutLayout = new QVBoxLayout(aboutWidget);
+    aboutLayout->setContentsMargins(20, 20, 20, 20);
+    aboutLayout->setSpacing(14);
+
+    auto* aTitle = new QLabel("IDE Embedded", aboutWidget);
+    aTitle->setStyleSheet("font-size: 16px; font-weight: 800; color: #1E293B;");
+    aboutLayout->addWidget(aTitle);
+
+    QString verStr = QCoreApplication::applicationVersion();
+    if (verStr.isEmpty()) verStr = "1.0.0 (estudos)";
+    auto* aSub = new QLabel(QString("Versão %1  |  Copyright © 2026 Herick B. Tiburski").arg(verStr), aboutWidget);
+    aSub->setStyleSheet("font-size: 11px; color: #64748B; font-weight: 600;");
+    aboutLayout->addWidget(aSub);
+
+    auto* aDesc = new QLabel(
+        "Uma IDE de modelagem gráfica, simulação em tempo real e geração automatizada de firmware "
+        "para microcontroladores ESP32 e Arduino.", aboutWidget);
+    aDesc->setWordWrap(true);
+    aDesc->setStyleSheet("font-size: 12px; line-height: 1.5; color: #475569;");
+    aboutLayout->addWidget(aDesc);
 
     // Pioneer credit card
-    auto* pCard = new QFrame(&dialog);
+    auto* pCard = new QFrame(aboutWidget);
     pCard->setStyleSheet("background-color: #EFF6FF; border: 1px solid #DBEAFE; border-radius: 8px;");
     auto* pcLayout = new QVBoxLayout(pCard);
     pcLayout->setContentsMargins(14, 12, 14, 12);
@@ -3654,147 +3922,21 @@ void MainWindow::showFirmwareInfo() {
     pcText->setStyleSheet("font-size: 11px; line-height: 1.4; color: #1E40AF;");
     pcLayout->addWidget(pcTitle);
     pcLayout->addWidget(pcText);
-    layout->addWidget(pCard);
+    aboutLayout->addWidget(pCard);
 
-    // Tips and Quick Steps
-    auto* steps = new QLabel(
-        "<b>Como usar:</b><br>"
-        "1. Adicione os componentes pela paleta lateral.<br>"
-        "2. Interconecte-os via cabos e configure suas propriedades.<br>"
-        "3. Clique em <b>Build</b> para gerar o firmware.<br>"
-        "4. Clique em <b>Play</b> para simular os atuadores e sensores em tempo real."
-    );
-    steps->setWordWrap(true);
-    steps->setStyleSheet("font-size: 11px; line-height: 1.5; color: #475569;");
-    layout->addWidget(steps);
+    aboutLayout->addStretch();
+    tabs->addTab(aboutWidget, "★ Sobre");
 
-    layout->addStretch();
+    layout->addWidget(tabs, 1);
 
-    // Button Row
+    // Bottom Action Row
     auto* btnRow = new QHBoxLayout();
-    auto* btnLicense = new QPushButton("Visualizar Licença", &dialog);
-    btnLicense->setObjectName("sec");
-    
-    auto* btnClose = new QPushButton("Fechar", &dialog);
-    
-    btnRow->addWidget(btnLicense);
     btnRow->addStretch();
+    auto* btnClose = new QPushButton("Fechar", &dialog);
     btnRow->addWidget(btnClose);
     layout->addLayout(btnRow);
 
     connect(btnClose, &QPushButton::clicked, &dialog, &QDialog::accept);
-
-    // View License dialog trigger
-    connect(btnLicense, &QPushButton::clicked, this, [this, &dialog]() {
-        QDialog licDlg(&dialog);
-        licDlg.setWindowTitle("Termos da Licença - IDE Embedded");
-        licDlg.resize(780, 520);
-        licDlg.setStyleSheet(
-            "QDialog { background-color: #FFFFFF; border: 1px solid #E2E8F0; }"
-            "QLabel { font-family: 'Segoe UI', Arial; color: #334155; }"
-            "QPushButton { background: #1E293B; border: none; border-radius: 6px; color: #fff; padding: 9px 16px; font-weight: bold; font-size: 12px; }"
-            "QPushButton:hover { background: #334155; }"
-        );
-
-        auto* lLayout = new QVBoxLayout(&licDlg);
-        lLayout->setContentsMargins(20, 20, 20, 20);
-        lLayout->setSpacing(14);
-
-        auto* lTitle = new QLabel("Termos de Uso e Licenciamento", &licDlg);
-        lTitle->setStyleSheet("font-size: 15px; font-weight: 800; color: #0F172A;");
-        lLayout->addWidget(lTitle);
-
-        auto* hLayout = new QHBoxLayout();
-        hLayout->setSpacing(16);
-
-        // LEFT COLUMN: Permitted / Prohibited Visual Summary (Outside Textbox)
-        auto* summaryFrame = new QFrame(&licDlg);
-        summaryFrame->setFixedWidth(260);
-        summaryFrame->setStyleSheet(
-            "QFrame { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; }"
-            "QLabel#sect { font-weight: 800; font-size: 11px; text-transform: uppercase; color: #475569; margin-top: 6px; }"
-            "QLabel#item { font-size: 11px; color: #334155; font-weight: 600; }"
-        );
-        auto* sLayout = new QVBoxLayout(summaryFrame);
-        sLayout->setContentsMargins(14, 14, 14, 14);
-        sLayout->setSpacing(8);
-
-        auto* sTitle = new QLabel("Resumo Simplificado", summaryFrame);
-        sTitle->setStyleSheet("font-size: 12px; font-weight: bold; color: #0F172A; margin-bottom: 4px;");
-        sLayout->addWidget(sTitle);
-
-        // Allowed
-        auto* allowedTitle = new QLabel("✔ O QUE É PERMITIDO:", summaryFrame);
-        allowedTitle->setObjectName("sect");
-        allowedTitle->setStyleSheet("color: #16A34A;");
-        sLayout->addWidget(allowedTitle);
-
-        auto* a1 = new QLabel("• Estudos e uso acadêmico", summaryFrame); a1->setObjectName("item"); sLayout->addWidget(a1);
-        auto* a2 = new QLabel("• Modificações para uso pessoal", summaryFrame); a2->setObjectName("item"); sLayout->addWidget(a2);
-        auto* a3 = new QLabel("• Compartilhamento educacional", summaryFrame); a3->setObjectName("item"); sLayout->addWidget(a3);
-
-        // Prohibited
-        auto* forbiddenTitle = new QLabel("❌ O QUE É PROIBIDO:", summaryFrame);
-        forbiddenTitle->setObjectName("sect");
-        forbiddenTitle->setStyleSheet("color: #DC2626;");
-        sLayout->addWidget(forbiddenTitle);
-
-        auto* f1 = new QLabel("• Comercialização do software", summaryFrame); f1->setObjectName("item"); sLayout->addWidget(f1);
-        auto* f2 = new QLabel("• Uso em produtos comerciais", summaryFrame); f2->setObjectName("item"); sLayout->addWidget(f2);
-        auto* f3 = new QLabel("• Exploração para fins lucrativos", summaryFrame); f3->setObjectName("item"); sLayout->addWidget(f3);
-
-        // Requirements
-        auto* reqTitle = new QLabel("★ OBRIGAÇÕES:", summaryFrame);
-        reqTitle->setObjectName("sect");
-        reqTitle->setStyleSheet("color: #2563EB;");
-        sLayout->addWidget(reqTitle);
-
-        auto* r1 = new QLabel("• Atribuir autoria e pioneirismo", summaryFrame); r1->setObjectName("item"); sLayout->addWidget(r1);
-        auto* r2 = new QLabel("• Manter avisos de copyright", summaryFrame); r2->setObjectName("item"); sLayout->addWidget(r2);
-
-        sLayout->addStretch();
-        hLayout->addWidget(summaryFrame);
-
-        // RIGHT COLUMN: The Legal License Text
-        auto* licenseEdit = new QPlainTextEdit(&licDlg);
-        licenseEdit->setReadOnly(true);
-        licenseEdit->setStyleSheet(
-            "QPlainTextEdit { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;"
-            "  color: #334155; font-family: Consolas, monospace; font-size: 10px; padding: 10px; }"
-        );
-
-        // Read or fallback
-        QString licenseText;
-        QFile licenseFile("LICENSE");
-        if (licenseFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            licenseText = licenseFile.readAll();
-        } else {
-            licenseText = 
-                "Educational and Non-Commercial Research License\n\n"
-                "Copyright (c) 2026 Herick B. Tiburski\n"
-                "All rights reserved.\n\n"
-                "The creator and author of this software, Herick B. Tiburski, is recognized as the pioneer of this style of visual event-oriented programming of components for embedded systems.\n\n"
-                "Redistribution and use of this software, with or without modification, are permitted solely for educational, academic, or personal study purposes, provided that the following conditions are met:\n\n"
-                "1. Redistributions of source code must retain the above copyright notice, this list of conditions, the pioneer acknowledgement, and the following disclaimer.\n"
-                "2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions, the pioneer acknowledgement, and the following disclaimer in the documentation and/or other materials provided with the distribution.\n"
-                "3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.\n"
-                "4. Commercial use, reproduction, distribution, or licensing of this software, in whole or in part, is strictly prohibited. Commercial use includes, but is not limited to, selling, using this software in a commercial product, using this software for commercial training, or using it in a profit-generating context.";
-        }
-        licenseEdit->setPlainText(licenseText);
-        hLayout->addWidget(licenseEdit, 1);
-
-        lLayout->addLayout(hLayout, 1);
-
-        auto* lBtnRow = new QHBoxLayout();
-        lBtnRow->addStretch();
-        auto* lClose = new QPushButton("Fechar", &licDlg);
-        lBtnRow->addWidget(lClose);
-        lLayout->addLayout(lBtnRow);
-
-        connect(lClose, &QPushButton::clicked, &licDlg, &QDialog::accept);
-
-        licDlg.exec();
-    });
 
     dialog.exec();
 }
