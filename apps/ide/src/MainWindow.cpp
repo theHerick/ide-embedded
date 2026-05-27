@@ -19,10 +19,13 @@
 #include <QHeaderView>
 #include <QScrollBar>
 #include <QDialog>
+#include <QScrollArea>
+#include <QPdfDocument>
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+
 #include <QComboBox>
 #include <QCheckBox>
 #include <QProcess>
@@ -3636,14 +3639,82 @@ void MainWindow::showFirmwareInfo() {
     auto* tabs = new QTabWidget(&dialog);
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TAB 1: COMANDOS
+    // TAB 1: CONTROLES DA IDE
+    // ─────────────────────────────────────────────────────────────────────────
+    auto* shortcutsWidget = new QWidget();
+    auto* shortcutsLayout = new QVBoxLayout(shortcutsWidget);
+    shortcutsLayout->setContentsMargins(16, 16, 16, 16);
+    shortcutsLayout->setSpacing(10);
+
+    auto* shortcutsIntro = new QLabel("Guia de Operação e Controles da Interface", shortcutsWidget);
+    shortcutsIntro->setStyleSheet("font-size: 13px; font-weight: bold; color: #0F172A;");
+    shortcutsLayout->addWidget(shortcutsIntro);
+
+    auto* shortcutsTable = new QTableWidget(shortcutsWidget);
+    shortcutsTable->setColumnCount(3);
+    shortcutsTable->setHorizontalHeaderLabels({"Ação / Atalho", "Contexto", "Descrição do Comando"});
+    shortcutsTable->setAlternatingRowColors(true);
+    shortcutsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    shortcutsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    shortcutsTable->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; gridline-color: #F1F5F9; }"
+        "QHeaderView::section { background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 6px; font-weight: bold; color: #475569; }"
+        "QTableWidget::item { padding: 8px; font-size: 11px; }"
+    );
+
+    struct ShortcutInfo {
+        QString gesture;
+        QString context;
+        QString description;
+    };
+    QVector<ShortcutInfo> shortcuts = {
+        {"Duplo clique", "Área de Trabalho", "Ao clicar 2 vezes na área de trabalho, irá aparecer o menu de componentes."},
+        {"Pressionar DEL", "Área de Trabalho / Seleção", "Ao pressionar DEL, o componente selecionado será deletado."},
+        {"Botão direito do mouse", "Sobre o Componente", "Ao clicar com o botão direito no componente, os eventos serão exibidos."},
+        {"Duplo clique", "Área de Eventos", "Ao entrar em um evento e clicar 2 vezes na área de eventos, aparecerá o menu de código."},
+        {"Duplo clique", "Bloco de Código", "Dando 2 cliques em um bloco de código, ele será deletado."},
+        {"Clique esquerdo", "Roteamento de PCB (Trilhas)", "Quando estiver fazendo uma trilha, clicar com o botão esquerdo prende a trilha para conseguir movê-la para outro lado."},
+        {"Botão direito do mouse", "Roteamento de PCB (Trilhas)", "Caso erre a trilha, clique com o botão direito do mouse para desfazer a trilha e soltá-la do ponteiro."},
+        {"Clique em trilha conectada", "Roteamento de PCB (Trilhas)", "Caso veja trilhas como VCC que já podem se conectar, basta clicar nela para prender a trilha atual na que já está conectada ao VCC."}
+    };
+
+    shortcutsTable->setRowCount(shortcuts.size());
+    for (int i = 0; i < shortcuts.size(); ++i) {
+        const auto& item = shortcuts[i];
+
+        auto* itemGesture = new QTableWidgetItem(item.gesture);
+        itemGesture->setFont(QFont("Segoe UI", 9, QFont::Bold));
+        itemGesture->setForeground(QColor("#2563EB"));
+
+        auto* itemContext = new QTableWidgetItem(item.context);
+        itemContext->setFont(QFont("Segoe UI", 9, QFont::Bold));
+        itemContext->setForeground(QColor("#475569"));
+
+        auto* itemDesc = new QTableWidgetItem(item.description);
+        itemDesc->setFont(QFont("Segoe UI", 9));
+        itemDesc->setForeground(QColor("#0F172A"));
+
+        shortcutsTable->setItem(i, 0, itemGesture);
+        shortcutsTable->setItem(i, 1, itemContext);
+        shortcutsTable->setItem(i, 2, itemDesc);
+    }
+
+    shortcutsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    shortcutsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    shortcutsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+
+    shortcutsLayout->addWidget(shortcutsTable);
+    tabs->addTab(shortcutsWidget, "Controles da IDE");
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAB 2: COMANDOS (SINTAXE C++)
     // ─────────────────────────────────────────────────────────────────────────
     auto* cmdWidget = new QWidget();
     auto* cmdLayout = new QVBoxLayout(cmdWidget);
     cmdLayout->setContentsMargins(16, 16, 16, 16);
     cmdLayout->setSpacing(10);
 
-    auto* cmdIntro = new QLabel("Referência Rápida de Blocos e Sintaxe de Código", cmdWidget);
+    auto* cmdIntro = new QLabel("Referência Rápida de Blocos e Sintaxe de Código C++", cmdWidget);
     cmdIntro->setStyleSheet("font-size: 13px; font-weight: bold; color: #0F172A;");
     cmdLayout->addWidget(cmdIntro);
 
@@ -3713,78 +3784,182 @@ void MainWindow::showFirmwareInfo() {
     table->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
 
     cmdLayout->addWidget(table);
-    tabs->addTab(cmdWidget, "📖 Comandos (Sintaxe)");
+    tabs->addTab(cmdWidget, "Sintaxe C++");
+
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TAB 2: LIVRO (PDF)
+    // TAB 2: LIVRO (PDF) — com PDF Previewer
     // ─────────────────────────────────────────────────────────────────────────
     auto* bookWidget = new QWidget();
-    auto* bookLayout = new QVBoxLayout(bookWidget);
-    bookLayout->setContentsMargins(30, 30, 30, 30);
+    auto* bookLayout = new QHBoxLayout(bookWidget);
+    bookLayout->setContentsMargins(16, 16, 16, 16);
     bookLayout->setSpacing(16);
-    bookLayout->setAlignment(Qt::AlignCenter);
 
-    auto* bookCard = new QFrame(bookWidget);
-    bookCard->setFixedWidth(520);
-    bookCard->setFixedHeight(240);
-    bookCard->setStyleSheet(
-        "QFrame { "
-        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #1E3A8A, stop:1 #3B82F6); "
-        "  border: 1px solid #2563EB; "
-        "  border-radius: 12px; "
-        "}"
-    );
+    // Left Column: PDF Previewer Container
+    auto* previewContainer = new QWidget(bookWidget);
+    previewContainer->setFixedWidth(350);
+    auto* previewVLayout = new QVBoxLayout(previewContainer);
+    previewVLayout->setContentsMargins(0, 0, 0, 0);
+    previewVLayout->setSpacing(8);
+
+    // Page viewing area with a QScrollArea
+    auto* scrollArea = new QScrollArea(previewContainer);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setStyleSheet("QScrollArea { border: 1px solid #E2E8F0; border-radius: 8px; background-color: #F8FAFC; }");
     
-    auto* bcLayout = new QVBoxLayout(bookCard);
-    bcLayout->setContentsMargins(24, 24, 24, 24);
-    bcLayout->setAlignment(Qt::AlignCenter);
+    auto* pdfPageLabel = new QLabel(scrollArea);
+    pdfPageLabel->setAlignment(Qt::AlignCenter);
+    pdfPageLabel->setStyleSheet("QLabel { background-color: #F8FAFC; }");
+    scrollArea->setWidget(pdfPageLabel);
+    previewVLayout->addWidget(scrollArea, 1);
 
-    auto* bcMainLabel = new QLabel("LIVRO OFICIAL", bookCard);
-    bcMainLabel->setStyleSheet("color: #FFFFFF; font-size: 20px; font-weight: 900; letter-spacing: 2px; background: transparent;");
-    bcMainLabel->setAlignment(Qt::AlignCenter);
-    bcLayout->addWidget(bcMainLabel);
+    // Navigation Controls Row
+    auto* navLayout = new QHBoxLayout();
+    navLayout->setSpacing(6);
 
-    auto* bcSubLabel = new QLabel("Programação Orientada a Eventos para Sistemas Embarcados", bookCard);
-    bcSubLabel->setWordWrap(true);
-    bcSubLabel->setStyleSheet("color: #EFF6FF; font-size: 12px; font-weight: 700; background: transparent;");
-    bcSubLabel->setAlignment(Qt::AlignCenter);
-    bcLayout->addWidget(bcSubLabel);
+    auto* btnPrevPage = new QPushButton("Anterior", previewContainer);
+    btnPrevPage->setFixedWidth(75);
+    btnPrevPage->setStyleSheet(
+        "QPushButton { background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 6px; color: #475569; padding: 6px; font-weight: bold; font-size: 11px; }"
+        "QPushButton:hover { background: #E2E8F0; color: #0F172A; }"
+    );
 
-    bcLayout->addSpacing(10);
+    auto* lblPageIndicator = new QLabel("Carregando...", previewContainer);
+    lblPageIndicator->setAlignment(Qt::AlignCenter);
+    lblPageIndicator->setStyleSheet("font-size: 11px; font-weight: 600; color: #475569;");
 
-    auto* bcAuthorLabel = new QLabel("Por Herick B. Tiburski", bookCard);
-    bcAuthorLabel->setStyleSheet("color: #93C5FD; font-size: 11px; font-weight: 600; font-style: italic; background: transparent;");
-    bcAuthorLabel->setAlignment(Qt::AlignCenter);
-    bcLayout->addWidget(bcAuthorLabel);
+    auto* btnNextPage = new QPushButton("Próxima", previewContainer);
+    btnNextPage->setFixedWidth(75);
+    btnNextPage->setStyleSheet(
+        "QPushButton { background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 6px; color: #475569; padding: 6px; font-weight: bold; font-size: 11px; }"
+        "QPushButton:hover { background: #E2E8F0; color: #0F172A; }"
+    );
 
-    bookLayout->addWidget(bookCard);
+    navLayout->addWidget(btnPrevPage);
+    navLayout->addWidget(lblPageIndicator, 1);
+    navLayout->addWidget(btnNextPage);
+    previewVLayout->addLayout(navLayout);
 
-    auto* bookDesc = new QLabel(
-        "Este livro é o guia oficial de estudos e treinamento prático que acompanha o IDE Embedded.\n"
-        "O material cobre os princípios de eletrônica, o modelo de blocos lógicos e detalha "
-        "a arquitetura inovadora 'Event Sandwich' criada para otimizar microcontroladores.", bookWidget);
-    bookDesc->setWordWrap(true);
-    bookDesc->setAlignment(Qt::AlignCenter);
-    bookDesc->setFixedWidth(600);
-    bookDesc->setStyleSheet("font-size: 12px; line-height: 1.5; color: #475569;");
-    bookLayout->addWidget(bookDesc);
+    bookLayout->addWidget(previewContainer);
 
-    auto* bookFileHint = new QLabel("Arquivo esperado: <b>ide.pdf</b> no diretório principal do software", bookWidget);
-    bookFileHint->setStyleSheet("font-size: 11px; color: #64748B;");
-    bookLayout->addWidget(bookFileHint);
+    // Initialize PDF Document and load file
+    auto* pdfDoc = new QPdfDocument(bookWidget);
+    QString pdfPath = QCoreApplication::applicationDirPath() + "/ide.pdf";
+    if (!QFile::exists(pdfPath)) {
+        pdfPath = "ide.pdf";
+    }
 
-    auto* btnOpenPdf = new QPushButton("📖  Abrir Livro Oficial (PDF)", bookWidget);
-    btnOpenPdf->setFixedWidth(260);
+    // Allocate current page tracker dynamically in the event system
+    struct PageTracker {
+        int index = 0;
+    };
+    auto tracker = std::make_shared<PageTracker>();
+
+    bool pdfLoaded = false;
+    if (QFile::exists(pdfPath)) {
+        if (pdfDoc->load(pdfPath) == QPdfDocument::Error::None) {
+            pdfLoaded = true;
+        }
+    }
+
+    // Lambda to render the page image to QLabel
+    auto renderPage = [pdfDoc, pdfPageLabel, lblPageIndicator, tracker, btnPrevPage, btnNextPage, pdfLoaded]() {
+        if (!pdfLoaded || pdfDoc->pageCount() == 0) {
+            // Load beautiful cover fallback
+            QPixmap coverPix(":/icons/book_cover.png");
+            if (!coverPix.isNull()) {
+                pdfPageLabel->setPixmap(coverPix.scaled(280, 380, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            } else {
+                pdfPageLabel->setText("Capa não disponível");
+            }
+            lblPageIndicator->setText("PDF indisponível");
+            btnPrevPage->setEnabled(false);
+            btnNextPage->setEnabled(false);
+            return;
+        }
+
+        int totalPages = pdfDoc->pageCount();
+        if (tracker->index < 0) tracker->index = 0;
+        if (tracker->index >= totalPages) tracker->index = totalPages - 1;
+
+        // Render target dimensions (width = 310px, dynamic height based on aspect ratio)
+        QSizeF ptSize = pdfDoc->pagePointSize(tracker->index);
+        double aspect = ptSize.height() / (ptSize.width() > 0 ? ptSize.width() : 1.0);
+        int targetW = 310;
+        int targetH = static_cast<int>(targetW * aspect);
+
+        QImage img = pdfDoc->render(tracker->index, QSize(targetW, targetH));
+        if (!img.isNull()) {
+            pdfPageLabel->setPixmap(QPixmap::fromImage(img));
+        } else {
+            pdfPageLabel->setText(QString("Erro na pág %1").arg(tracker->index + 1));
+        }
+
+        lblPageIndicator->setText(QString("Página %1 de %2").arg(tracker->index + 1).arg(totalPages));
+        btnPrevPage->setEnabled(tracker->index > 0);
+        btnNextPage->setEnabled(tracker->index < totalPages - 1);
+    };
+
+    // Initial render call
+    renderPage();
+
+    // Hook up navigation signals
+    connect(btnPrevPage, &QPushButton::clicked, bookWidget, [tracker, renderPage]() {
+        if (tracker->index > 0) {
+            tracker->index--;
+            renderPage();
+        }
+    });
+
+    connect(btnNextPage, &QPushButton::clicked, bookWidget, [tracker, renderPage]() {
+        tracker->index++;
+        renderPage();
+    });
+
+    // Right Column: Book Info & Details
+    auto* infoLayout = new QVBoxLayout();
+    infoLayout->setSpacing(12);
+    infoLayout->setAlignment(Qt::AlignTop);
+
+    auto* bTitle = new QLabel("LIVRO OFICIAL DO SOFTWARE", bookWidget);
+    bTitle->setStyleSheet("font-size: 13px; font-weight: 800; color: #1E3A8A; text-transform: uppercase; letter-spacing: 0.5px;");
+    infoLayout->addWidget(bTitle);
+
+    auto* bSub = new QLabel("Programação Orientada a Eventos para Sistemas Embarcados", bookWidget);
+    bSub->setWordWrap(true);
+    bSub->setStyleSheet("font-size: 12px; font-weight: 700; color: #0F172A;");
+    infoLayout->addWidget(bSub);
+
+    auto* bAuthor = new QLabel("Autor: Herick B. Tiburski", bookWidget);
+    bAuthor->setStyleSheet("font-size: 11px; font-weight: 600; color: #64748B; font-style: italic;");
+    infoLayout->addWidget(bAuthor);
+
+    auto* bDesc = new QLabel(
+        "Este livro é o guia oficial de estudos e treinamento prático que acompanha o IDE Embedded.\n\n"
+        "O material aborda desde os princípios da eletrônica prática até a modelagem avançada de eventos "
+        "e o funcionamento interno da arquitetura 'Event Sandwich' idealizada pelo autor para gerenciar "
+        "eficientemente as rotinas de sistemas microcontrolados.", bookWidget);
+    bDesc->setWordWrap(true);
+    bDesc->setStyleSheet("font-size: 11px; line-height: 1.5; color: #475569;");
+    infoLayout->addWidget(bDesc);
+
+    infoLayout->addSpacing(10);
+
+    auto* bookFileHint = new QLabel("Arquivo de leitura esperado: <b>ide.pdf</b> na pasta raiz", bookWidget);
+    bookFileHint->setStyleSheet("font-size: 10px; color: #64748B;");
+    infoLayout->addWidget(bookFileHint);
+
+    auto* btnOpenPdf = new QPushButton("Abrir Livro Oficial (PDF)", bookWidget);
+    btnOpenPdf->setFixedWidth(240);
     btnOpenPdf->setStyleSheet(
         "QPushButton { background-color: #10B981; border: none; border-radius: 6px; "
-        "  color: #fff; padding: 12px; font-weight: bold; font-size: 12px; }"
+        "  color: #fff; padding: 11px; font-weight: bold; font-size: 12px; }"
         "QPushButton:hover { background-color: #059669; }"
     );
-    bookLayout->addWidget(btnOpenPdf);
-    
+    infoLayout->addWidget(btnOpenPdf);
+
     QDialog* dlgPtr = &dialog;
-    connect(btnOpenPdf, &QPushButton::clicked, this, [this, dlgPtr]() {
-        // Tenta achar o PDF na pasta do executavel ou na pasta de execucao
+    connect(btnOpenPdf, &QPushButton::clicked, bookWidget, [this, dlgPtr]() {
         QString pdfPath = QCoreApplication::applicationDirPath() + "/ide.pdf";
         if (!QFile::exists(pdfPath)) {
             pdfPath = "ide.pdf";
@@ -3800,7 +3975,9 @@ void MainWindow::showFirmwareInfo() {
         }
     });
 
-    tabs->addTab(bookWidget, "📚 Livro (PDF)");
+    infoLayout->addStretch();
+    bookLayout->addLayout(infoLayout, 1);
+    tabs->addTab(bookWidget, "Livro (PDF)");
 
     // ─────────────────────────────────────────────────────────────────────────
     // TAB 3: LICENÇA (Side-by-Side)
@@ -3817,7 +3994,7 @@ void MainWindow::showFirmwareInfo() {
     auto* licHLayout = new QHBoxLayout();
     licHLayout->setSpacing(14);
 
-    // Left Column: Visual summary
+    // Left Column: Visual summary (No emojis)
     auto* summaryFrame = new QFrame(licWidget);
     summaryFrame->setFixedWidth(250);
     summaryFrame->setStyleSheet(
@@ -3833,19 +4010,19 @@ void MainWindow::showFirmwareInfo() {
     sTitle->setStyleSheet("font-size: 12px; font-weight: bold; color: #0F172A; margin-bottom: 2px;");
     sLayout->addWidget(sTitle);
 
-    auto* allowedTitle = new QLabel("✔ O QUE É PERMITIDO:", summaryFrame);
+    auto* allowedTitle = new QLabel("O QUE É PERMITIDO:", summaryFrame);
     allowedTitle->setObjectName("sect"); allowedTitle->setStyleSheet("color: #16A34A;"); sLayout->addWidget(allowedTitle);
     auto* a1 = new QLabel("• Estudos e uso acadêmico", summaryFrame); a1->setObjectName("item"); sLayout->addWidget(a1);
     auto* a2 = new QLabel("• Modificações para uso pessoal", summaryFrame); a2->setObjectName("item"); sLayout->addWidget(a2);
     auto* a3 = new QLabel("• Compartilhamento educacional", summaryFrame); a3->setObjectName("item"); sLayout->addWidget(a3);
 
-    auto* forbiddenTitle = new QLabel("❌ O QUE É PROIBIDO:", summaryFrame);
+    auto* forbiddenTitle = new QLabel("O QUE É PROIBIDO:", summaryFrame);
     forbiddenTitle->setObjectName("sect"); forbiddenTitle->setStyleSheet("color: #DC2626;"); sLayout->addWidget(forbiddenTitle);
     auto* f1 = new QLabel("• Comercialização do software", summaryFrame); f1->setObjectName("item"); sLayout->addWidget(f1);
     auto* f2 = new QLabel("• Uso em produtos de lucro", summaryFrame); f2->setObjectName("item"); sLayout->addWidget(f2);
     auto* f3 = new QLabel("• Distribuição comercial", summaryFrame); f3->setObjectName("item"); sLayout->addWidget(f3);
 
-    auto* reqTitle = new QLabel("★ OBRIGAÇÕES:", summaryFrame);
+    auto* reqTitle = new QLabel("OBRIGAÇÕES:", summaryFrame);
     reqTitle->setObjectName("sect"); reqTitle->setStyleSheet("color: #2563EB;"); sLayout->addWidget(reqTitle);
     auto* r1 = new QLabel("• Atribuir autoria a Herick B. Tiburski", summaryFrame); r1->setObjectName("item"); sLayout->addWidget(r1);
     auto* r2 = new QLabel("• Reconhecer o pioneirismo", summaryFrame); r2->setObjectName("item"); sLayout->addWidget(r2);
@@ -3881,10 +4058,10 @@ void MainWindow::showFirmwareInfo() {
     licHLayout->addWidget(licenseEdit, 1);
 
     licLayout->addLayout(licHLayout, 1);
-    tabs->addTab(licWidget, "⚖ Licença");
+    tabs->addTab(licWidget, "Licença");
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TAB 4: SOBRE
+    // TAB 4: SOBRE (No Emojis)
     // ─────────────────────────────────────────────────────────────────────────
     auto* aboutWidget = new QWidget();
     auto* aboutLayout = new QVBoxLayout(aboutWidget);
@@ -3913,7 +4090,7 @@ void MainWindow::showFirmwareInfo() {
     pCard->setStyleSheet("background-color: #EFF6FF; border: 1px solid #DBEAFE; border-radius: 8px;");
     auto* pcLayout = new QVBoxLayout(pCard);
     pcLayout->setContentsMargins(14, 12, 14, 12);
-    auto* pcTitle = new QLabel("★ Arquitetura Pioneira", pCard);
+    auto* pcTitle = new QLabel("Arquitetura Pioneira", pCard);
     pcTitle->setStyleSheet("font-weight: 800; color: #1D4ED8; font-size: 11px; text-transform: uppercase;");
     auto* pcText = new QLabel(
         "Desenvolvida sob o modelo de programação orientada a eventos para embarcados "
@@ -3925,7 +4102,7 @@ void MainWindow::showFirmwareInfo() {
     aboutLayout->addWidget(pCard);
 
     aboutLayout->addStretch();
-    tabs->addTab(aboutWidget, "★ Sobre");
+    tabs->addTab(aboutWidget, "Sobre");
 
     layout->addWidget(tabs, 1);
 

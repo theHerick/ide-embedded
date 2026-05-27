@@ -9,5 +9,6 @@
     <file>icons/modelar.png</file>
     <file>icons/undo_on.png</file>
     <file>icons/undo_off.png</file>
+    <file>icons/book_cover.png</file>
 </qresource>
 </RCC>

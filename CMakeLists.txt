@@ -26,7 +26,8 @@ else()
 endif()
 
 # Find Qt6 components
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGLWidgets Qml)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGLWidgets Qml Pdf PdfWidgets)
+
 
 # Include directories
 include_directories(
