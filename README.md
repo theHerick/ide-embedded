@@ -1,4 +1,11 @@
-<div align="center">
+<table>
+<tr>
+<td width="180">
+
+<img src="readme_foto.png" width="160" alt="IDE Embedded Logo"/>
+
+</td>
+<td>
 
 <pre>
     ██╗██████╗ ███████╗    ███████╗███╗   ███╗██████╗ ███████╗██████╗ ██████╗ ███████╗██████╗ 
@@ -9,7 +16,7 @@
     ╚═╝╚═════╝ ╚══════╝    ╚══════╝╚═╝     ╚═╝╚═════╝ ╚══════╝╚═════╝ ╚═════╝ ╚══════╝╚═════╝ 
 </pre>
 
-<p><b>Event-Driven IDE · Physical Routing · Qt6 & C++ Powered · Instant Code Gen</b></p>
+<p><b>Event-Driven IDE · Physical Routing · Powered by Qt6 & C++17 · Instant Code Gen</b></p>
 
 <img src="https://img.shields.io/badge/Status-Stable-brightgreen?logo=qt" alt="Status" />
 <img src="https://img.shields.io/badge/Language-C%2B%2B17-blue?logo=c%2B%2B" alt="C++" />
@@ -17,12 +24,9 @@
 <img src="https://img.shields.io/badge/Build-CMake--Ninja-orange?logo=cmake" alt="CMake" />
 <img src="https://img.shields.io/badge/license-Academic--Non--Commercial-red" alt="License" />
 
-</div>
-
-<p align="center">
-  <img src="readme_foto.png" width="500"/>
-</p>
-
+</td>
+</tr>
+</table>
 ---
 
 ## What is IDE Embedded?
