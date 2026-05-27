@@ -3744,14 +3744,11 @@ void MainWindow::showFirmwareInfo() {
     dialog.setWindowTitle("Ajuda e Documentação — IDE Embedded");
     dialog.resize(880, 640);
     dialog.setStyleSheet(
-        "QDialog { background-color: #FFFFFF; border: 1px solid #E2E8F0; }"
-        "QLabel { font-family: 'Segoe UI', Arial; color: #334155; }"
-        "QTabWidget::pane { border: 1px solid #E2E8F0; background: #FFFFFF; border-radius: 8px; }"
-        "QTabBar::tab { background: #F1F5F9; border: 1px solid #E2E8F0; border-bottom: none; "
-        "  border-top-left-radius: 6px; border-top-right-radius: 6px; "
-        "  padding: 8px 16px; font-weight: 600; font-size: 12px; color: #475569; }"
-        "QTabBar::tab:selected { background: #FFFFFF; border-color: #E2E8F0; "
-        "  color: #1D4ED8; font-weight: bold; }"
+        "QDialog { background-color: rgba(255,255,255,0.85); border: 1px solid #CBD5E1; border-radius: 12px; }"
+        "QLabel { font-family: 'Inter', sans-serif; color: #1E293B; }"
+        "QTabWidget::pane { border: 1px solid #CBD5E1; background: rgba(255,255,255,0.9); border-radius: 10px; }"
+        "QTabBar::tab { background: linear-gradient(135deg, #E0F2F1, #B2EBF2); border: 1px solid #CBD5E1; border-bottom: none; border-top-left-radius: 8px; border-top-right-radius: 8px; padding: 8px 16px; font-weight: 600; font-size: 12px; color: #0F172A; }"
+        "QTabBar::tab:selected { background: linear-gradient(135deg, #99E9E8, #63D7F5); border-color: #CBD5E1; color: #1E3A8A; font-weight: bold; }"
         "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: #fff; padding: 10px 18px; font-weight: bold; font-size: 12px; }"
         "QPushButton:hover { background: #1E40AF; }"
         "QPushButton#sec { background: #F1F5F9; border: 1px solid #E2E8F0; color: #475569; }"
