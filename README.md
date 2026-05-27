@@ -24,9 +24,13 @@
 <img src="https://img.shields.io/badge/Build-CMake--Ninja-orange?logo=cmake" alt="CMake" />
 <img src="https://img.shields.io/badge/license-Academic--Non--Commercial-red" alt="License" />
 
-</td>
-</tr>
-</table>
+
+</div>
+
+![IDE Logo](readme_foto.png)
+
+
+
 
 ## What is IDE Embedded?
 
