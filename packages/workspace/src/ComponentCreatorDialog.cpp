@@ -24,8 +24,22 @@ ComponentCreatorDialog::ComponentCreatorDialog(QWidget* parent)
         "  background-color: white; border: 1px solid #CBD5E1; border-radius: 6px; padding: 5px; color: #1E293B; "
         "}"
         "QLineEdit:focus { border: 2px solid #3B82F6; }"
-        "QPushButton { background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 6px; padding: 8px 16px; color: #334155; font-weight: 500; }"
-        "QPushButton:hover { background-color: #F1F5F9; border-color: #94A3B8; }"
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F8FAFC, stop:0.46 #F1F5F9, stop:1 #E2E8F0); "
+        "  border: 1.5px solid #CBD5E1; "
+        "  border-radius: 8px; "
+        "  padding: 8px 16px; "
+        "  color: #334155; "
+        "  font-weight: 600; "
+        "} "
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F8FAFC, stop:0.45 #F1F5F9, stop:0.46 #E2E8F0, stop:1 #CBD5E1); "
+        "  border-color: #94A3B8; "
+        "  color: #0F172A; "
+        "} "
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E2E8F0, stop:1 #94A3B8); "
+        "}"
         "QTabWidget::pane { border: 1px solid #CBD5E1; border-radius: 4px; background: white; }"
         "QTabBar::tab { background: #E2E8F0; padding: 10px 20px; margin-right: 2px; border-top-left-radius: 4px; border-top-right-radius: 4px; color: #64748B; font-weight: 600; }"
         "QTabBar::tab:selected { background: white; color: #3B82F6; border-bottom: none; }"
@@ -120,7 +134,23 @@ void ComponentCreatorDialog::setupUI() {
     bottomRow->addWidget(cancel);
 
     auto* save = new QPushButton("Salvar Componente", this);
-    save->setStyleSheet("background-color: #2563EB; color: white; font-weight: bold; border: none; padding: 10px 24px; border-radius: 6px;");
+    save->setStyleSheet(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #93C5FD, stop:0.45 #3B82F6, stop:0.46 #2563EB, stop:1 #1D4ED8); "
+        "  border: 1.5px solid #2563EB; "
+        "  border-radius: 8px; "
+        "  color: white; "
+        "  font-weight: bold; "
+        "  padding: 10px 24px; "
+        "} "
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #3B82F6, stop:0.45 #2563EB, stop:0.46 #1D4ED8, stop:1 #1E40AF); "
+        "  border-color: #1D4ED8; "
+        "} "
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1D4ED8, stop:1 #1E3A8A); "
+        "}"
+    );
     connect(save, &QPushButton::clicked, this, &ComponentCreatorDialog::validateAndSave);
     bottomRow->addWidget(save);
 

@@ -331,11 +331,17 @@ protected:
             path.closeSubpath();
         }
 
-        // Fill background with block solid color, lighter if hovered
-        painter.fillPath(path, m_hovered ? m_color.lighter(108) : m_color);
+        // Fill background with Frutiger Aero high-gloss linear gradient
+        QColor baseColor = m_hovered ? m_color.lighter(112) : m_color;
+        QLinearGradient grad(0, 0, 0, H);
+        grad.setColorAt(0.0, baseColor.lighter(130));
+        grad.setColorAt(0.45, baseColor.lighter(108));
+        grad.setColorAt(0.46, baseColor.darker(105));
+        grad.setColorAt(1.0, baseColor.darker(118));
+        painter.fillPath(path, grad);
 
         // Draw a clean, premium border
-        QColor borderColor = m_color.darker(115);
+        QColor borderColor = m_color.darker(125);
         double penWidth = 1.5;
         if (isSelected) {
             borderColor = QColor("#FFFFFF"); // Premium white selection highlight border
@@ -345,8 +351,8 @@ protected:
         painter.setPen(pen);
         painter.drawPath(path);
 
-        // Draw a subtle 1px translucent white overlay at the top (top 3D highlight)
-        painter.setPen(QPen(QColor(255, 255, 255, 45), 1.0));
+        // Draw a subtle translucent white overlay at the top (top 3D highlight)
+        painter.setPen(QPen(QColor(255, 255, 255, 110), 1.5));
         if (m_isHatBlock) {
             // Curve highlight
             QPainterPath highlightPath;
@@ -406,8 +412,24 @@ BlockEditor::BlockEditor(QWidget* parent) : QWidget(parent) {
         "QListWidget#blockListWidget::item { background: transparent; border: none; padding: 0px; margin: 0px; }"
         "QListWidget#blockListWidget::item:hover { background: transparent; border: none; }"
         "QListWidget#blockListWidget::item:selected { background: transparent; border: none; }"
-        "QPushButton { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #6366F1, stop:1 #4F46E5); border: 1px solid #818CF8; border-radius: 8px; padding: 6px 12px; font-weight: bold; color: #FFFFFF; font-size: 11px; }"
-        "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #818CF8, stop:1 #6366F1); border-color: #A5B4FC; }"
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #EEF2FF, stop:0.45 #E0E7FF, stop:0.46 #C7D2FE, stop:1 #A5B4FC); "
+        "  border: 1.5px solid #6366F1; "
+        "  border-radius: 8px; "
+        "  padding: 6px 12px; "
+        "  font-weight: bold; "
+        "  color: #4338CA; "
+        "  font-size: 11px; "
+        "} "
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E0E7FF, stop:0.45 #C7D2FE, stop:0.46 #A5B4FC, stop:1 #818CF8); "
+        "  border-color: #4F46E5; "
+        "  color: #312E81; "
+        "} "
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #A5B4FC, stop:1 #4F46E5); "
+        "  color: white; "
+        "}"
     );
 
     auto* mainLayout = new QVBoxLayout(this);
@@ -1245,10 +1267,10 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         formulaBtn->setToolTip("Abrir Criador de Fórmulas Avançado");
         formulaBtn->setStyleSheet(
             "QPushButton { "
-            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #EC4899, stop:1 #DB2777); "
-            "  border: 1.5px solid #BE185D; "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FDF2F8, stop:0.45 #FCE7F3, stop:0.46 #FBCFE8, stop:1 #F472B6); "
+            "  border: 1.5px solid #EC4899; "
             "  border-radius: 8px; "
-            "  color: white; "
+            "  color: #BE185D; "
             "  font-weight: bold; "
             "  font-size: 11px; "
             "  padding: 4px 10px; "
@@ -1256,8 +1278,13 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
             "  min-height: 20px; "
             "} "
             "QPushButton:hover { "
-            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #F472B6, stop:1 #EC4899); "
-            "  border-color: #DB2777; "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FCE7F3, stop:0.45 #FBCFE8, stop:0.46 #F472B6, stop:1 #EC4899); "
+            "  border-color: #BE185D; "
+            "  color: #9D174D; "
+            "} "
+            "QPushButton:pressed { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F472B6, stop:1 #EC4899); "
+            "  color: white; "
             "}"
         );
 
