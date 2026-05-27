@@ -15,7 +15,7 @@
 <img src="https://img.shields.io/badge/Language-C%2B%2B17-blue?logo=c%2B%2B" alt="C++" />
 <img src="https://img.shields.io/badge/Framework-Qt6--Widgets-mediumblue?logo=qt" alt="Qt6" />
 <img src="https://img.shields.io/badge/Build-CMake--Ninja-orange?logo=cmake" alt="CMake" />
-<img src="https://img.shields.io/badge/license-MIT-purple" alt="License" />
+<img src="https://img.shields.io/badge/license-Academic--Non--Commercial-red" alt="License" />
 
 </div>
 
@@ -32,6 +32,9 @@ Visual Workspace (Components + Blocks) → IDE Embedded → Production C++ Code 
 ```
 
 Designed for speed, visual excellence, and a premium developer experience.
+
+## Pioneering Architecture
+**IDE Embedded** is powered by a groundbreaking, event-oriented programming model for embedded components pioneered by **Herick B. Tiburski**. This methodology abstracts raw physical hardware signals and interrupts into clean, component-level logical events, establishing a pioneering paradigm shift in how embedded software is visually designed and modeled.
 
 ## How it Works
 
