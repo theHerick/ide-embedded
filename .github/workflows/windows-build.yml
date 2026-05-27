@@ -26,6 +26,7 @@ jobs:
       - name: Run Code Quality & Static Analysis (Cppcheck)
         shell: powershell
         run: |
+          subst R: "$env:GITHUB_WORKSPACE\cppcheck_cfg"
           cppcheck --enable=warning,performance --std=c++17 --inline-suppr --suppress=missingIncludeSystem packages/ apps/
 
       - name: Install Qt6
