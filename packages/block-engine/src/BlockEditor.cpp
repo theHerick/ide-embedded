@@ -1015,6 +1015,9 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
             blockColor = QColor("#059669"); // Emerald/Teal
             actionName = "RESTAURAR DA EEPROM";
         }
+    } else if (block.type == LogicBlockType::EVENT_CREATE) {
+        blockColor = QColor("#D946EF"); // Fuchsia
+        actionName = "eventCreate";
     } else {
         blockColor = customFimColor.isValid() ? customFimColor : QColor("#64748B");
         actionName = "FIM";
@@ -1428,8 +1431,26 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
 
         connect(slotEdit, &QLineEdit::textChanged, this, saveParams);
 
+    } else if (block.type == LogicBlockType::EVENT_CREATE) {
+        auto* nameEdit = new QLineEdit(w);
+        nameEdit->setPlaceholderText("ex: aoDetectar()");
+        nameEdit->setText(block.actionTarget);
+        nameEdit->setStyleSheet(
+            "QLineEdit { background: #FFFFFF; border: 1.5px solid #F0ABFC; border-radius: 8px; color: #701A75; font-size: 11px; font-weight: bold; padding: 4px 8px; min-width: 200px; }"
+        );
+
+        auto* label = new QLabel("Nome do Evento:", w);
+        label->setStyleSheet("color: white; font-weight: bold;");
+
+        auto saveParams = [this, index, nameEdit]() {
+            m_activeBlocks[index].actionTarget = nameEdit->text();
+            emit blocksChanged();
+        };
+
+        connect(nameEdit, &QLineEdit::textChanged, this, saveParams);
+
         lay->addWidget(label);
-        lay->addWidget(slotEdit);
+        lay->addWidget(nameEdit);
     }
 
     lay->addStretch();
@@ -1669,7 +1690,8 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
                      << "Alternar (toggle)"
                      << "Salvar na EEPROM (Persistir estado/variável)"
                      << "Restaurar da EEPROM (Recuperar estado/variável)"
-                     << "Serial Print (Escrever na Serial)";
+                     << "Serial Print (Escrever na Serial)"
+                     << "eventCreate (Criar Evento Customizado)";
 
     }
 
@@ -1808,6 +1830,14 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             addBlock("toggle");
         } else if (text.contains("chamar") || text.contains("call function") || text.contains("invocar")) {
             addBlock("callFunction");
+        } else if (text.contains("eventcreate") || text.contains("criar evento") || text.contains("aodetectar")) {
+            EventLogicBlock b;
+            b.id = QUuid::createUuid().toString();
+            b.type = LogicBlockType::EVENT_CREATE;
+            b.actionTarget = "aoDetectar()";
+            m_activeBlocks.append(b);
+            refreshListDisplay();
+            emit blocksChanged();
         } else if (text.contains("calcular bateria") || text.contains("bateria") || text.contains("calc bat")) {
             EventLogicBlock b;
             b.id = QUuid::createUuid().toString();

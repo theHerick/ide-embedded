@@ -37,7 +37,8 @@ enum class LogicBlockType {
     CREATE_VAR,   // type name;
     FIM,          // }
     SERIAL_PRINT, // Serial.print(...)
-    EEPROM_OP     // Salvar/Ler EEPROM
+    EEPROM_OP,    // Salvar/Ler EEPROM
+    EVENT_CREATE  // Novo: eventCreate
 };
 
 struct EventLogicBlock {
