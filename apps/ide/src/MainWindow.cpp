@@ -24,6 +24,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QProcess>
 #include <QDoubleSpinBox>
 #include <QPushButton>
@@ -1162,7 +1163,7 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
 
         menu.addSeparator();
 
-        QAction* actClearEeprom = menu.addAction("🗑️ Limpar EEPROM");
+        QAction* actClearEeprom = menu.addAction("Limpar EEPROM");
         connect(actClearEeprom, &QAction::triggered, this, [this]() {
             auto res = QMessageBox::question(this, "Limpar EEPROM",
                 "Tem certeza que deseja apagar todos os dados salvos na EEPROM simulada?\n\n"
@@ -1864,7 +1865,7 @@ void MainWindow::exportLaserPNG() {
     // ── Step 3: Preview dialog ───────────────────────────────────────────────
     QDialog previewDlg(this);
     previewDlg.setWindowTitle("Preview — Layout para Laser");
-    previewDlg.resize(900, 680);
+    previewDlg.resize(980, 720);
     previewDlg.setStyleSheet(
         "QDialog { background: #FFFFFF; border: 1px solid #E6EEF3; }"
         "QLabel#header { color: #0F172A; font-size: 15px; font-weight: 700;"
@@ -1880,6 +1881,11 @@ void MainWindow::exportLaserPNG() {
         "QPushButton#discard { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3;"
         "  color: #475569; }"
         "QPushButton#discard:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
+        "QPushButton#toolBtn { background: #F1F5F9; border: 1px solid #E2E8F0;"
+        "  color: #334155; padding: 8px 12px; font-weight: 600; font-size: 12px;"
+        "  border-radius: 6px; font-family: 'Segoe UI', Arial; }"
+        "QPushButton#toolBtn:hover { background: #E2E8F0; }"
+        "QPushButton#toolBtn:checked { background: #FEF2F2; border-color: #FCA5A5; color: #EF4444; }"
         "QScrollArea { border: 1px solid #E6EEF3; background: #F8FAFC; border-radius: 10px; }"
     );
 
@@ -1915,7 +1921,79 @@ void MainWindow::exportLaserPNG() {
     metaRow->addStretch();
     pvLayout->addLayout(metaRow);
 
-    // Scrollable image area
+    // Main horizontal layout for Sidebar + Preview
+    auto* mainHLayout = new QHBoxLayout();
+    mainHLayout->setSpacing(18);
+    
+    // Left Control Panel (Sidebar)
+    auto* ctrlFrame = new QFrame(&previewDlg);
+    ctrlFrame->setObjectName("ctrlFrame");
+    ctrlFrame->setFixedWidth(230);
+    ctrlFrame->setStyleSheet(
+        "QFrame#ctrlFrame { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; }"
+        "QCheckBox { color: #334155; font-size: 12px; font-weight: 600; font-family: 'Segoe UI', Arial; padding: 4px; }"
+        "QCheckBox:hover { color: #0F172A; }"
+        "QLabel#sectionTitle { color: #0F172A; font-size: 11px; font-weight: 700; font-family: 'Segoe UI', Arial; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 10px; }"
+    );
+    
+    auto* ctrlLayout = new QVBoxLayout(ctrlFrame);
+    ctrlLayout->setContentsMargins(16, 16, 16, 16);
+    ctrlLayout->setSpacing(12);
+    
+    // Section: Layers
+    auto* layersTitle = new QLabel("Camadas Visualizadas", ctrlFrame);
+    layersTitle->setObjectName("sectionTitle");
+    ctrlLayout->addWidget(layersTitle);
+    
+    auto* cbTracks = new QCheckBox("Trilhas e Ilhas (Cobre)", ctrlFrame);
+    cbTracks->setChecked(true);
+    ctrlLayout->addWidget(cbTracks);
+    
+    auto* cbDrills = new QCheckBox("Furos de Perfuração", ctrlFrame);
+    cbDrills->setChecked(true);
+    ctrlLayout->addWidget(cbDrills);
+    
+    // Divider
+    auto* div1 = new QFrame(ctrlFrame);
+    div1->setFrameShape(QFrame::HLine);
+    div1->setFrameShadow(QFrame::Sunken);
+    div1->setStyleSheet("color: #E2E8F0;");
+    ctrlLayout->addWidget(div1);
+    
+    // Section: Tools
+    auto* toolsTitle = new QLabel("Ferramentas", ctrlFrame);
+    toolsTitle->setObjectName("sectionTitle");
+    ctrlLayout->addWidget(toolsTitle);
+    
+    auto* btnMeasure = new QPushButton("Régua de Medição", ctrlFrame);
+    btnMeasure->setObjectName("toolBtn");
+    btnMeasure->setCheckable(true);
+    ctrlLayout->addWidget(btnMeasure);
+    
+    // Divider
+    auto* div2 = new QFrame(ctrlFrame);
+    div2->setFrameShape(QFrame::HLine);
+    div2->setFrameShadow(QFrame::Sunken);
+    div2->setStyleSheet("color: #E2E8F0;");
+    ctrlLayout->addWidget(div2);
+    
+    // Section: Quick Export
+    auto* exportTitle = new QLabel("Exportar Camada", ctrlFrame);
+    exportTitle->setObjectName("sectionTitle");
+    ctrlLayout->addWidget(exportTitle);
+    
+    auto* btnExportTracks = new QPushButton("Exportar Apenas Trilhas", ctrlFrame);
+    btnExportTracks->setObjectName("toolBtn");
+    ctrlLayout->addWidget(btnExportTracks);
+    
+    auto* btnExportDrills = new QPushButton("Exportar Apenas Furos", ctrlFrame);
+    btnExportDrills->setObjectName("toolBtn");
+    ctrlLayout->addWidget(btnExportDrills);
+    
+    ctrlLayout->addStretch();
+    mainHLayout->addWidget(ctrlFrame);
+
+    // Scrollable image area (Right side)
     auto* scroll = new QScrollArea(&previewDlg);
     scroll->setAlignment(Qt::AlignCenter);
     scroll->setWidgetResizable(false);
@@ -1926,16 +2004,10 @@ void MainWindow::exportLaserPNG() {
     QPixmap pxFull = QPixmap::fromImage(previewImage);
     
     // SCALE CALCULATION FOR 1:1 REAL WORLD SCALE
-    // PcbExporter: 1mm = 3.937 units. RenderScale = 5.0. 
-    // Total: 1mm = 3.937 * 5.0 = 19.685 pixels in the QImage.
     double imagePixelsPerMm = 3.937 * 5.0;
-    
-    // Get screen DPI to convert physical mm to screen pixels
     QScreen *screen = QGuiApplication::primaryScreen();
     double screenDpi = screen ? screen->logicalDotsPerInch() : 96.0;
     double screenPixelsPerMm = screenDpi / 25.4;
-    
-    // Target display scale to match 1:1 physical size
     double realScale = screenPixelsPerMm / imagePixelsPerMm;
     
     QSize displaySize = pxFull.size() * realScale;
@@ -1945,7 +2017,9 @@ void MainWindow::exportLaserPNG() {
     imgLabel->adjustSize();
 
     scroll->setWidget(imgLabel);
-    pvLayout->addWidget(scroll, 1);
+    mainHLayout->addWidget(scroll, 1);
+    
+    pvLayout->addLayout(mainHLayout, 1);
 
     // Info hint
     auto* pvMeta = new QLabel(QString("Escala: REAL (1:1)  |  Resolução: %1 × %2 px")
@@ -1960,31 +2034,87 @@ void MainWindow::exportLaserPNG() {
     pvBtnRow->setContentsMargins(0, 14, 0, 0);
     pvBtnRow->addStretch();
 
-    auto* btnMeasure = new QPushButton("Medir", &previewDlg);
-    btnMeasure->setObjectName("discard");
-    btnMeasure->setCheckable(true);
-    btnMeasure->setFixedWidth(120);
-
-    auto* btnDiscard = new QPushButton("Descartar", &previewDlg);
+    auto* btnDiscard = new QPushButton("Fechar", &previewDlg);
     btnDiscard->setObjectName("discard");
-    auto* btnSave    = new QPushButton("Salvar PNG", &previewDlg);
+    auto* btnSave    = new QPushButton("Salvar Visualização Atual", &previewDlg);
     
-    pvBtnRow->addWidget(btnMeasure);
     pvBtnRow->addWidget(btnDiscard);
     pvBtnRow->addWidget(btnSave);
     pvLayout->addLayout(pvBtnRow);
 
     // Setup measurement factors for 1:1 scale
-    // m_mmPerPixel should be 1.0 / screenPixelsPerMm to convert screen pixels back to mm
     imgLabel->setScaleFactors(1.0, 1.0 / screenPixelsPerMm);
 
-    connect(btnMeasure, &QPushButton::toggled, [=](bool checked){
-        imgLabel->setMeasuring(checked);
-        btnMeasure->setText(checked ? "Parar Medição" : "Medir");
-        if(checked) {
-            btnMeasure->setStyleSheet("background: #FEF2F2; border-color: #FCA5A5; color: #EF4444;");
+    QDialog* dlgPtr = &previewDlg;
+
+    // Lambda to update preview image dynamically based on selected layers
+    auto updatePreview = [this, cbTracks, cbDrills, trackWidthMil, lineWidthMil, &previewImage, &pxFull, realScale, imgLabel, pvMeta]() {
+        bool showTracks = cbTracks->isChecked();
+        bool showDrills = cbDrills->isChecked();
+
+        QImage newImg;
+        if (showTracks && showDrills) {
+            newImg = PcbExporter::generateLaserImage(
+                m_scene->components(), m_scene->cables(), trackWidthMil, lineWidthMil, true);
+        } else if (showTracks) {
+            newImg = PcbExporter::generateLaserImage(
+                m_scene->components(), m_scene->cables(), trackWidthMil, lineWidthMil, false);
+        } else if (showDrills) {
+            newImg = PcbExporter::generateDrillImage(m_scene->components());
         } else {
-            btnMeasure->setStyleSheet("");
+            // Both unchecked -> empty white image
+            newImg = QImage(previewImage.size(), QImage::Format_RGB32);
+            newImg.fill(Qt::white);
+        }
+
+        previewImage = newImg;
+        pxFull = QPixmap::fromImage(previewImage);
+        
+        QSize displaySize = pxFull.size() * realScale;
+        QPixmap pxReal = pxFull.scaled(displaySize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        
+        imgLabel->setPixmap(pxReal);
+        imgLabel->adjustSize();
+        
+        pvMeta->setText(QString("Escala: REAL (1:1)  |  Resolução: %1 × %2 px")
+                            .arg(previewImage.width()).arg(previewImage.height()));
+    };
+
+    connect(cbTracks, &QCheckBox::stateChanged, this, [updatePreview]() { updatePreview(); });
+    connect(cbDrills, &QCheckBox::stateChanged, this, [updatePreview]() { updatePreview(); });
+
+    connect(btnMeasure, &QPushButton::toggled, this, [imgLabel, btnMeasure](bool checked){
+        imgLabel->setMeasuring(checked);
+        btnMeasure->setText(checked ? "Parar Medição" : "Régua de Medição");
+    });
+
+    // Sidebar export actions
+    connect(btnExportTracks, &QPushButton::clicked, this, [this, dlgPtr, trackWidthMil, lineWidthMil]() {
+        QString filePath = QFileDialog::getSaveFileName(dlgPtr,
+            "Salvar Apenas Trilhas", "", "PNG Image (*.png)");
+        if (filePath.isEmpty()) return;
+        QImage img = PcbExporter::generateLaserImage(
+            m_scene->components(), m_scene->cables(), trackWidthMil, lineWidthMil, false);
+        if (img.save(filePath, "PNG")) {
+            logMessage(QString("Trilhas exportadas: %1").arg(filePath), "SUCCESS");
+            QMessageBox::information(dlgPtr, "Sucesso", "Imagem das trilhas exportada com sucesso!");
+        } else {
+            logMessage("Falha ao salvar imagem de trilhas.", "ERROR");
+            QMessageBox::critical(dlgPtr, "Erro", "Não foi possível salvar o arquivo.");
+        }
+    });
+
+    connect(btnExportDrills, &QPushButton::clicked, this, [this, dlgPtr]() {
+        QString filePath = QFileDialog::getSaveFileName(dlgPtr,
+            "Salvar Apenas Furos", "", "PNG Image (*.png)");
+        if (filePath.isEmpty()) return;
+        QImage img = PcbExporter::generateDrillImage(m_scene->components());
+        if (img.save(filePath, "PNG")) {
+            logMessage(QString("Furos exportados: %1").arg(filePath), "SUCCESS");
+            QMessageBox::information(dlgPtr, "Sucesso", "Imagem dos furos exportada com sucesso!");
+        } else {
+            logMessage("Falha ao salvar imagem de furos.", "ERROR");
+            QMessageBox::critical(dlgPtr, "Erro", "Não foi possível salvar o arquivo.");
         }
     });
 

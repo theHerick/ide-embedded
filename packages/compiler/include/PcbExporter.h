@@ -21,7 +21,8 @@ public:
     static QImage generateLaserImage(const QVector<ComponentItem*>& components,
                                      const QVector<ConnectionCable*>& cables,
                                      double trackWidthMil = 80.0,
-                                     double lineWidthMil = 10.0);
+                                     double lineWidthMil = 10.0,
+                                     bool drawDrills = true);
 
     static QImage generateDrillImage(const QVector<ComponentItem*>& components);
     
