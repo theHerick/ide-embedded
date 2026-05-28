@@ -652,6 +652,9 @@ void MainWindow::buildToolbar() {
     m_openAction->setToolTip("Abrir Projeto");
     m_openAction->setIcon(QIcon(":/icons/pasta.png"));
     connect(m_openAction, &QAction::triggered, this, &MainWindow::openProject);
+    if (auto* tb = qobject_cast<QToolButton*>(toolbar->widgetForAction(m_openAction))) {
+        tb->setIconSize(QSize(32, 32));
+    }
 
     m_saveAction = toolbar->addAction("");
     m_saveAction->setToolTip("Salvar Projeto");
