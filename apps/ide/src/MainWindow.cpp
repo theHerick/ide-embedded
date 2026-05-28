@@ -2837,9 +2837,9 @@ void MainWindow::loadToolboxItems() {
     m_toolboxList->clear();
 
     // 1. Add native built-in components
-    auto* ledItem = new QListWidgetItem("LED Emissor", m_toolboxList);
+    auto* ledItem = new QListWidgetItem("LED", m_toolboxList);
     ledItem->setData(Qt::UserRole, "led");
-    auto* btnItem = new QListWidgetItem("Botão Pulsador", m_toolboxList);
+    auto* btnItem = new QListWidgetItem("Botão", m_toolboxList);
     btnItem->setData(Qt::UserRole, "button");
     auto* resItem = new QListWidgetItem("Resistor", m_toolboxList);
     resItem->setData(Qt::UserRole, "resistor");

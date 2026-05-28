@@ -151,7 +151,7 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
 
     // Setup premium, highly responsive autocomplete list
     QStringList componentsList;
-    componentsList << "LED Emissor" << "Botão Pulsador" << "Resistor" << "Capacitor" << "Potenciômetro" << "Buzzer 5V" << "Motor Genérico" << "Terra (GND)"
+    componentsList << "LED" << "Botão" << "Resistor" << "Capacitor" << "Potenciômetro" << "Buzzer 5V" << "Motor Genérico" << "Terra (GND)"
                    << "Sensor Temperatura/Umidade DHT22"
                    << "Sensor Ultrassônico HC-SR04";
 
