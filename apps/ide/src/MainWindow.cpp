@@ -885,7 +885,7 @@ void MainWindow::applyTheme() {
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E2E8F0, stop:1 #94A3B8); "
         "} "
         "QDialog { "
-        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #E0F2FE, stop:0.6 #BAE6FD, stop:1 #F0FDFA); "
+        "  background: #F8FAFC; "
         "}"
     );
 }
@@ -1906,7 +1906,7 @@ void MainWindow::exportLaserPNG() {
     configDlg.setWindowTitle("Configurar Export Laser");
     configDlg.setMinimumWidth(360);
     configDlg.setStyleSheet(
-        "QDialog { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #E0F2FE, stop:0.6 #BAE6FD, stop:1 #F0FDFA); border: 1.5px solid rgba(255,255,255,0.8); }"
+        "QDialog { background: #F8FAFC; border: 1px solid #CBD5E1; }"
         "QLabel { color: #0F172A; font-family: 'Segoe UI', Arial; font-size: 11px; font-weight: 600; }"
         "QLabel#title { color: #0F172A; font-size: 15px; font-weight: 700; }"
         "QLabel#sub { color: #475569; font-size: 10px; font-weight: 400; }"
@@ -2031,7 +2031,7 @@ void MainWindow::exportLaserPNG() {
     previewDlg.setWindowTitle("Preview — Layout para Laser");
     previewDlg.resize(980, 720);
     previewDlg.setStyleSheet(
-        "QDialog { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #E0F2FE, stop:0.6 #BAE6FD, stop:1 #F0FDFA); border: 1.5px solid rgba(255,255,255,0.8); }"
+        "QDialog { background: #F8FAFC; border: 1px solid #CBD5E1; }"
         "QLabel#header { color: #0F172A; font-size: 15px; font-weight: 700;"
         "  font-family: 'Segoe UI', Arial; padding: 0 0 4px 0; }"
         "QLabel#meta { color: #475569; font-size: 11px; font-family: 'Segoe UI', Arial; }"
@@ -4059,10 +4059,7 @@ void MainWindow::showFirmwareInfo() {
     infoLayout->addWidget(bAuthor);
 
     auto* bDesc = new QLabel(
-        "Este livro é o guia oficial de estudos e treinamento prático que acompanha o IDE Embedded.\n\n"
-        "O material aborda desde os princípios da eletrônica prática até a modelagem avançada de eventos "
-        "e o funcionamento interno da arquitetura 'Event Sandwich' idealizada pelo autor para gerenciar "
-        "eficientemente as rotinas de sistemas microcontrolados.", bookWidget);
+        "Este livro é o guia oficial de estudos e treinamento prático que acompanha o IDE Embedded.", bookWidget);
     bDesc->setWordWrap(true);
     bDesc->setStyleSheet("font-size: 11px; line-height: 1.5; color: #475569;");
     infoLayout->addWidget(bDesc);
