@@ -1430,10 +1430,15 @@ void MainWindow::checkPythonAsync() {
     auto onFailed = [this, pyProc]() {
         pyProc->deleteLater();
         
-        QMessageBox::critical(this, "Ferramentas Faltando", 
+        auto res = QMessageBox::question(this, "Ferramentas Faltando", 
             "Python não foi detectado no sistema.\n\n"
-            "Para fazer Flash na ESP32, você precisa instalar o Python e marcar a opção 'Add Python to PATH'.\n"
-            "Deseja abrir o site oficial do Python agora?");
+            "Para fazer compilação e gravação de hardware, você precisa ter o Python instalado e com a opção 'Add Python to PATH' marcada no instalador.\n\n"
+            "Deseja abrir o site oficial do Python agora para baixá-lo?",
+            QMessageBox::Yes | QMessageBox::No);
+            
+        if (res == QMessageBox::Yes) {
+            QDesktopServices::openUrl(QUrl("https://www.python.org/downloads/"));
+        }
     };
 
     QTimer* pyTimer = new QTimer(this);
