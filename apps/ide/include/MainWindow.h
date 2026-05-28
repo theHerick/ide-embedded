@@ -97,6 +97,7 @@ private:
     void buildToolbar();
     void applyTheme();
     void checkAndInstallToolchain();
+    void checkPythonAsync();
     void parseResourceUsage(const QString& line);
     void openEventEditor(ComponentItem* comp, const QString& eventName);
     void synchronizeLoopBlocks();

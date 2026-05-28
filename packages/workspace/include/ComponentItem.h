@@ -187,8 +187,19 @@ public:
     bool isActive() const { return m_isActive; }
     void setActive(bool active) { m_isActive = active; update(); }
 
+    bool isPassive() const { return m_isPassive; }
+    void setPassive(bool passive) { m_isPassive = passive; update(); }
+
+    int frequency() const { return m_frequency; }
+    void setFrequency(int freq) { m_frequency = freq; update(); }
+
+protected:
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+
 private:
     bool m_isActive = false;
+    bool m_isPassive = false;
+    int m_frequency = 1000;
 };
 
 // Motor Item

@@ -1706,6 +1706,18 @@ void BuzzerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
     painter->drawLine(-14, -8, -10, -8);
     painter->drawLine(-12, -10, -12, -6);
 
+    // Draw active/passive type indicator
+    painter->setPen(QColor(148, 163, 184));
+    QFont fontType = painter->font();
+    fontType.setPointSize(5);
+    fontType.setBold(true);
+    painter->setFont(fontType);
+    painter->drawText(QRectF(-18, -25, 36, 10), Qt::AlignCenter, m_isPassive ? "PASSIVE" : "ACTIVE");
+
+    if (m_isPassive) {
+        painter->drawText(QRectF(-30, 10, 60, 10), Qt::AlignCenter, QString("%1 Hz").arg(m_frequency));
+    }
+
     // Name Label
     painter->setPen(QColor(148, 163, 184));
     QFont fLabelB = painter->font();
@@ -1713,6 +1725,24 @@ void BuzzerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
     fLabelB.setBold(true);
     painter->setFont(fLabelB);
     painter->drawText(QRectF(-25, 22, 50, 10), Qt::AlignCenter, m_name.toUpper());
+}
+
+void BuzzerItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
+    QMenu menu;
+    QAction* typeAct = menu.addAction(m_isPassive ? "Alternar para Buzzer Ativo" : "Alternar para Buzzer Passivo");
+    QAction* freqAct = m_isPassive ? menu.addAction("Ajustar Frequência Padrão...") : nullptr;
+    
+    QAction* selected = menu.exec(event->screenPos());
+    if (selected == typeAct) {
+        setPassive(!m_isPassive);
+    } else if (freqAct && selected == freqAct) {
+        bool ok;
+        int newFreq = QInputDialog::getInt(nullptr, "Ajustar Frequência", "Frequência (Hz):", m_frequency, 50, 10000, 100, &ok);
+        if (ok) {
+            setFrequency(newFreq);
+        }
+    }
+    event->accept();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

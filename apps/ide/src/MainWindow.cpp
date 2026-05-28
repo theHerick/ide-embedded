@@ -8,6 +8,7 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QTime>
+#include <QTimer>
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QCoreApplication>
@@ -1415,49 +1416,115 @@ void MainWindow::toggleSimulation() {
 void MainWindow::checkAndInstallToolchain() {
     logMessage("Verificando ferramentas de hardware (Python/PlatformIO)...", "SYSTEM");
     
-    QProcess process;
-    process.start("pio", {"--version"});
-    if (process.waitForFinished() && process.exitCode() == 0) {
-        logMessage("PlatformIO detectado com sucesso!", "SUCCESS");
-        return;
-    }
+    QProcess* pioProc = new QProcess(this);
+    QTimer* pioTimer = new QTimer(this);
+    pioTimer->setSingleShot(true);
+    
+    auto onPioFailed = [this, pioProc, pioTimer]() {
+        pioTimer->stop();
+        pioTimer->deleteLater();
+        disconnect(pioProc, &QProcess::finished, nullptr, nullptr);
+        pioProc->deleteLater();
+        
+        checkPythonAsync();
+    };
 
-    // Se falhou, tenta verificar se o Python existe
-    process.start("python", {"--version"});
-    bool hasPython = (process.waitForFinished() && process.exitCode() == 0);
+    connect(pioTimer, &QTimer::timeout, this, [pioProc, onPioFailed]() {
+        if (pioProc->state() == QProcess::Running) {
+            pioProc->kill();
+        }
+        onPioFailed();
+    });
 
-    if (!hasPython) {
+    connect(pioProc, &QProcess::finished, this, [this, pioProc, pioTimer, onPioFailed](int exitCode, QProcess::ExitStatus exitStatus) {
+        pioTimer->stop();
+        pioTimer->deleteLater();
+        pioProc->deleteLater();
+        
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            logMessage("PlatformIO detectado com sucesso!", "SUCCESS");
+        } else {
+            checkPythonAsync();
+        }
+    });
+
+    connect(pioProc, &QProcess::errorOccurred, this, [onPioFailed](QProcess::ProcessError err) {
+        Q_UNUSED(err);
+        onPioFailed();
+    });
+
+    pioProc->start("pio", {"--version"});
+    pioTimer->start(2000); // 2 segundos de timeout
+}
+
+void MainWindow::checkPythonAsync() {
+    QProcess* pyProc = new QProcess(this);
+    
+    auto onFailed = [this, pyProc]() {
+        pyProc->deleteLater();
+        
         QMessageBox::critical(this, "Ferramentas Faltando", 
             "Python não foi detectado no sistema.\n\n"
             "Para fazer Flash na ESP32, você precisa instalar o Python e marcar a opção 'Add Python to PATH'.\n"
             "Deseja abrir o site oficial do Python agora?");
-        // Abrir site se o usuário quiser (opcional)
-        return;
-    }
+    };
 
-    // Python existe, mas PIO não. Oferece instalação automática.
-    auto res = QMessageBox::question(this, "Instalar PlatformIO", 
-        "O motor de Flash (PlatformIO) não foi encontrado, mas o Python está presente.\n\n"
-        "Deseja que a IDE tente instalar o PlatformIO automaticamente agora?",
-        QMessageBox::Yes | QMessageBox::No);
+    QTimer* pyTimer = new QTimer(this);
+    pyTimer->setSingleShot(true);
+    
+    connect(pyTimer, &QTimer::timeout, this, [pyProc, pyTimer, onFailed]() {
+        pyTimer->deleteLater();
+        if (pyProc->state() == QProcess::Running) {
+            pyProc->kill();
+            onFailed();
+        }
+    });
 
-    if (res == QMessageBox::Yes) {
-        logMessage("Iniciando instalação do PlatformIO via pip...", "WARNING");
-        statusBar()->showMessage("Instalando PlatformIO... Isso pode levar alguns minutos.");
-        
-        QProcess* installProc = new QProcess(this);
-        connect(installProc, &QProcess::finished, this, [this, installProc](int exitCode) {
-            if (exitCode == 0) {
-                logMessage("PlatformIO instalado com sucesso! Reinicie a IDE para aplicar.", "SUCCESS");
-                QMessageBox::information(this, "Sucesso", "PlatformIO instalado! Por favor, reinicie a IDE para habilitar o Flash.");
-            } else {
-                logMessage("Falha na instalação automática. Tente: 'pip install platformio' no terminal.", "ERROR");
+    connect(pyProc, &QProcess::finished, this, [this, pyProc, pyTimer, onFailed](int exitCode, QProcess::ExitStatus exitStatus) {
+        pyTimer->stop();
+        pyTimer->deleteLater();
+        pyProc->deleteLater();
+
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            // Python existe, mas PIO não. Oferece instalação automática.
+            auto res = QMessageBox::question(this, "Instalar PlatformIO", 
+                "O motor de Flash (PlatformIO) não foi encontrado, mas o Python está presente.\n\n"
+                "Deseja que a IDE tente instalar o PlatformIO automaticamente agora?",
+                QMessageBox::Yes | QMessageBox::No);
+
+            if (res == QMessageBox::Yes) {
+                logMessage("Iniciando instalação do PlatformIO via pip...", "WARNING");
+                statusBar()->showMessage("Instalando PlatformIO... Isso pode levar alguns minutos.");
+                
+                QProcess* installProc = new QProcess(this);
+                connect(installProc, &QProcess::finished, this, [this, installProc](int exitCode) {
+                    if (exitCode == 0) {
+                        logMessage("PlatformIO instalado com sucesso! Reinicie a IDE para aplicar.", "SUCCESS");
+                        QMessageBox::information(this, "Sucesso", "PlatformIO instalado! Por favor, reinicie a IDE para habilitar o Flash.");
+                    } else {
+                        logMessage("Falha na instalação automática. Tente: 'pip install platformio' no terminal.", "ERROR");
+                    }
+                    installProc->deleteLater();
+                });
+                
+                installProc->start("python", {"-m", "pip", "install", "-U", "platformio"});
             }
-            installProc->deleteLater();
-        });
-        
-        installProc->start("python", {"-m", "pip", "install", "-U", "platformio"});
-    }
+        } else {
+            onFailed();
+        }
+    });
+
+    connect(pyProc, &QProcess::errorOccurred, this, [pyProc, pyTimer, onFailed](QProcess::ProcessError err) {
+        Q_UNUSED(err);
+        pyTimer->stop();
+        pyTimer->deleteLater();
+        disconnect(pyProc, &QProcess::finished, nullptr, nullptr);
+        pyProc->deleteLater();
+        onFailed();
+    });
+
+    pyProc->start("python", {"--version"});
+    pyTimer->start(2000); // 2 segundos de timeout
 }
 
 void MainWindow::compileCode() {

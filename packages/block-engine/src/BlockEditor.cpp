@@ -1141,6 +1141,7 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         cmdCombo->addItem("LIGAR (HIGH)", "HIGH");
         cmdCombo->addItem("DESLIGAR (LOW)", "LOW");
         cmdCombo->addItem("INVERTER (TOGGLE)", "TOGGLE");
+        cmdCombo->addItem("MUDAR FREQUÊNCIA (Buzzer)", "SET_FREQUENCY");
         cmdCombo->addItem("AGUARDAR (DELAY)", "DELAY");
         cmdCombo->addItem("GIRAR MOTOR (Ângulo)", "ROTATE_MOTOR");
         cmdCombo->addItem("GIRAR MOTOR (Tempo)", "MOTOR_SPIN_TIME");
