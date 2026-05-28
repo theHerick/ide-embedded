@@ -66,7 +66,7 @@ IDE Embedded separates raw physical hardware signals from your core business log
 
 ## Features
 
-*   **Visual Block Editor** — Premium, drag-and-drop Sketchware-inspired interface. Create math expressions, loops, serial formatting, and manage persistent memory visually.
+*   **Visual Block Editor** — drag-and-drop Sketchware-inspired interface. Create math expressions, loops, serial formatting, and manage persistent memory visually.
 *   **Custom Component Creator** — Design and define complex custom hardware parts with dedicated properties, pins, simulation behaviors, and semantic roles.
 *   **Automatic Pin Tracing & Routing** — Automatically maps GPIO signals and validates GND/VCC rail connectivity even when chained through complex passive networks (resistors, switches, tracks).
 *   **EEPROM State Persist Engine** — High-level persistent saving and restoring blocks that handle low-level memory offset management and C++ EEPROM commitments transparently.
