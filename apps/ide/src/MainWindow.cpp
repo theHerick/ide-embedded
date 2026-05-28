@@ -649,7 +649,7 @@ void MainWindow::buildToolbar() {
 
     m_openAction = toolbar->addAction("");
     m_openAction->setToolTip("Abrir Projeto");
-    m_openAction->setIcon(style()->standardIcon(QStyle::SP_DirOpenIcon));
+    m_openAction->setIcon(QIcon(":/icons/folder_open.svg"));
     connect(m_openAction, &QAction::triggered, this, &MainWindow::openProject);
 
     m_saveAction = toolbar->addAction("");

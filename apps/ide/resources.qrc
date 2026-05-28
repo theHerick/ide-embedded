@@ -10,5 +10,6 @@
     <file>icons/undo_on.png</file>
     <file>icons/undo_off.png</file>
     <file>icons/book_cover.png</file>
+    <file>icons/folder_open.svg</file>
 </qresource>
 </RCC>
