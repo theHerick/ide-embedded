@@ -1,6 +1,6 @@
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets SerialPort OPTIONAL_COMPONENTS Pdf PdfWidgets)
 
-add_executable(ide-embedded
+add_executable(ide-embedded WIN32
     include/MainWindow.h
     include/OscilloscopePanel.h
     main.cpp
