@@ -107,6 +107,7 @@ private:
     bool platformIOBuild();
     bool platformIOUpload();
     bool platformIOIsInstalled();
+    QString getPlatformIOCommand();
     bool platformIOInstall();
     QStringList platformIOListBoards();
     bool showPlatformIOConfigDialog(QString& outBoard, QString& outFramework, QString& outPort, QString& outSpeed);

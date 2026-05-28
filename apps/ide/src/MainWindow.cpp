@@ -1416,45 +1416,12 @@ void MainWindow::toggleSimulation() {
 void MainWindow::checkAndInstallToolchain() {
     logMessage("Verificando ferramentas de hardware (Python/PlatformIO)...", "SYSTEM");
     
-    QProcess* pioProc = new QProcess(this);
-    QTimer* pioTimer = new QTimer(this);
-    pioTimer->setSingleShot(true);
-    
-    auto onPioFailed = [this, pioProc, pioTimer]() {
-        pioTimer->stop();
-        pioTimer->deleteLater();
-        disconnect(pioProc, &QProcess::finished, nullptr, nullptr);
-        pioProc->deleteLater();
-        
+    QString pioCmd = getPlatformIOCommand();
+    if (!pioCmd.isEmpty()) {
+        logMessage(QString("PlatformIO detectado com sucesso! Caminho: %1").arg(pioCmd), "SUCCESS");
+    } else {
         checkPythonAsync();
-    };
-
-    connect(pioTimer, &QTimer::timeout, this, [pioProc, onPioFailed]() {
-        if (pioProc->state() == QProcess::Running) {
-            pioProc->kill();
-        }
-        onPioFailed();
-    });
-
-    connect(pioProc, &QProcess::finished, this, [this, pioProc, pioTimer, onPioFailed](int exitCode, QProcess::ExitStatus exitStatus) {
-        pioTimer->stop();
-        pioTimer->deleteLater();
-        pioProc->deleteLater();
-        
-        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-            logMessage("PlatformIO detectado com sucesso!", "SUCCESS");
-        } else {
-            checkPythonAsync();
-        }
-    });
-
-    connect(pioProc, &QProcess::errorOccurred, this, [onPioFailed](QProcess::ProcessError err) {
-        Q_UNUSED(err);
-        onPioFailed();
-    });
-
-    pioProc->start("pio", {"--version"});
-    pioTimer->start(2000); // 2 segundos de timeout
+    }
 }
 
 void MainWindow::checkPythonAsync() {
@@ -3079,7 +3046,9 @@ void MainWindow::editMicrocontroller(ComponentItem* comp) {
         }
         
         QProcess p;
-        p.setProgram("platformio");
+        QString pioCmd = getPlatformIOCommand();
+        if (pioCmd.isEmpty()) pioCmd = "platformio";
+        p.setProgram(pioCmd);
         p.setArguments({"boards", query, "--json-output"});
         p.start();
         if (!p.waitForFinished(5000)) {
@@ -3422,7 +3391,9 @@ bool MainWindow::platformIOBuild() {
     QString pioPath = buildDir.filePath("pio_project");
 
     QProcess p;
-    p.setProgram("platformio");
+    QString pioCmd = getPlatformIOCommand();
+    if (pioCmd.isEmpty()) pioCmd = "platformio";
+    p.setProgram(pioCmd);
     p.setArguments({"run"});
     p.setWorkingDirectory(pioPath);
     logMessage("Iniciando compilação de validação do PlatformIO...", "INFO");
@@ -3516,7 +3487,9 @@ bool MainWindow::platformIOUpload() {
     QString pioPath = buildDir.filePath("pio_project");
 
     QProcess p;
-    p.setProgram("platformio");
+    QString pioCmd = getPlatformIOCommand();
+    if (pioCmd.isEmpty()) pioCmd = "platformio";
+    p.setProgram(pioCmd);
     p.setArguments({"run", "-t", "upload"});
     p.setWorkingDirectory(pioPath);
     logMessage("Iniciando gravação na placa (Upload via PlatformIO)...", "INFO");
@@ -3584,38 +3557,83 @@ bool MainWindow::platformIOUpload() {
 }
 
 bool MainWindow::platformIOIsInstalled() {
-    QProcess p;
-    p.setProgram("pio");
-    p.setArguments({"--version"});
-    p.start();
-    if (p.waitForFinished(3000) && p.exitCode() == 0) return true;
+    return !getPlatformIOCommand().isEmpty();
+}
 
-    // Se falhar, tenta procurar no caminho padrão do Python no Windows
-    QString appData = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-    // C:\Users\user\AppData\Local\Programs\Python\Python312\Scripts\pio.exe
-    QString localAppData = QDir::homePath() + "/AppData/Local/Programs/Python";
-    QDir pythonDir(localAppData);
-    if (pythonDir.exists()) {
-        QStringList entries = pythonDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-        for (const QString& entry : entries) {
-            if (entry.toLower().contains("python")) {
-                QString pioPath = pythonDir.absoluteFilePath(entry + "/Scripts/pio.exe");
-                if (QFile::exists(pioPath)) {
-                    // Se encontrou, vamos tentar usar o caminho completo no futuro
-                    // Por enquanto apenas retorna true para indicar que "está lá"
-                    return true;
-                }
+QString MainWindow::getPlatformIOCommand() {
+    // 1. Test "pio" directly (system PATH)
+    {
+        QProcess p;
+        p.setProgram("pio");
+        p.setArguments({"--version"});
+        p.start();
+        if (p.waitForFinished(1000) && p.exitCode() == 0) {
+            return "pio";
+        }
+    }
+    // 2. Test "platformio" directly (system PATH)
+    {
+        QProcess p;
+        p.setProgram("platformio");
+        p.setArguments({"--version"});
+        p.start();
+        if (p.waitForFinished(1000) && p.exitCode() == 0) {
+            return "platformio";
+        }
+    }
+
+    // 3. Test Windows common paths
+#ifdef Q_OS_WIN
+    // 3a. VS Code PlatformIO Core
+    QString pioVscode = QDir::homePath() + "/.platformio/penv/Scripts/pio.exe";
+    if (QFile::exists(pioVscode)) {
+        return QDir::toNativeSeparators(pioVscode);
+    }
+    QString platformioVscode = QDir::homePath() + "/.platformio/penv/Scripts/platformio.exe";
+    if (QFile::exists(platformioVscode)) {
+        return QDir::toNativeSeparators(platformioVscode);
+    }
+
+    // 3b. Local Python Scripts
+    QString localPythonDir = QDir::homePath() + "/AppData/Local/Programs/Python";
+    QDir dir(localPythonDir);
+    if (dir.exists()) {
+        QStringList subdirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString& subdir : subdirs) {
+            if (subdir.toLower().contains("python")) {
+                QString path1 = dir.absoluteFilePath(subdir + "/Scripts/pio.exe");
+                if (QFile::exists(path1)) return QDir::toNativeSeparators(path1);
+                QString path2 = dir.absoluteFilePath(subdir + "/Scripts/platformio.exe");
+                if (QFile::exists(path2)) return QDir::toNativeSeparators(path2);
             }
         }
     }
 
-    return false;
+    // 3c. Roaming Python Scripts
+    QString roamingPythonDir = QDir::homePath() + "/AppData/Roaming/Python";
+    QDir rDir(roamingPythonDir);
+    if (rDir.exists()) {
+        QStringList subdirs = rDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString& subdir : subdirs) {
+            if (subdir.toLower().contains("python")) {
+                QString path1 = rDir.absoluteFilePath(subdir + "/Scripts/pio.exe");
+                if (QFile::exists(path1)) return QDir::toNativeSeparators(path1);
+                QString path2 = rDir.absoluteFilePath(subdir + "/Scripts/platformio.exe");
+                if (QFile::exists(path2)) return QDir::toNativeSeparators(path2);
+            }
+        }
+    }
+#endif
+
+    return "";
 }
 
 QStringList MainWindow::platformIOListBoards() {
     QStringList res;
     QProcess p;
-    p.setProgram("platformio");
+    QString pioCmd = getPlatformIOCommand();
+    if (pioCmd.isEmpty()) pioCmd = "platformio";
+    p.setProgram(pioCmd);
     p.setArguments({"boards", "--json-output"});
     p.start();
     if (!p.waitForFinished(8000)) return QStringList({"esp32dev"});
@@ -4508,7 +4526,9 @@ bool MainWindow::showPlatformIOConfigDialog(QString& outBoard, QString& outFrame
         }
         
         QProcess p;
-        p.setProgram("platformio");
+        QString pioCmd = getPlatformIOCommand();
+        if (pioCmd.isEmpty()) pioCmd = "platformio";
+        p.setProgram(pioCmd);
         p.setArguments({"boards", query, "--json-output"});
         p.start();
         if (!p.waitForFinished(5000)) {
