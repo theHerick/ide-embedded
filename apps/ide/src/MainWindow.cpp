@@ -1431,13 +1431,61 @@ void MainWindow::checkPythonAsync() {
         pyProc->deleteLater();
         
         auto res = QMessageBox::question(this, "Ferramentas Faltando", 
-            "Python não foi detectado no sistema.\n\n"
-            "Para fazer compilação e gravação de hardware, você precisa ter o Python instalado e com a opção 'Add Python to PATH' marcada no instalador.\n\n"
-            "Deseja abrir o site oficial do Python agora para baixá-lo?",
+            "O Python (necessário para compilação e gravação de hardware) não foi detectado.\n\n"
+            "Deseja que a IDE tente instalar o Python 3.12 e o PlatformIO de forma 100% automática e silenciosa agora?",
             QMessageBox::Yes | QMessageBox::No);
             
         if (res == QMessageBox::Yes) {
-            QDesktopServices::openUrl(QUrl("https://www.python.org/downloads/"));
+            logMessage("Iniciando instalação silenciosa do Python via winget...", "WARNING");
+            statusBar()->showMessage("Instalando Python automaticamente... Isso pode levar alguns minutos.");
+            
+            QProcess* wingetProc = new QProcess(this);
+            connect(wingetProc, &QProcess::finished, this, [this, wingetProc](int exitCode) {
+                if (exitCode == 0) {
+                    logMessage("Python instalado com sucesso via winget! Iniciando instalação do PlatformIO...", "SUCCESS");
+                    statusBar()->showMessage("Python instalado! Iniciando instalação do PlatformIO...");
+                    
+                    QProcess* installPio = new QProcess(this);
+                    connect(installPio, &QProcess::finished, this, [this, installPio](int pioExit) {
+                        if (pioExit == 0) {
+                            logMessage("PlatformIO instalado com sucesso! Reinicie a IDE para aplicar.", "SUCCESS");
+                            QMessageBox::information(this, "Sucesso", "Python 3.12 e PlatformIO foram instalados automaticamente com sucesso! Por favor, reinicie a IDE para habilitar as funções de gravação.");
+                        } else {
+                            logMessage("Falha ao instalar PlatformIO após instalar Python. Reinicie a IDE e tente rodar 'pip install platformio' no terminal.", "ERROR");
+                        }
+                        installPio->deleteLater();
+                    });
+                    
+                    QString pyPath = QDir::homePath() + "/AppData/Local/Programs/Python";
+                    QDir pyDir(pyPath);
+                    QString pyExe = "python";
+                    if (pyDir.exists()) {
+                        QStringList entries = pyDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+                        for (const QString& entry : entries) {
+                            if (entry.toLower().contains("python")) {
+                                QString testExe = pyDir.absoluteFilePath(entry + "/python.exe");
+                                if (QFile::exists(testExe)) {
+                                    pyExe = testExe;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    installPio->start(pyExe, {"-m", "pip", "install", "-U", "platformio"});
+                } else {
+                    logMessage("Falha na instalação automática do Python via winget.", "ERROR");
+                    auto openWeb = QMessageBox::question(this, "Falha na Instalação", 
+                        "Não foi possível instalar o Python automaticamente via winget.\n\n"
+                        "Deseja abrir a página oficial de downloads do Python para fazer a instalação manual?",
+                        QMessageBox::Yes | QMessageBox::No);
+                    if (openWeb == QMessageBox::Yes) {
+                        QDesktopServices::openUrl(QUrl("https://www.python.org/downloads/"));
+                    }
+                }
+                wingetProc->deleteLater();
+            });
+            
+            wingetProc->start("winget", {"install", "--id", "Python.Python.3.12", "--silent", "--accept-source-agreements", "--accept-package-agreements"});
         }
     };
 
