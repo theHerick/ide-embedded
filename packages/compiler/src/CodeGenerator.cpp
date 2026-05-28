@@ -529,7 +529,22 @@ static QString compileBlocks(
             if (tgtName == "UNKNOWN") tgtName = actionTgt; // Fallback to raw string if it's a variable or pin
 
             if (actionCmd == "HIGH" || actionCmd == "LOW") {
-                res += QString("%1digitalWrite(PIN_%2, %3);\n").arg(indent).arg(tgtName).arg(actionCmd);
+                bool isBuzzer = false;
+                for (auto* c : components) {
+                    QString sName = sanitizedMap ? sanitizedMap->value(c, sanitizeIdentifier(c->name())) : sanitizeIdentifier(c->name());
+                    if (c->componentType() == "buzzer" && (c->name() == actionTgt || c->id() == actionTgt || sName == actionTgt || (QString("PIN_") + sName) == actionTgt)) {
+                        isBuzzer = true;
+                        break;
+                    }
+                }
+                if (isBuzzer && actionCmd == "LOW") {
+                    res += QString("%1noTone(PIN_%2);\n").arg(indent).arg(tgtName);
+                } else {
+                    res += QString("%1digitalWrite(PIN_%2, %3);\n").arg(indent).arg(tgtName).arg(actionCmd);
+                }
+            } else if (actionCmd == "SET_FREQUENCY") {
+                QString freq = block.actionParam.trimmed().isEmpty() ? "1000" : block.actionParam.trimmed();
+                res += QString("%1tone(PIN_%2, %3);\n").arg(indent).arg(tgtName).arg(freq);
             } else if (actionCmd == "TOGGLE") {
                 res += QString("%1digitalWrite(PIN_%2, !digitalRead(PIN_%2));\n").arg(indent).arg(tgtName);
             } else if (actionCmd == "DELAY") {

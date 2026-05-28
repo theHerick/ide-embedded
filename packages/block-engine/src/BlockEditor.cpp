@@ -1196,6 +1196,11 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
                 paramEdit->setPlaceholderText("Salvar resultado na Var...");
                 targetEdit->show();
                 paramEdit->show();
+            } else if (cmd == "SET_FREQUENCY") {
+                targetEdit->setPlaceholderText("Buzzer Alvo");
+                paramEdit->setPlaceholderText("Frequência (Hz)");
+                targetEdit->show();
+                paramEdit->show();
             } else if (cmd == "DELAY") {
                 targetEdit->hide();
                 paramEdit->setPlaceholderText("Milissegundos (ms)");

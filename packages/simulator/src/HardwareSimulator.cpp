@@ -3,6 +3,11 @@
 #include <QDebug>
 #include <QEventLoop>
 #include <QRegularExpression>
+#include <chrono>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 
 HardwareSimulator::HardwareSimulator(QObject* parent) : QObject(parent) {}
@@ -73,11 +78,47 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
                 }
             }
             
+            // Check active buzzers and set active audio frequency
+            int maxFreq = 0;
+            for (auto* comp : m_scene->components()) {
+                if (comp->componentType() == "buzzer") {
+                    auto* buzzer = static_cast<BuzzerItem*>(comp);
+                    if (buzzer->isActive()) {
+                        if (buzzer->isPassive()) {
+                            maxFreq = qMax(maxFreq, buzzer->frequency());
+                        } else {
+                            maxFreq = qMax(maxFreq, 2500); // 2500 Hz default for active buzzer
+                        }
+                    }
+                }
+            }
+            m_activeBuzzerFreq.store(maxFreq);
+            
             checkElectricalIntegrity();
         });
     }
 
     m_simTimer->start(50); // 50ms for more responsive loop simulation
+    
+    // Start background sound thread
+    m_activeBuzzerFreq.store(0);
+    m_soundThreadRunning = true;
+    m_soundThread = std::thread([this]() {
+        #ifdef _WIN32
+        while (m_soundThreadRunning) {
+            int freq = m_activeBuzzerFreq.load();
+            if (freq > 0) {
+                Beep(freq, 50); // Play a 50ms tone
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            }
+        }
+        #else
+        while (m_soundThreadRunning) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+        #endif
+    });
     
     // Trigger ESP32's 'aoIniciar' boot event
     for (auto* comp : m_scene->components()) {
@@ -170,6 +211,12 @@ void HardwareSimulator::updateEventStorage(const QMap<QString, QVector<EventLogi
 }
 
 void HardwareSimulator::stopSimulation() {
+    m_soundThreadRunning = false;
+    m_activeBuzzerFreq.store(0);
+    if (m_soundThread.joinable()) {
+        m_soundThread.join();
+    }
+
     m_isRunning = false;
     m_motorSpeeds.clear();
     if (m_simTimer) {
@@ -648,6 +695,31 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                                 }, Qt::QueuedConnection);
                             }
                         }
+                    }
+                }
+            } else if (param == "SET_FREQUENCY") {
+                ComponentItem* comp = findComponent(targetId);
+                if (comp && comp->componentType() == "buzzer") {
+                    auto* buzzer = static_cast<BuzzerItem*>(comp);
+                    int freq = 1000;
+                    QString freqStr = block.actionParam.trimmed();
+                    if (m_simVariables.contains(freqStr)) {
+                        freq = m_simVariables[freqStr].toInt();
+                    } else {
+                        bool ok;
+                        int val = freqStr.toInt(&ok);
+                        if (ok) freq = val;
+                    }
+                    if (freq <= 0) freq = 1000;
+                    buzzer->setFrequency(freq);
+                    
+                    bool wasActive = buzzer->isActive();
+                    buzzer->setActive(true);
+                    emit pinStateChanged(comp->id(), "1", true);
+                    if (!wasActive) {
+                        QMetaObject::invokeMethod(this, [this, buzzer]() {
+                            triggerComponentEvent(buzzer->id(), "aoTocar");
+                        }, Qt::QueuedConnection);
                     }
                 }
             } else if (param == "ROTATE_MOTOR") {

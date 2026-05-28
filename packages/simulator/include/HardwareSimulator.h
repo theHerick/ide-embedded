@@ -7,11 +7,20 @@
 #include "WorkspaceScene.h"
 #include "BlockEditor.h"
 
+#include <thread>
+#include <atomic>
+
 class HardwareSimulator : public QObject {
     Q_OBJECT
 public:
     explicit HardwareSimulator(QObject* parent = nullptr);
-    ~HardwareSimulator() = default;
+    ~HardwareSimulator() {
+        m_soundThreadRunning = false;
+        m_activeBuzzerFreq = 0;
+        if (m_soundThread.joinable()) {
+            m_soundThread.join();
+        }
+    }
 
     void startSimulation(WorkspaceScene* scene, const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage);
     void stopSimulation();
@@ -62,4 +71,8 @@ private:
     ComponentItem* findComponent(const QString& target);
     
     void checkElectricalIntegrity();
+
+    std::thread m_soundThread;
+    std::atomic<bool> m_soundThreadRunning{false};
+    std::atomic<int> m_activeBuzzerFreq{0};
 };
