@@ -2190,6 +2190,15 @@ QString CodeGenerator::generateArduinoCode(
         code += "  }\n";
         code += "  server.send(200, \"text/plain\", \"OK\");\n";
         code += "}\n\n";
+        
+        code += "// --- INICIALIZADOR DO WEB DASHBOARD ---\n";
+        code += "void setupWebDashboard() {\n";
+        code += "  server.on(\"/\", handleRoot);\n";
+        code += "  server.on(\"/data\", handleData);\n";
+        code += "  server.on(\"/event\", HTTP_POST, handleEvent);\n";
+        code += "  server.begin();\n";
+        code += "  Serial.println(\"Web Dashboard iniciado na porta 80\");\n";
+        code += "}\n\n";
     }
 
     code += "void setup() {\n";
@@ -2278,10 +2287,7 @@ QString CodeGenerator::generateArduinoCode(
     
     if (webPageData.value("enabled").toBool()) {
         code += "    // Inicializa Web Server do Dashboard\n";
-        code += "    server.on(\"/\", handleRoot);\n";
-        code += "    server.on(\"/data\", handleData);\n";
-        code += "    server.on(\"/event\", HTTP_POST, handleEvent);\n";
-        code += "    server.begin();\n";
+        code += "    setupWebDashboard();\n";
     }
     
     code += "}\n\n";
@@ -2289,7 +2295,7 @@ QString CodeGenerator::generateArduinoCode(
     // 5. Loop function (handling Button click events and LED triggers)
     code += "void loop() {\n";
     if (webPageData.value("enabled").toBool()) {
-        code += "    server.handleClient();\n";
+        code += "    server.handleClient(); // Processa requisições do Web Dashboard\n";
         
         QJsonArray elements = webPageData["elements"].toArray();
         for (int i = 0; i < elements.size(); ++i) {
