@@ -1433,6 +1433,12 @@ QString CodeGenerator::generateArduinoCode(
                 code += QString("String _webFormat_%1_color = \"%2\";\n").arg(id).arg(fc);
                 code += QString("String _webFormat_%1_size = \"%2px\";\n").arg(id).arg(fs);
                 code += QString("String _webFormat_%1_weight = \"%2\";\n").arg(id).arg(fb ? "bold" : "normal");
+                
+                QString boundVar = el["boundVar"].toString();
+                if (boundVar.isEmpty()) {
+                    QString defaultText = el["text"].toString();
+                    code += QString("String %1 = \"%2\";\n").arg(id).arg(defaultText);
+                }
             }
         }
     }
@@ -2115,13 +2121,13 @@ QString CodeGenerator::generateArduinoCode(
             QString id = el["id"].toString();
             if (type == "Text") {
                 QString boundVar = el["boundVar"].toString();
-                if (!boundVar.isEmpty()) {
-                    if (!firstVar) code += "  json += \",\";\n";
-                    code += QString("  json += \"\\\"%1\\\":\\\"\" + String(%2) + \"\\\"\";\n").arg(id).arg(boundVar);
-                    firstVar = false;
-                }
                 if (!firstVar) code += "  json += \",\";\n";
-                code += QString("  json += \"\\\"%1_color\\\":\\\"\" + _webFormat_%1_color + \"\\\",\";\n").arg(id);
+                if (!boundVar.isEmpty()) {
+                    code += QString("  json += \"\\\"%1\\\":\\\"\" + String(%2) + \"\\\"\";\n").arg(id).arg(boundVar);
+                } else {
+                    code += QString("  json += \"\\\"%1\\\":\\\"\" + String(%1) + \"\\\"\";\n").arg(id);
+                }
+                code += QString("  json += \",\\\"%1_color\\\":\\\"\" + _webFormat_%1_color + \"\\\",\";\n").arg(id);
                 code += QString("  json += \"\\\"%1_size\\\":\\\"\" + _webFormat_%1_size + \"\\\",\";\n").arg(id);
                 code += QString("  json += \"\\\"%1_weight\\\":\\\"\" + _webFormat_%1_weight + \"\\\"\";\n").arg(id);
                 firstVar = false;
