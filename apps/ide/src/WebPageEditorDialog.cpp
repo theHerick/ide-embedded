@@ -20,6 +20,60 @@
 #include <QAbstractItemView>
 #include <QTimer>
 
+#include <QDialogButtonBox>
+#include <QLabel>
+
+// Dialog for selecting multiple variables
+class MultiVarSelectionDialog : public QDialog {
+public:
+    MultiVarSelectionDialog(const QStringList& allVars, const QString& currentBound, QWidget* parent = nullptr) 
+        : QDialog(parent) 
+    {
+        setWindowTitle("Vincular Múltiplas Variáveis");
+        setMinimumWidth(300);
+        QVBoxLayout* layout = new QVBoxLayout(this);
+        
+        QLabel* lbl = new QLabel("Selecione as variáveis para exibir no gráfico:");
+        layout->addWidget(lbl);
+        
+        QListWidget* listWidget = new QListWidget(this);
+        listWidget->setStyleSheet(
+            "QListWidget { border: 1px solid #CBD5E1; border-radius: 4px; padding: 4px; outline: none; }"
+            "QListWidget::item { padding: 4px; border-bottom: 1px solid #F1F5F9; }"
+        );
+        
+        QStringList currentList = currentBound.split(",", Qt::SkipEmptyParts);
+        for (QString& s : currentList) s = s.trimmed();
+        
+        for (const QString& var : allVars) {
+            QListWidgetItem* item = new QListWidgetItem(var, listWidget);
+            item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+            item->setCheckState(currentList.contains(var) ? Qt::Checked : Qt::Unchecked);
+        }
+        layout->addWidget(listWidget);
+        
+        QDialogButtonBox* btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+        connect(btnBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+        connect(btnBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+        layout->addWidget(btnBox);
+        
+        m_list = listWidget;
+    }
+    
+    QString getSelectedVars() const {
+        QStringList selected;
+        for (int i = 0; i < m_list->count(); ++i) {
+            if (m_list->item(i)->checkState() == Qt::Checked) {
+                selected << m_list->item(i)->text();
+            }
+        }
+        return selected.join(", ");
+    }
+    
+private:
+    QListWidget* m_list;
+};
+
 // Custom Scene to handle double click for quick search
 class WebScene : public QGraphicsScene {
 public:
@@ -64,9 +118,10 @@ protected:
                 
                 if (type == "Chart") {
                     menu.addAction("Vincular Múltiplas Variáveis", dialog, [this, webItem](){
-                        bool ok;
-                        QString var = QInputDialog::getText(nullptr, "Múltiplas Variáveis", "Nomes separados por vírgula:", QLineEdit::Normal, webItem->boundVar(), &ok);
-                        if (ok) webItem->setBoundVar(var);
+                        MultiVarSelectionDialog varDlg(dialog->getAvailableVars(), webItem->boundVar(), dialog);
+                        if (varDlg.exec() == QDialog::Accepted) {
+                            webItem->setBoundVar(varDlg.getSelectedVars());
+                        }
                     });
                 } else if (type == "Button") {
                     menu.addAction("Editar Evento: Ao Clicar", dialog, [this, webItem](){
@@ -166,7 +221,11 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     
     QHBoxLayout* bottomLayout = new QHBoxLayout();
     QPushButton* btnSave = new QPushButton("Salvar e Fechar");
-    connect(btnSave, &QPushButton::clicked, this, &WebPageEditorDialog::saveAndClose);
+    btnSave->setStyleSheet(
+        "QPushButton { background-color: #10B981; color: white; border: none; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #059669; }"
+    );
+    connect(btnSave, &QPushButton::clicked, this, [this](){ accept(); });
     bottomLayout->addStretch();
     bottomLayout->addWidget(btnSave);
     
@@ -209,7 +268,7 @@ void WebPageEditorDialog::addElement(const QString& type, const QPointF& pos) {
     m_scene->addItem(item);
 }
 
-void WebPageEditorDialog::saveAndClose() {
+void WebPageEditorDialog::done(int r) {
     m_data["enabled"] = m_enableSwitch->isChecked();
     m_data["orientation"] = m_orientationCombo->currentIndex();
     
@@ -221,13 +280,13 @@ void WebPageEditorDialog::saveAndClose() {
     }
     m_data["elements"] = newElements;
     
-    accept();
+    QDialog::done(r);
 }
 
 void WebPageEditorDialog::requestEditEvent(const QString& compId, const QString& eventName) {
     m_editEventCompId = compId;
     m_editEventName = eventName;
-    saveAndClose();
+    accept();
 }
 
 // Stubs for header slots

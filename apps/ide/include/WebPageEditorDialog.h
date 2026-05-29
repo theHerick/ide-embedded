@@ -17,6 +17,9 @@ public:
 
     void addElement(const QString& type, const QPointF& pos = QPointF(100, 100));
     void showQuickSearch(const QPointF& scenePos, const QPoint& globalPos);
+    
+    // Override done to ensure data is always saved when dialog is closed (even via X)
+    void done(int r) override;
 
     QString getEditEventCompId() const { return m_editEventCompId; }
     QString getEditEventName() const { return m_editEventName; }
@@ -28,7 +31,6 @@ public:
     QStringList getAvailableVars() const { return m_availableVars; }
 
 private slots:
-    void saveAndClose();
     void handleDoubleClick(const QPoint& pos);
     void showContextMenu(const QPoint& pos);
 
