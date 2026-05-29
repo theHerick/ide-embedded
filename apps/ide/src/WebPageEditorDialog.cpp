@@ -15,73 +15,9 @@
 
 #include <QListWidget>
 
-// Custom Popup for Quick Search
-class WebQuickSearchPopup : public QWidget {
-public:
-    WebQuickSearchPopup(WebPageEditorDialog* dlg, const QPointF& sPos, const QPoint& gPos) : QWidget(nullptr, Qt::Popup | Qt::FramelessWindowHint), dialog(dlg), scenePos(sPos) {
-        setAttribute(Qt::WA_DeleteOnClose);
-        
-        QVBoxLayout* layout = new QVBoxLayout(this);
-        layout->setContentsMargins(0, 0, 0, 0);
-        layout->setSpacing(0);
-        
-        QLineEdit* searchEdit = new QLineEdit(this);
-        searchEdit->setPlaceholderText("Busca rápida...");
-        searchEdit->setStyleSheet(
-            "QLineEdit { "
-            "  background: rgba(255, 255, 255, 0.98); "
-            "  border: 2px solid #BFDBFE; "
-            "  border-radius: 8px 8px 0 0; "
-            "  color: #0F172A; "
-            "  font-family: 'Segoe UI', Arial, sans-serif; "
-            "  font-size: 12px; "
-            "  font-weight: 500; "
-            "  padding: 6px 12px; "
-            "}"
-        );
-        layout->addWidget(searchEdit);
-        
-        QListWidget* listWidget = new QListWidget(this);
-        listWidget->setStyleSheet(
-            "QListWidget { "
-            "  background: #FFFFFF; "
-            "  border: 1px solid #BFDBFE; "
-            "  border-top: none; "
-            "  border-radius: 0 0 8px 8px; "
-            "  outline: none; "
-            "  font-family: 'Segoe UI', Arial, sans-serif; "
-            "  font-size: 11px; "
-            "  color: #334155; "
-            "}"
-            "QListWidget::item { padding: 8px 12px; border-bottom: 1px solid #F1F5F9; }"
-            "QListWidget::item:selected { background: #EEF2FF; color: #4F46E5; font-weight: bold; border-left: 3px solid #4F46E5; }"
-        );
-        listWidget->addItems({"Adicionar Texto", "Adicionar Botão", "Adicionar Input", "Adicionar Gráfico"});
-        layout->addWidget(listWidget);
-        
-        setGeometry(gPos.x(), gPos.y(), 200, 180);
-        
-        connect(searchEdit, &QLineEdit::textChanged, this, [listWidget](const QString& text) {
-            for (int i = 0; i < listWidget->count(); ++i) {
-                QListWidgetItem* item = listWidget->item(i);
-                item->setHidden(!item->text().contains(text, Qt::CaseInsensitive));
-            }
-        });
-        
-        connect(listWidget, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
-            if (item->text() == "Adicionar Texto") dialog->addElement("Text", scenePos);
-            else if (item->text() == "Adicionar Botão") dialog->addElement("Button", scenePos);
-            else if (item->text() == "Adicionar Input") dialog->addElement("Input", scenePos);
-            else if (item->text() == "Adicionar Gráfico") dialog->addElement("Chart", scenePos);
-            close();
-        });
-        
-        searchEdit->setFocus();
-    }
-private:
-    WebPageEditorDialog* dialog;
-    QPointF scenePos;
-};
+#include <QCompleter>
+#include <QAbstractItemView>
+#include <QTimer>
 
 // Custom Scene to handle double click for quick search
 class WebScene : public QGraphicsScene {
@@ -90,7 +26,9 @@ public:
 protected:
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override {
         if (!itemAt(event->scenePos(), QTransform())) {
-            dialog->showQuickSearch(event->scenePos(), event->screenPos());
+            // Map scene pos to view pos
+            QPoint viewPos = dialog->getView()->mapFromScene(event->scenePos());
+            dialog->showQuickSearch(event->scenePos(), viewPos);
         } else {
             QGraphicsScene::mouseDoubleClickEvent(event);
         }
@@ -242,7 +180,101 @@ void WebPageEditorDialog::requestEditEvent(const QString& compId, const QString&
 void WebPageEditorDialog::handleDoubleClick(const QPoint&) {}
 void WebPageEditorDialog::showContextMenu(const QPoint&) {}
 
-void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint& globalPos) {
-    WebQuickSearchPopup* popup = new WebQuickSearchPopup(this, scenePos, globalPos);
-    popup->show();
+void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint& viewPos) {
+    if (m_view->viewport()->findChild<QLineEdit*>("floatingSearchBoxWeb")) {
+        return;
+    }
+
+    QLineEdit* searchEdit = new QLineEdit(m_view->viewport());
+    searchEdit->setObjectName("floatingSearchBoxWeb");
+    searchEdit->setPlaceholderText("Adicionar componente...");
+    searchEdit->setStyleSheet(
+        "QLineEdit#floatingSearchBoxWeb { "
+        "  background: #FBFBFB; "
+        "  border: 1px solid #E6EEF3; "
+        "  border-radius: 8px; "
+        "  color: #0F172A; "
+        "  font-family: 'Segoe UI', Arial, sans-serif; "
+        "  font-size: 12px; "
+        "  font-weight: 500; "
+        "  padding: 6px 12px; "
+        "  min-width: 180px; "
+        "}"
+    );
+
+    searchEdit->adjustSize();
+    int w = searchEdit->width();
+    int h = searchEdit->height();
+
+    // Bound coordinates to viewport boundaries
+    int x = qMax(10, qMin(viewPos.x() - w/2, m_view->viewport()->width() - w - 10));
+    int y = qMax(10, qMin(viewPos.y() - h/2, m_view->viewport()->height() - h - 10));
+
+    searchEdit->setGeometry(x, y, w, h);
+    searchEdit->show();
+    searchEdit->raise();
+    searchEdit->setFocus(Qt::OtherFocusReason);
+
+    QStringList componentsList;
+    componentsList << "Texto" << "Botão" << "Gráfico";
+
+    QCompleter* completer = new QCompleter(componentsList, searchEdit);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    completer->setFilterMode(Qt::MatchContains);
+    completer->setCompletionMode(QCompleter::PopupCompletion);
+
+    completer->popup()->setStyleSheet(
+        "QAbstractItemView { "
+        "  background-color: #FBFBFB; "
+        "  border: 1px solid #E6EEF3; "
+        "  border-radius: 8px; "
+        "  color: #0F172A; "
+        "  padding: 4px; "
+        "  font-family: 'Segoe UI', Arial, sans-serif; "
+        "  font-size: 12px; "
+        "  font-weight: 500; "
+        "}"
+        "QAbstractItemView::item { "
+        "  padding: 6px 12px; "
+        "  border-radius: 4px; "
+        "  color: #0F172A; "
+        "}"
+        "QAbstractItemView::item:hover { "
+        "  background-color: #EEF2FF; "
+        "  color: #1D4ED8; "
+        "}"
+        "QAbstractItemView::item:selected { "
+        "  background-color: #93C5FD; "
+        "  color: white; "
+        "}"
+    );
+    searchEdit->setCompleter(completer);
+
+    QTimer::singleShot(50, searchEdit, [completer]() {
+        completer->complete();
+    });
+
+    auto handleAddition = [this, searchEdit, scenePos](const QString& textVal) {
+        if (!searchEdit || searchEdit->property("processed").toBool()) return;
+        searchEdit->setProperty("processed", true);
+
+        QString text = textVal.trimmed();
+        if (text == "Texto") addElement("Text", scenePos);
+        else if (text == "Botão") addElement("Button", scenePos);
+        else if (text == "Gráfico") addElement("Chart", scenePos);
+
+        searchEdit->deleteLater();
+    };
+
+    connect(completer, static_cast<void(QCompleter::*)(const QString&)>(&QCompleter::activated), searchEdit, handleAddition);
+    connect(searchEdit, &QLineEdit::returnPressed, searchEdit, [handleAddition, searchEdit]() {
+        handleAddition(searchEdit->text());
+    });
+
+    // Close when losing focus
+    connect(searchEdit, &QLineEdit::editingFinished, searchEdit, [searchEdit]() {
+        if (!searchEdit->property("processed").toBool()) {
+            QTimer::singleShot(100, searchEdit, &QObject::deleteLater);
+        }
+    });
 }

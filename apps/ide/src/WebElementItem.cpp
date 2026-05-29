@@ -24,7 +24,24 @@ WebElementItem::WebElementItem(const QJsonObject& data, QGraphicsItem* parent)
     setPos(x, y);
 
     m_textItem = new QGraphicsTextItem(this);
-    m_textItem->setDefaultTextColor(Qt::white);
+    
+    QFont f = m_textItem->font();
+    if (m_type == "Text") {
+        f.setPixelSize(16);
+        f.setBold(true);
+    } else {
+        f.setBold(true);
+    }
+    m_textItem->setFont(f);
+    
+    if (m_type == "Button") {
+        m_textItem->setDefaultTextColor(Qt::white);
+    } else if (m_type == "Text") {
+        m_textItem->setDefaultTextColor(QColor("#01579b"));
+    } else if (m_type == "Chart") {
+        m_textItem->setDefaultTextColor(QColor("#0288d1"));
+    }
+    
     setText(m_text);
 }
 
@@ -67,40 +84,40 @@ void WebElementItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
     painter->setRenderHint(QPainter::Antialiasing);
     QRectF r = rect();
     
-    // Frutiger Aero style
-    QLinearGradient grad(0, 0, 0, r.height());
-    if (m_type == "Button") {
-        grad.setColorAt(0, QColor(90, 180, 255));
-        grad.setColorAt(1, QColor(40, 100, 200));
-    } else if (m_type == "Text") {
-        grad.setColorAt(0, QColor(100, 100, 100, 150));
-        grad.setColorAt(1, QColor(50, 50, 50, 150));
-    } else if (m_type == "Input") {
-        grad.setColorAt(0, QColor(255, 255, 255));
-        grad.setColorAt(1, QColor(220, 220, 220));
-        m_textItem->setDefaultTextColor(Qt::black);
-    } else if (m_type == "Chart") {
-        grad.setColorAt(0, QColor(100, 200, 100));
-        grad.setColorAt(1, QColor(40, 140, 40));
-    }
-    
-    painter->setBrush(grad);
-    QPen pen(Qt::white, 2);
+    QPen pen(Qt::NoPen);
     if (isSelected()) {
-        pen.setColor(Qt::yellow);
-        pen.setStyle(Qt::DashLine);
+        pen = QPen(Qt::yellow, 2, Qt::DashLine);
     }
-    painter->setPen(pen);
     
-    painter->drawRoundedRect(r, 10, 10);
-    
-    // Glossy highlight
-    QLinearGradient gloss(0, 0, 0, r.height()/2);
-    gloss.setColorAt(0, QColor(255, 255, 255, 100));
-    gloss.setColorAt(1, QColor(255, 255, 255, 0));
-    painter->setBrush(gloss);
-    painter->setPen(Qt::NoPen);
-    painter->drawRoundedRect(QRectF(r.x(), r.y(), r.width(), r.height()/2), 10, 10);
+    if (m_type == "Button") {
+        QLinearGradient grad(0, 0, 0, r.height());
+        grad.setColorAt(0, QColor("#4fc3f7"));
+        grad.setColorAt(1, QColor("#0288d1"));
+        painter->setBrush(grad);
+        if (!isSelected()) painter->setPen(Qt::NoPen);
+        else painter->setPen(pen);
+        painter->drawRoundedRect(r, r.height()/2, r.height()/2);
+        
+        // Glossy highlight
+        QLinearGradient gloss(0, 0, 0, r.height()/2);
+        gloss.setColorAt(0, QColor(255, 255, 255, 100));
+        gloss.setColorAt(1, QColor(255, 255, 255, 0));
+        painter->setBrush(gloss);
+        painter->setPen(Qt::NoPen);
+        painter->drawRoundedRect(QRectF(r.x(), r.y(), r.width(), r.height()/2), r.height()/2, r.height()/2);
+        
+    } else if (m_type == "Text") {
+        painter->setBrush(Qt::NoBrush);
+        if (isSelected()) painter->setPen(pen);
+        else painter->setPen(Qt::NoPen);
+        painter->drawRect(r); // Just for selection bounding box
+        
+    } else if (m_type == "Chart") {
+        painter->setBrush(QColor(255, 255, 255, 204));
+        if (!isSelected()) painter->setPen(QPen(QColor("#4fc3f7"), 1));
+        else painter->setPen(pen);
+        painter->drawRoundedRect(r, 10, 10);
+    }
 }
 
 void WebElementItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) {

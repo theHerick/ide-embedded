@@ -19,6 +19,8 @@ public:
 
     QString getEditEventCompId() const { return m_editEventCompId; }
     QString getEditEventName() const { return m_editEventName; }
+
+    QGraphicsView* getView() const { return m_view; }
     
     void requestEditEvent(const QString& compId, const QString& eventName);
 
