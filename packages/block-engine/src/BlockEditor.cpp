@@ -854,6 +854,18 @@ void BlockEditor::addBlock(const QString& type) {
                 b.actionCommand = "WIFI_CONNECT";
                 b.actionTarget = "MinhaRede";
                 b.actionParam = "12345678";
+            } else if (type == "formatWebColor") {
+                b.actionCommand = "FORMAT_WEB_COLOR";
+                b.actionTarget = "texto_1";
+                b.actionParam = "#ff0000";
+            } else if (type == "formatWebSize") {
+                b.actionCommand = "FORMAT_WEB_SIZE";
+                b.actionTarget = "texto_1";
+                b.actionParam = "24";
+            } else if (type == "formatWebBold") {
+                b.actionCommand = "FORMAT_WEB_BOLD";
+                b.actionTarget = "texto_1";
+                b.actionParam = "1";
             } else {
                 b.actionCommand = "HIGH";
             }
@@ -1802,6 +1814,9 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
                          << "Serial Print (Escrever na Serial)"
                          << "Criar WiFi (Ponto de Acesso AP)"
                          << "Conectar WiFi"
+                         << "Formatar Cor Web (Alterar cor de texto)"
+                         << "Formatar Tamanho Web (Alterar tamanho de texto)"
+                         << "Formatar Negrito Web (Alterar negrito de texto)"
                          << "eventCreate (Criar Evento Customizado)";
         }
     }
@@ -1927,6 +1942,14 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             addBlock("elseif");
         } else if (text.contains("sen") || text.contains("else")) {
             addBlock("else");
+        } else if (text.contains("formatar cor") || text.contains("cor web")) {
+            addBlock("formatWebColor");
+        } else if (text.contains("formatar tamanho") || text.contains("tamanho web")) {
+            addBlock("formatWebSize");
+        } else if (text.contains("formatar negrito") || text.contains("negrito web")) {
+            addBlock("formatWebBold");
+        } else if (text.contains("formatar")) {
+            addBlock("formatWebColor"); // Default fallback for generic 'formatar'
         } else if (text.contains("condi") || text.contains("se ") || text == "se" || text.split(" ").contains("if")) {
             addConditionBlock();
         } else if (text.contains("repetir para") || text.contains("para ") || text == "para" || text.contains("for")) {
