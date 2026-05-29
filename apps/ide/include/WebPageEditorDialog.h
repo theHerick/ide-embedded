@@ -20,6 +20,8 @@ public:
     
     // Override done to ensure data is always saved when dialog is closed (even via X)
     void done(int r) override;
+    
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
     QString getEditEventCompId() const { return m_editEventCompId; }
     QString getEditEventName() const { return m_editEventName; }

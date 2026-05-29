@@ -18,6 +18,9 @@
 
 #include <QCompleter>
 #include <QAbstractItemView>
+#include <QKeyEvent>
+#include <QPointer>
+#include <QTimer>
 #include <QTimer>
 
 #include <QDialogButtonBox>
@@ -215,7 +218,13 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     
     m_view = new QGraphicsView(m_scene);
     m_view->setRenderHint(QPainter::Antialiasing);
-    m_view->setBackgroundBrush(QColor(230, 240, 250)); // Frutiger aero light blue background
+    
+    QLinearGradient aeroGradient(0, 0, 0, 1000);
+    aeroGradient.setColorAt(0.0, QColor(195, 235, 255)); // Light sky blue
+    aeroGradient.setColorAt(0.4, QColor(140, 205, 245)); // Glossy mid blue
+    aeroGradient.setColorAt(0.41, QColor(115, 185, 235)); // Glossy sharp drop
+    aeroGradient.setColorAt(1.0, QColor(170, 240, 195)); // Light grass green
+    m_view->setBackgroundBrush(QBrush(aeroGradient));
     
     mainLayout->addWidget(m_view);
     
@@ -238,6 +247,28 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
 }
 
 WebPageEditorDialog::~WebPageEditorDialog() {}
+
+bool WebPageEditorDialog::eventFilter(QObject* watched, QEvent* event) {
+    if (watched->objectName() == "floatingSearchBoxWeb") {
+        if (event->type() == QEvent::KeyPress) {
+            auto* keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_Escape) {
+                watched->deleteLater();
+                return true;
+            }
+        } else if (event->type() == QEvent::FocusOut) {
+            QLineEdit* edit = qobject_cast<QLineEdit*>(watched);
+            if (edit) {
+                QPointer<QLineEdit> guardedEdit(edit);
+                QTimer::singleShot(150, this, [guardedEdit]() {
+                    if (guardedEdit) guardedEdit->deleteLater();
+                });
+            }
+            return true;
+        }
+    }
+    return QDialog::eventFilter(watched, event);
+}
 
 void WebPageEditorDialog::rebuildScene() {
     for (const QJsonValue& val : m_elements) {
@@ -303,14 +334,14 @@ void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint&
     searchEdit->setPlaceholderText("Adicionar componente...");
     searchEdit->setStyleSheet(
         "QLineEdit#floatingSearchBoxWeb { "
-        "  background: #FBFBFB; "
-        "  border: 1px solid #E6EEF3; "
-        "  border-radius: 8px; "
-        "  color: #0F172A; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgba(255, 255, 255, 0.95), stop:0.48 rgba(235, 248, 255, 0.9), stop:0.5 rgba(200, 235, 255, 0.95), stop:1 rgba(185, 230, 250, 0.95)); "
+        "  border: 2px solid rgba(130, 190, 230, 0.8); "
+        "  border-radius: 12px; "
+        "  color: #003050; "
         "  font-family: 'Segoe UI', Arial, sans-serif; "
-        "  font-size: 12px; "
-        "  font-weight: 500; "
-        "  padding: 6px 12px; "
+        "  font-size: 13px; "
+        "  font-weight: 600; "
+        "  padding: 8px 14px; "
         "  min-width: 180px; "
         "}"
     );
@@ -327,6 +358,7 @@ void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint&
     searchEdit->show();
     searchEdit->raise();
     searchEdit->setFocus(Qt::OtherFocusReason);
+    searchEdit->installEventFilter(this);
 
     QStringList componentsList;
     componentsList << "Texto" << "Botão" << "Gráfico";
@@ -338,27 +370,27 @@ void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint&
 
     completer->popup()->setStyleSheet(
         "QAbstractItemView { "
-        "  background-color: #FBFBFB; "
-        "  border: 1px solid #E6EEF3; "
-        "  border-radius: 8px; "
-        "  color: #0F172A; "
+        "  background-color: rgba(255, 255, 255, 0.95); "
+        "  border: 2px solid rgba(130, 190, 230, 0.8); "
+        "  border-radius: 10px; "
+        "  color: #003050; "
         "  padding: 4px; "
         "  font-family: 'Segoe UI', Arial, sans-serif; "
         "  font-size: 12px; "
-        "  font-weight: 500; "
+        "  font-weight: 600; "
         "}"
         "QAbstractItemView::item { "
-        "  padding: 6px 12px; "
-        "  border-radius: 4px; "
-        "  color: #0F172A; "
+        "  padding: 8px 12px; "
+        "  border-radius: 6px; "
+        "  color: #003050; "
         "}"
         "QAbstractItemView::item:hover { "
-        "  background-color: #EEF2FF; "
-        "  color: #1D4ED8; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #EAF5FF, stop:1 #D4EAFF); "
+        "  color: #0050A0; "
         "}"
         "QAbstractItemView::item:selected { "
-        "  background-color: #93C5FD; "
-        "  color: white; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #BAE0FF, stop:1 #80C8FF); "
+        "  color: #003050; "
         "}"
     );
     searchEdit->setCompleter(completer);
