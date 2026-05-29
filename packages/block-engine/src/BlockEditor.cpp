@@ -711,6 +711,25 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
         def.description = QString("Motor / Atuador de Rotação (%1)").arg(mot);
         m_hardwareScopeVariables.append(def);
     }
+    
+    // Inject special variables for Web Page Dashboard events
+    if (compId.startsWith("webtext_")) {
+        VariableDef def;
+        def.name = "Texto";
+        def.type = VarType::STRING;
+        def.scope = VarScope::LOCAL_EVENT;
+        def.initialValue = "\"\"";
+        def.description = "Variável interna do elemento Web Text";
+        m_hardwareScopeVariables.append(def);
+    } else if (compId.startsWith("webinput_")) {
+        VariableDef def;
+        def.name = "Valor";
+        def.type = VarType::STRING;
+        def.scope = VarScope::LOCAL_EVENT;
+        def.initialValue = "\"\"";
+        def.description = "Valor digitado no campo de texto";
+        m_hardwareScopeVariables.append(def);
+    }
 
     QString key = QString("%1:%2").arg(compId).arg(eventName);
     if (m_eventBlockStorage.contains(key)) {
@@ -827,6 +846,14 @@ void BlockEditor::addBlock(const QString& type) {
             } else if (type == "delay") {
                 b.actionCommand = "DELAY";
                 b.actionTarget = "1000";
+            } else if (type == "wifiAP") {
+                b.actionCommand = "WIFI_AP";
+                b.actionTarget = "MinhaRede";
+                b.actionParam = "12345678";
+            } else if (type == "wifiConnect") {
+                b.actionCommand = "WIFI_CONNECT";
+                b.actionTarget = "MinhaRede";
+                b.actionParam = "12345678";
             } else {
                 b.actionCommand = "HIGH";
             }
@@ -1150,6 +1177,8 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         cmdCombo->addItem("CALCULAR BATERIA (%)", "CALC_BATTERY");
         cmdCombo->addItem("CHAMAR FUNÇÃO", "CALL_FUNCTION");
         cmdCombo->addItem("RETORNAR VALOR", "RETURN");
+        cmdCombo->addItem("CRIAR PONTO WIFI", "WIFI_AP");
+        cmdCombo->addItem("CONECTAR WIFI", "WIFI_CONNECT");
 
         int cmdIndex = cmdCombo->findData(block.actionCommand);
         if (cmdIndex == -1) {
@@ -1213,6 +1242,11 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
             } else if (cmd == "RETURN") {
                 targetEdit->hide();
                 paramEdit->setPlaceholderText("Valor ou expressão");
+                paramEdit->show();
+            } else if (cmd == "WIFI_AP" || cmd == "WIFI_CONNECT") {
+                targetEdit->setPlaceholderText("Nome da Rede (SSID)");
+                paramEdit->setPlaceholderText("Senha (opcional)");
+                targetEdit->show();
                 paramEdit->show();
             } else {
                 targetEdit->setPlaceholderText("Alvo (Pino / Var)");
@@ -1748,6 +1782,8 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
                          << "Salvar na EEPROM (Persistir estado/variável)"
                          << "Restaurar da EEPROM (Recuperar estado/variável)"
                          << "Serial Print (Escrever na Serial)"
+                         << "Criar WiFi (Ponto de Acesso AP)"
+                         << "Conectar WiFi"
                          << "eventCreate (Criar Evento Customizado)";
         }
     }
@@ -1895,6 +1931,10 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             addBlock("toggle");
         } else if (text.contains("chamar") || text.contains("call function") || text.contains("invocar")) {
             addBlock("callFunction");
+        } else if (text.contains("criar wifi") || text.contains("ap") || text.contains("ponto de acesso")) {
+            addBlock("wifiAP");
+        } else if (text.contains("conectar wifi") || text.contains("wifi")) {
+            addBlock("wifiConnect");
         } else if (text.contains("calcular bateria") || text.contains("bateria") || text.contains("calc bat")) {
             EventLogicBlock b;
             b.id = QUuid::createUuid().toString();

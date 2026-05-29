@@ -75,8 +75,9 @@ private:
     QAction* m_saveAction = nullptr;
     QAction* m_newAction = nullptr;
     QAction* m_openAction = nullptr;
-    QAction* m_undoAction = nullptr;
-    QAction* m_redoAction = nullptr;
+    QAction* m_undoAction;
+    QAction* m_redoAction;
+    QAction* m_webPageAction;
     QAction* m_clearAction = nullptr;
     QAction* m_copyAction = nullptr;
     QAction* m_pasteAction = nullptr;
@@ -85,6 +86,7 @@ private:
     ComponentItem* m_selectedComponent = nullptr;
     QString m_compiledCode;
     QString m_currentProjectPath;
+    QJsonObject m_webPageData; // Store Web Page dashboard settings
     bool m_lastBuildOk = false;
     bool m_isBuilding = false;
 
@@ -100,6 +102,7 @@ private:
     void checkPythonAsync();
     void parseResourceUsage(const QString& line);
     void openEventEditor(ComponentItem* comp, const QString& eventName);
+    void openWebEventEditor(const QString& compId, const QString& eventName);
     void synchronizeLoopBlocks();
     void openComponentCreator();
     void loadToolboxItems();

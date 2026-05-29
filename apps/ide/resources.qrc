@@ -11,5 +11,6 @@
     <file>icons/undo_off.png</file>
     <file>icons/book_cover.png</file>
     <file>icons/pasta.png</file>
+    <file>icons/webPage.ico</file>
 </qresource>
 </RCC>

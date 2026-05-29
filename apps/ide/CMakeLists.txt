@@ -3,9 +3,13 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets SerialPort OPTIONAL_COMPON
 add_executable(ide-embedded WIN32
     include/MainWindow.h
     include/OscilloscopePanel.h
+    include/WebPageEditorDialog.h
+    include/WebElementItem.h
     main.cpp
     src/MainWindow.cpp
     src/OscilloscopePanel.cpp
+    src/WebPageEditorDialog.cpp
+    src/WebElementItem.cpp
     resources.qrc
     resources.rc
 )

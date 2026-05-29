@@ -10,7 +10,8 @@ public:
     static QString generateArduinoCode(
         const QVector<ComponentItem*>& components,
         const QVector<ConnectionCable*>& cables,
-        const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage
+        const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage,
+        const QJsonObject& webPageData = QJsonObject()
     );
 
     static QString compileComponentEvents(

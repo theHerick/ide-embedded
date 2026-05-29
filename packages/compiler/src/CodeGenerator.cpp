@@ -580,6 +580,20 @@ static QString compileBlocks(
                 res += QString("%1%2 = (vADC_%3 * 2.0 / 4.2) * 100.0;\n").arg(indent).arg(destVar).arg(tgtName);
                 res += QString("%1if (%2 > 100.0) %2 = 100.0;\n").arg(indent).arg(destVar);
                 res += QString("%1if (%2 < 0.0) %2 = 0.0;\n").arg(indent).arg(destVar);
+            } else if (actionCmd == "WIFI_AP") {
+                QString ssid = actionTgt.isEmpty() ? "ESP32_Network" : actionTgt;
+                QString pwd = block.actionParam.trimmed();
+                res += QString("%1// Criar Ponto de Acesso (AP)\n").arg(indent);
+                if (pwd.isEmpty() || pwd.length() < 8) {
+                    res += QString("%1WiFi.softAP(\"%2\");\n").arg(indent).arg(ssid);
+                } else {
+                    res += QString("%1WiFi.softAP(\"%2\", \"%3\");\n").arg(indent).arg(ssid).arg(pwd);
+                }
+            } else if (actionCmd == "WIFI_CONNECT") {
+                QString ssid = actionTgt;
+                QString pwd = block.actionParam.trimmed();
+                res += QString("%1// Conectar a rede WiFi\n").arg(indent);
+                res += QString("%1WiFi.begin(\"%2\", \"%3\");\n").arg(indent).arg(ssid).arg(pwd);
             }
         }
         else if (block.type == LogicBlockType::SERIAL_PRINT) {
@@ -1006,7 +1020,8 @@ static QString emitStateVariables(
 QString CodeGenerator::generateArduinoCode(
     const QVector<ComponentItem*>& components,
     const QVector<ConnectionCable*>& cables,
-    const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage
+    const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage,
+    const QJsonObject& webPageData
 ) {
     g_eepromKeys.clear();
     g_eepromKeyTypes.clear();
@@ -1251,6 +1266,11 @@ QString CodeGenerator::generateArduinoCode(
                 }
             }
         }
+    }
+
+    if (webPageData.value("enabled").toBool()) {
+        if (!includesList.contains("#include <WiFi.h>")) includesList.append("#include <WiFi.h>");
+        if (!includesList.contains("#include <WebServer.h>")) includesList.append("#include <WebServer.h>");
     }
 
     if (!includesList.isEmpty()) {
@@ -1887,6 +1907,52 @@ QString CodeGenerator::generateArduinoCode(
         }
     }
 
+    // ── EVENTOS WEB DASHBOARD ─────────────────────────────────────────
+    if (webPageData.value("enabled").toBool()) {
+        QJsonArray elements = webPageData["elements"].toArray();
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            QString id = el["id"].toString();
+            QString type = el["type"].toString();
+            
+            if (type == "Button") {
+                QString eventKey = QString("%1:aoClicar").arg(id);
+                if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
+                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                    if (!eventBody.trimmed().isEmpty()) {
+                        code += QString("void %1_eventAoClicar() {\n").arg(id);
+                        code += eventBody;
+                        code += "}\n\n";
+                    }
+                }
+            } else if (type == "Text") {
+                QString eventKey = QString("%1:aoAtualizar").arg(id);
+                if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
+                    // Create a hidden global string for this text
+                    code += QString("String val_%1 = \"\";\n").arg(id);
+                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                    if (!eventBody.trimmed().isEmpty()) {
+                        code += QString("void %1_eventAoAtualizar() {\n").arg(id);
+                        code += QString("    String Texto = val_%1;\n").arg(id);
+                        code += eventBody;
+                        code += QString("    val_%1 = Texto;\n").arg(id);
+                        code += "}\n\n";
+                    }
+                }
+            } else if (type == "Input") {
+                QString eventKey = QString("%1:aoAlterar").arg(id);
+                if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
+                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                    if (!eventBody.trimmed().isEmpty()) {
+                        code += QString("void %1_eventAoAlterar(String Valor) {\n").arg(id);
+                        code += eventBody;
+                        code += "}\n\n";
+                    }
+                }
+            }
+        }
+    }
+
     // ── EEPROM SETUP ───────────────────────────────────────────
     bool hasEeprom = false;
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
@@ -1903,6 +1969,151 @@ QString CodeGenerator::generateArduinoCode(
     }
 
     // ── SETUP ───────────────────────────────────────────────────
+    if (webPageData.value("enabled").toBool()) {
+        code += "// ── WEB SERVER E DASHBOARD (FRUTIGER AERO) ─────────────\n";
+        code += "WebServer server(80);\n";
+        code += "String getHtmlPage() {\n";
+        code += "  String html = \"<!DOCTYPE html><html><head><meta charset='UTF-8'>\";\n";
+        code += "  html += \"<meta name='viewport' content='width=device-width, initial-scale=1.0'>\";\n";
+        code += "  html += \"<style>\";\n";
+        code += "  html += \"body { margin: 0; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; \";\n";
+        code += "  html += \"background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); min-height: 100vh; }\";\n";
+        code += "  html += \".container { position: relative; width: 100%; height: 80vh; background: rgba(255, 255, 255, 0.4); \";\n";
+        code += "  html += \"border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.8); overflow: hidden; }\";\n";
+        code += "  html += \".elem { position: absolute; }\";\n";
+        code += "  html += \"button.elem { background: linear-gradient(180deg, #4fc3f7 0%, #0288d1 100%); color: white; border: none; border-radius: 30px; \";\n";
+        code += "  html += \"box-shadow: 0 4px 15px rgba(2,136,209,0.4), inset 0 2px 5px rgba(255,255,255,0.5); text-shadow: 0 1px 2px rgba(0,0,0,0.2); \";\n";
+        code += "  html += \"cursor: pointer; font-weight: bold; font-size: 14px; transition: all 0.2s ease; }\";\n";
+        code += "  html += \"button.elem:active { transform: translateY(2px); box-shadow: 0 2px 5px rgba(2,136,209,0.4); }\";\n";
+        code += "  html += \"input.elem { background: rgba(255,255,255,0.7); border: 1px solid #81d4fa; border-radius: 10px; padding: 8px 15px; \";\n";
+        code += "  html += \"box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); outline: none; font-size: 14px; color: #01579b; }\";\n";
+        code += "  html += \"input.elem:focus { border-color: #0288d1; background: rgba(255,255,255,0.9); }\";\n";
+        code += "  html += \".text.elem { font-size: 16px; color: #01579b; font-weight: 600; text-shadow: 0 1px 1px rgba(255,255,255,0.8); }\";\n";
+        code += "  html += \"</style></head><body>\";\n";
+        code += "  html += \"<div class='container'>\";\n";
+        
+        QJsonArray elements = webPageData["elements"].toArray();
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            QString type = el["type"].toString();
+            QString id = el["id"].toString();
+            int x = el["x"].toInt();
+            int y = el["y"].toInt();
+            QString text = el["text"].toString().toHtmlEscaped();
+            QString var = el["boundVar"].toString();
+            
+            if (type == "Text") {
+                code += QString("  html += \"<div class='elem text' style='left:%1px; top:%2px;' id='%2'>%3 <span id='val_%2'></span></div>\";\n")
+                    .arg(x).arg(id).arg(text);
+            } else if (type == "Button") {
+                code += QString("  html += \"<button class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' onclick='sendEvent(\\\"%5\\\")'>%6</button>\";\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(100)).arg(el["height"].toInt(40)).arg(id).arg(text);
+            } else if (type == "Input") {
+                code += QString("  html += \"<input type='text' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' id='%5' value='' onchange='sendVar(\\\"%5\\\", this.value)'>\";\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30)).arg(id);
+            } else if (type == "Chart") {
+                code += QString("  html += \"<div class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px; background:rgba(255,255,255,0.8); border-radius:10px; border:1px solid #4fc3f7; padding:10px; display:flex; align-items:center; justify-content:center; color:#0288d1; font-weight:bold;'>[Gráfico: %5]</div>\";\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(300)).arg(el["height"].toInt(200)).arg(var.isEmpty() ? text : var);
+            }
+        }
+        
+        code += "  html += \"</div>\";\n";
+        code += "  html += \"<script>\";\n";
+        code += "  html += \"function sendEvent(btn) { fetch('/event?btn=' + btn, {method: 'POST'}); }\";\n";
+        code += "  html += \"function sendVar(varName, val) { fetch('/event?var=' + varName + '&val=' + val, {method: 'POST'}); }\";\n";
+        code += "  html += \"setInterval(() => { fetch('/data').then(r=>r.json()).then(d => { \";\n";
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            QString type = el["type"].toString();
+            QString id = el["id"].toString();
+            if (type == "Text") {
+                code += QString("  html += \"if(d.%1 !== undefined) document.getElementById('val_%1').innerText = d.%1; \";\n").arg(id);
+            } else if (type == "Chart" && !el["boundVar"].toString().isEmpty()) {
+                // We'll leave the chart fetching logic empty or minimal for now
+            }
+        }
+        code += "  html += \"}); }, 1000);\";\n";
+        code += "  html += \"</script></body></html>\";\n";
+        code += "  return html;\n";
+        code += "}\n\n";
+        
+        code += "void handleRoot() {\n";
+        code += "  server.send(200, \"text/html\", getHtmlPage());\n";
+        code += "}\n\n";
+        
+        code += "void handleData() {\n";
+        code += "  String json = \"{\";\n";
+        bool firstVar = true;
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            QString type = el["type"].toString();
+            QString id = el["id"].toString();
+            if (type == "Text") {
+                if (!firstVar) code += "  json += \",\";\n";
+                // Output the text variable value
+                code += QString("  json += \"\\\"%1\\\":\\\"\" + val_%1 + \"\\\"\";\n").arg(id);
+                firstVar = false;
+            } else if (type == "Chart") {
+                QString var = el["boundVar"].toString();
+                if (!var.isEmpty()) {
+                    QStringList vars = var.split(",");
+                    for (const QString& v : vars) {
+                        QString trimmed = v.trimmed();
+                        if (trimmed.isEmpty()) continue;
+                        if (!firstVar) code += "  json += \",\";\n";
+                        code += QString("  json += \"\\\"%1\\\":\\\"\" + String(%1) + \"\\\"\";\n").arg(trimmed);
+                        firstVar = false;
+                    }
+                }
+            }
+        }
+        code += "  json += \"}\";\n";
+        code += "  server.send(200, \"application/json\", json);\n";
+        code += "}\n\n";
+        
+        code += "void handleEvent() {\n";
+        code += "  if (server.hasArg(\"btn\")) {\n";
+        code += "    String btn = server.arg(\"btn\");\n";
+        // Call Web Button events
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            if (el["type"].toString() == "Button") {
+                QString id = el["id"].toString();
+                QString eventKey = QString("%1:aoClicar").arg(id);
+                if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
+                    code += QString("    if (btn == \"%1\") { %1_eventAoClicar(); }\n").arg(id);
+                }
+            }
+        }
+        
+        // Call physical button events
+        for (auto* comp : components) {
+            if (comp->componentType() == "button") {
+                QString name = sanitizeIdentifier(comp->name());
+                code += QString("    if (btn == \"%1\") { %1_eventAoClicar(); }\n").arg(name);
+            }
+        }
+        code += "  }\n";
+        code += "  if (server.hasArg(\"var\") && server.hasArg(\"val\")) {\n";
+        code += "    String varName = server.arg(\"var\");\n";
+        code += "    String val = server.arg(\"val\");\n";
+        
+        // Call Web Input events
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            if (el["type"].toString() == "Input") {
+                QString id = el["id"].toString();
+                QString eventKey = QString("%1:aoAlterar").arg(id);
+                if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
+                    code += QString("    if (varName == \"%1\") { %1_eventAoAlterar(val); }\n").arg(id);
+                }
+            }
+        }
+        code += "  }\n";
+        code += "  server.send(200, \"text/plain\", \"OK\");\n";
+        code += "}\n\n";
+    }
+
     code += "void setup() {\n";
     code += "    Serial.begin(115200);\n";
     if (hasEeprom) {
@@ -1986,10 +2197,34 @@ QString CodeGenerator::generateArduinoCode(
             code += compileBlocks(eventBlockStorage[startKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
         }
     }
+    
+    if (webPageData.value("enabled").toBool()) {
+        code += "    // Inicializa Web Server do Dashboard\n";
+        code += "    server.on(\"/\", handleRoot);\n";
+        code += "    server.on(\"/data\", handleData);\n";
+        code += "    server.on(\"/event\", HTTP_POST, handleEvent);\n";
+        code += "    server.begin();\n";
+    }
+    
     code += "}\n\n";
 
     // 5. Loop function (handling Button click events and LED triggers)
     code += "void loop() {\n";
+    if (webPageData.value("enabled").toBool()) {
+        code += "    server.handleClient();\n";
+        
+        QJsonArray elements = webPageData["elements"].toArray();
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            if (el["type"].toString() == "Text") {
+                QString id = el["id"].toString();
+                QString eventKey = QString("%1:aoAtualizar").arg(id);
+                if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
+                    code += QString("    %1_eventAoAtualizar();\n").arg(id);
+                }
+            }
+        }
+    }
 
     // Evento de loop principal do ESP32
     if (esp32) {

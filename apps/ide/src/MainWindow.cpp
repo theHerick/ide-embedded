@@ -3,6 +3,7 @@
 #include "PcbExporter.h"
 #include "CustomComponent.h"
 #include "ComponentCreatorDialog.h"
+#include "WebPageEditorDialog.h"
 #include "ComponentItem.h"
 #include <QMenuBar>
 #include <QToolBar>
@@ -684,8 +685,8 @@ void MainWindow::buildToolbar() {
     // Redo icons: Flip the Undo icons horizontally for consistency
     QImage redoOnImg(":/icons/undo_on.png");
     QImage redoOffImg(":/icons/undo_off.png");
-    QIcon redoOnIcon(QPixmap::fromImage(redoOnImg.mirrored(true, false)));
-    QIcon redoOffIcon(QPixmap::fromImage(redoOffImg.mirrored(true, false)));
+    QIcon redoOnIcon(QPixmap::fromImage(redoOnImg.transformed(QTransform().scale(-1, 1))));
+    QIcon redoOffIcon(QPixmap::fromImage(redoOffImg.transformed(QTransform().scale(-1, 1))));
 
     m_redoAction->setIcon(m_scene->undoStack()->canRedo() ? redoOnIcon : redoOffIcon);
 
@@ -737,6 +738,33 @@ void MainWindow::buildToolbar() {
     connect(pioConfigAction, &QAction::triggered, this, &MainWindow::platformIOConfigTriggered);
 
     toolbar->addSeparator();
+
+    m_webPageAction = toolbar->addAction("");
+    m_webPageAction->setToolTip("Construtor Web Page / Dashboard");
+    m_webPageAction->setIcon(QIcon(":/icons/webPage.ico"));
+    connect(m_webPageAction, &QAction::triggered, this, [this]() {
+        QStringList availableVars;
+        for (auto* item : m_scene->items()) {
+            if (auto* c = dynamic_cast<ComponentItem*>(item)) {
+                if (c->componentType() == "dht22") {
+                    availableVars.append("umidade");
+                    availableVars.append("temperatura");
+                } else if (c->componentType() == "hcsr04") {
+                    availableVars.append("distancia");
+                }
+            }
+        }
+        availableVars.removeDuplicates();
+        
+        WebPageEditorDialog dlg(m_webPageData, availableVars, this);
+        dlg.exec();
+        
+        QString editId = dlg.getEditEventCompId();
+        QString editEvent = dlg.getEditEventName();
+        if (!editId.isEmpty() && !editEvent.isEmpty()) {
+            openWebEventEditor(editId, editEvent);
+        }
+    });
 
     m_clearAction = toolbar->addAction("");
     m_clearAction->setToolTip("Limpar Workspace");
@@ -1002,6 +1030,33 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
 
     // Only open the event editor when explicitly requested (context menu / double-click)
     m_blockEditor->loadEventLogic(comp->id(), eventName, avLeds, avPots, avBuzzers, avMotors, avDhts, avHcsrs);
+    synchronizeLoopBlocks();
+    m_blockEditor->show();
+    m_blockEditor->setEnabled(true);
+}
+
+void MainWindow::openWebEventEditor(const QString& compId, const QString& eventName) {
+    QStringList avLeds, avPots, avBuzzers, avMotors, avDhts, avHcsrs;
+    for (QGraphicsItem* item : m_scene->items()) {
+        auto* c = dynamic_cast<ComponentItem*>(item);
+        if (!c) continue;
+        if (c->componentType() == "esp32") continue;
+        
+        if (c->componentType() == "dht22") avDhts.append(c->name());
+        else if (c->componentType() == "hcsr04") avHcsrs.append(c->name());
+        else if (c->componentType() == "led") avLeds.append(c->name());
+        else if (c->componentType() == "potentiometer") avPots.append(c->name());
+        else if (c->componentType() == "bess") avPots.append(c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name());
+        else if (c->componentType() == "buzzer") avBuzzers.append(c->name());
+        else if (c->componentType() == "motor") avMotors.append(c->name());
+        else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
+            if (custom->category() == "digital_actuator") avLeds.append(custom->name());
+            else if (custom->category() == "analog_input") avPots.append(custom->name());
+            else if (custom->category() == "active_actuator") avBuzzers.append(custom->name());
+        }
+    }
+
+    m_blockEditor->loadEventLogic(compId, eventName, avLeds, avPots, avBuzzers, avMotors, avDhts, avHcsrs);
     synchronizeLoopBlocks();
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
@@ -1556,7 +1611,8 @@ void MainWindow::compileCode() {
     m_compiledCode = CodeGenerator::generateArduinoCode(
         m_scene->components(),
         m_scene->cables(),
-        m_blockEditor->getEventBlockStorage()
+        m_blockEditor->getEventBlockStorage(),
+        m_webPageData
     );
 
     if (m_compiledCode.startsWith("// ERROR:")) {
@@ -1691,6 +1747,7 @@ void MainWindow::clearScene() {
 void MainWindow::newProject() {
     clearScene();
     m_currentProjectPath.clear();
+    m_webPageData = QJsonObject();
     statusBar()->showMessage("Novo projeto iniciado.", 2500);
     logMessage("Novo projeto criado.", "SYSTEM");
 }
@@ -1735,6 +1792,8 @@ bool MainWindow::saveProjectToFile(const QString& filePath) {
         blocks.append(entry);
     }
     root["eventBlocks"] = blocks;
+    
+    root["webPageData"] = m_webPageData;
 
     // Save EEPROM persistent data
     QJsonObject eepromObj;
@@ -1788,6 +1847,8 @@ bool MainWindow::loadProjectFromFile(const QString& filePath) {
         m_scene->clearWorkspace();
         m_scene->blockSignals(prevSceneSignals);
     }
+
+    m_webPageData = root.value("webPageData").toObject();
 
     CustomComponentManager::instance().clearRegistry();
     const QJsonArray customComponents = root["customComponents"].toArray();
@@ -2307,8 +2368,8 @@ void MainWindow::exportLaserPNG() {
                             .arg(previewImage.width()).arg(previewImage.height()));
     };
 
-    connect(cbTracks, &QCheckBox::stateChanged, this, [updatePreview]() { updatePreview(); });
-    connect(cbDrills, &QCheckBox::stateChanged, this, [updatePreview]() { updatePreview(); });
+    connect(cbTracks, &QCheckBox::checkStateChanged, this, [updatePreview]() { updatePreview(); });
+    connect(cbDrills, &QCheckBox::checkStateChanged, this, [updatePreview]() { updatePreview(); });
 
     connect(btnMeasure, &QPushButton::toggled, this, [imgLabel, btnMeasure](bool checked){
         imgLabel->setMeasuring(checked);
