@@ -2134,48 +2134,49 @@ void MathFormulaDialog::buildUI() {
         QString label;
         QString textToInsert;
         QString style; // basic, func, action, clear
+        QString tooltip;
     };
 
     QVector<CalcBtn> buttons = {
-        {"fraction(A,B)", "fraction(,)", "func"},
-        {"sqrt(x)", "sqrt()", "func"},
-        {"integral(A,B,f)", "integral(0,pi,,)", "func"},
-        {"base^exp", "^", "func"},
+        {"a/b", "fraction(,)", "func", "Fração: fraction(numerador, denominador)"},
+        {"√x", "sqrt()", "func", "Raiz Quadrada: sqrt(valor)"},
+        {"∫ dx", "integral(0,pi,,)", "func", "Integral Definida: integral(limite_inferior, limite_superior, expressao)"},
+        {"xʸ", "^", "func", "Potência: base^expoente"},
         
-        {"sin(x)", "sin()", "func"},
-        {"cos(x)", "cos()", "func"},
-        {"tan(x)", "tan()", "func"},
-        {"log(x)", "log()", "func"},
+        {"sin(x)", "sin()", "func", "Seno: sin(angulo)"},
+        {"cos(x)", "cos()", "func", "Cosseno: cos(angulo)"},
+        {"tan(x)", "tan()", "func", "Tangente: tan(angulo)"},
+        {"log(x)", "log()", "func", "Logaritmo Base 10: log(valor)"},
         
-        {"ln(x)", "ln()", "func"},
-        {"abs(x)", "abs()", "func"},
-        {"pi (π)", "pi", "func"},
-        {"X", "X", "func"},
+        {"ln(x)", "ln()", "func", "Logaritmo Natural: ln(valor)"},
+        {"|x|", "abs()", "func", "Valor Absoluto / Módulo: abs(valor)"},
+        {"π", "pi", "func", "Constante Pi (3.14159...)"},
+        {"x", "X", "func", "Variável X"},
         
-        {"(", "(", "basic"},
-        {")", ")", "basic"},
-        {",", ",", "basic"},
-        {"/", "/", "basic"},
+        {"(", "(", "basic", "Parêntese Esquerdo"},
+        {")", ")", "basic", "Parêntese Direito"},
+        {",", ",", "basic", "Separador de Argumentos"},
+        {"/", "/", "basic", "Divisão"},
         
-        {"7", "7", "basic"},
-        {"8", "8", "basic"},
-        {"9", "9", "basic"},
-        {"*", "*", "basic"},
+        {"7", "7", "basic", ""},
+        {"8", "8", "basic", ""},
+        {"9", "9", "basic", ""},
+        {"*", "*", "basic", "Multiplicação"},
         
-        {"4", "4", "basic"},
-        {"5", "5", "basic"},
-        {"6", "6", "basic"},
-        {"-", "-", "basic"},
+        {"4", "4", "basic", ""},
+        {"5", "5", "basic", ""},
+        {"6", "6", "basic", ""},
+        {"-", "-", "basic", "Subtração"},
         
-        {"1", "1", "basic"},
-        {"2", "2", "basic"},
-        {"3", "3", "basic"},
-        {"+", "+", "basic"},
+        {"1", "1", "basic", ""},
+        {"2", "2", "basic", ""},
+        {"3", "3", "basic", ""},
+        {"+", "+", "basic", "Adição"},
         
-        {"0", "0", "basic"},
-        {".", ".", "basic"},
-        {"Backspace", "BACKSPACE", "clear"},
-        {"Limpar", "CLEAR", "clear"}
+        {"0", "0", "basic", ""},
+        {".", ".", "basic", "Ponto Decimal"},
+        {"⌫", "BACKSPACE", "clear", "Apagar último caractere"},
+        {"C", "CLEAR", "clear", "Limpar toda a fórmula"}
     };
 
     int rRow = 0;
@@ -2183,6 +2184,9 @@ void MathFormulaDialog::buildUI() {
     for (const auto& btn : buttons) {
         auto* button = new QPushButton(btn.label, this);
         button->setFixedHeight(36);
+        if (!btn.tooltip.isEmpty()) {
+            button->setToolTip(btn.tooltip);
+        }
         
         if (btn.style == "func") {
             button->setStyleSheet(
@@ -2192,7 +2196,7 @@ void MathFormulaDialog::buildUI() {
                 "  border-radius: 8px; "
                 "  color: #0369A1; "
                 "  font-weight: bold; "
-                "  font-size: 11px; "
+                "  font-size: 13px; "
                 "} "
                 "QPushButton:hover { "
                 "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E0F2FE, stop:0.45 #BAE6FD, stop:0.46 #7DD3FC, stop:1 #38BDF8); "
@@ -2212,7 +2216,7 @@ void MathFormulaDialog::buildUI() {
                 "  border-radius: 8px; "
                 "  color: #991B1B; "
                 "  font-weight: bold; "
-                "  font-size: 11px; "
+                "  font-size: 13px; "
                 "} "
                 "QPushButton:hover { "
                 "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FED7D7, stop:0.45 #FEB2B2, stop:0.46 #FCA5A5, stop:1 #F87171); "
@@ -2232,7 +2236,7 @@ void MathFormulaDialog::buildUI() {
                 "  border-radius: 8px; "
                 "  color: #1E293B; "
                 "  font-weight: bold; "
-                "  font-size: 12px; "
+                "  font-size: 13px; "
                 "} "
                 "QPushButton:hover { "
                 "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F8FAFC, stop:0.45 #F1F5F9, stop:0.46 #E2E8F0, stop:1 #CBD5E1); "
