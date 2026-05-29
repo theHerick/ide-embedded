@@ -143,6 +143,12 @@ protected:
                     menu.addAction("Editar Formatação", dialog, [this, webItem](){
                         QDialog fmtDlg(dialog);
                         fmtDlg.setWindowTitle("Formatação de Texto");
+                        fmtDlg.setStyleSheet(
+                            "QDialog { background: #F8F9FA; }"
+                            "QLabel, QCheckBox { color: #1E293B; font-weight: bold; font-size: 13px; }"
+                            "QSpinBox, QLineEdit { background: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1; padding: 5px; border-radius: 6px; }"
+                            "QSpinBox::up-button, QSpinBox::down-button { width: 20px; }"
+                        );
                         auto* layout = new QFormLayout(&fmtDlg);
                         auto* sizeSpin = new QSpinBox();
                         sizeSpin->setRange(8, 100);
