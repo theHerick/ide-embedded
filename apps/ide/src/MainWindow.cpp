@@ -3860,6 +3860,15 @@ void MainWindow::viewCompiledCodeModal() {
     titleLabel->setStyleSheet("color: #1D4ED8; font-size: 14px; font-weight: bold;");
     layout->addWidget(titleLabel);
 
+    // Auto-atualiza o código antes de mostrar
+    synchronizeLoopBlocks();
+    m_compiledCode = CodeGenerator::generateArduinoCode(
+        m_scene->components(),
+        m_scene->cables(),
+        m_blockEditor->getEventBlockStorage(),
+        m_webPageData
+    );
+
     auto* codeEditor = new QPlainTextEdit(&dialog);
     codeEditor->setReadOnly(true);
     codeEditor->setPlainText(m_compiledCode.isEmpty() ? "// Nenhum código gerado ainda. Monte um circuito para gerar." : m_compiledCode);
