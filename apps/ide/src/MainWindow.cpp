@@ -705,7 +705,7 @@ void MainWindow::buildToolbar() {
     m_playAction->setToolTip("Iniciar/Parar Simulação de Hardware");
     m_playAction->setCheckable(true);
     m_playAction->setIcon(QIcon(":/icons/play.svg"));
-    m_playAction->setEnabled(false); // disabled until a successful build
+    m_playAction->setEnabled(true);
     connect(m_playAction, &QAction::triggered, this, &MainWindow::toggleSimulation);
 
     // PlatformIO Upload action (disk + DVD icon)
@@ -1424,11 +1424,6 @@ void MainWindow::toggleSimulation() {
             }
         }
     } else {
-        // Prevent starting simulation unless we have a successful build
-        if (!m_lastBuildOk) {
-            QMessageBox::information(this, "Build necessário", "Por favor, execute Build antes de iniciar a simulação.");
-            return;
-        }
         statusBar()->showMessage("Iniciando Simulacao...");
         logMessage("Simulacao interativa de hardware iniciada.", "SYSTEM");
         logMessage("Dica: Clique nos botoes pulsadores e ajuste os potenciometros para ver os eventos disparando em tempo real!", "INFO");
@@ -1665,7 +1660,6 @@ void MainWindow::buildProject() {
         QMessageBox::critical(this, "Erro de Conexão (Alimentação/GND)", errorMsg);
         m_compiledCode = "";
         m_lastBuildOk = false;
-        if (m_playAction) m_playAction->setEnabled(false);
         return;
     }
 
@@ -1674,7 +1668,6 @@ void MainWindow::buildProject() {
         logMessage("Build falhou: código gerado está vazio.", "ERROR");
         QMessageBox::warning(this, "Build falhou", "Código gerado está vazio. Verifique o projeto.");
         m_lastBuildOk = false;
-        if (m_playAction) m_playAction->setEnabled(false);
         return;
     }
 
@@ -1709,7 +1702,6 @@ void MainWindow::buildProject() {
             logMessage("Verificação de compilação do PlatformIO falhou! Corrija os erros acima.", "ERROR");
             QMessageBox::warning(this, "Erro de Compilação", "O PlatformIO detectou erros de compilação no código gerado. Verifique os logs no console.");
             m_lastBuildOk = false;
-            if (m_playAction) m_playAction->setEnabled(false);
             return;
         }
     } else {
