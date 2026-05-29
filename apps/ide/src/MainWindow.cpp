@@ -916,9 +916,11 @@ void MainWindow::applyTheme() {
         "QPushButton#cancelBtn:pressed, QPushButton#cancel:pressed, QPushButton#discard:pressed { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E2E8F0, stop:1 #94A3B8); "
         "} "
-        "QDialog { "
+        "QDialog, QMessageBox { "
         "  background: #F8FAFC; "
+        "  color: #0F172A; "
         "}"
+        "QMessageBox QLabel { color: #0F172A; }"
     );
 }
 
