@@ -49,7 +49,11 @@ protected:
     
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override {
         if (auto* item = itemAt(event->scenePos(), QTransform())) {
-            if (auto* webItem = dynamic_cast<WebElementItem*>(item)) {
+            WebElementItem* webItem = dynamic_cast<WebElementItem*>(item);
+            if (!webItem && item->parentItem()) {
+                webItem = dynamic_cast<WebElementItem*>(item->parentItem());
+            }
+            if (webItem) {
                 QMenu menu;
                 menu.setStyleSheet(
                     "QMenu { background: #FBFBFB; border: 1px solid #E2E8F0; color: #0F172A; padding: 4px; }"
