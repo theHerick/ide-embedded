@@ -1424,6 +1424,16 @@ void MainWindow::toggleSimulation() {
             }
         }
     } else {
+        if (!m_lastBuildOk) {
+            auto resp = QMessageBox::question(this, "Simulação Rápida", 
+                "O projeto não foi construído (Build).\nDeseja fazer uma simulação rápida (sem verificação de erros de roteamento)?",
+                QMessageBox::Yes | QMessageBox::No);
+            if (resp == QMessageBox::No) {
+                playAction->setChecked(false);
+                return;
+            }
+        }
+        
         statusBar()->showMessage("Iniciando Simulacao...");
         logMessage("Simulacao interativa de hardware iniciada.", "SYSTEM");
         logMessage("Dica: Clique nos botoes pulsadores e ajuste os potenciometros para ver os eventos disparando em tempo real!", "INFO");
