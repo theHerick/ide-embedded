@@ -104,26 +104,13 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
 
     m_simTimer->start(50); // 50ms for more responsive loop simulation
     
-    // Start background sound thread
+    // Start background sound thread (Disabled: silent for now)
     m_activeBuzzerFreq.store(0);
     m_soundThreadRunning = true;
     m_soundThread = std::thread([this]() {
-        #ifdef _WIN32
-        while (m_soundThreadRunning) {
-            int freq = m_activeBuzzerFreq.load();
-            if (freq > 0) {
-                // Play longer 200ms tones to achieve a smooth, solid continuous beep,
-                // while maintaining a very fast stop response (within 200ms)
-                Beep(freq, 200);
-            } else {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
-        }
-        #else
         while (m_soundThreadRunning) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
-        #endif
     });
     
     // Trigger ESP32's 'aoIniciar' boot event
