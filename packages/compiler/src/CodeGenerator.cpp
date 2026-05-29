@@ -542,9 +542,11 @@ static QString compileBlocks(
                 } else {
                     res += QString("%1digitalWrite(PIN_%2, %3);\n").arg(indent).arg(tgtName).arg(actionCmd);
                 }
-            } else if (actionCmd == "SET_FREQUENCY") {
+            } else if (actionCmd == "SET_FREQUENCY" || actionCmd == "BUZZER_TONE") {
                 QString freq = block.actionParam.trimmed().isEmpty() ? "1000" : block.actionParam.trimmed();
                 res += QString("%1tone(PIN_%2, %3);\n").arg(indent).arg(tgtName).arg(freq);
+            } else if (actionCmd == "BUZZER_NOTONE") {
+                res += QString("%1noTone(PIN_%2);\n").arg(indent).arg(tgtName);
             } else if (actionCmd == "TOGGLE") {
                 res += QString("%1digitalWrite(PIN_%2, !digitalRead(PIN_%2));\n").arg(indent).arg(tgtName);
             } else if (actionCmd == "DELAY") {

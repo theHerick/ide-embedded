@@ -1141,7 +1141,8 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         cmdCombo->addItem("LIGAR (HIGH)", "HIGH");
         cmdCombo->addItem("DESLIGAR (LOW)", "LOW");
         cmdCombo->addItem("INVERTER (TOGGLE)", "TOGGLE");
-        cmdCombo->addItem("MUDAR FREQUÊNCIA (Buzzer)", "SET_FREQUENCY");
+        cmdCombo->addItem("TOCAR TOM (Buzzer)", "BUZZER_TONE");
+        cmdCombo->addItem("PARAR TOM (Buzzer)", "BUZZER_NOTONE");
         cmdCombo->addItem("AGUARDAR (DELAY)", "DELAY");
         cmdCombo->addItem("GIRAR MOTOR (Ângulo)", "ROTATE_MOTOR");
         cmdCombo->addItem("GIRAR MOTOR (Tempo)", "MOTOR_SPIN_TIME");
@@ -1196,11 +1197,15 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
                 paramEdit->setPlaceholderText("Salvar resultado na Var...");
                 targetEdit->show();
                 paramEdit->show();
-            } else if (cmd == "SET_FREQUENCY") {
+            } else if (cmd == "SET_FREQUENCY" || cmd == "BUZZER_TONE") {
                 targetEdit->setPlaceholderText("Buzzer Alvo");
                 paramEdit->setPlaceholderText("Frequência (Hz)");
                 targetEdit->show();
                 paramEdit->show();
+            } else if (cmd == "BUZZER_NOTONE") {
+                targetEdit->setPlaceholderText("Buzzer Alvo");
+                targetEdit->show();
+                paramEdit->hide();
             } else if (cmd == "DELAY") {
                 targetEdit->hide();
                 paramEdit->setPlaceholderText("Milissegundos (ms)");

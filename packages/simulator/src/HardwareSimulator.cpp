@@ -697,7 +697,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                         }
                     }
                 }
-            } else if (param == "SET_FREQUENCY") {
+            } else if (param == "SET_FREQUENCY" || param == "BUZZER_TONE") {
                 ComponentItem* comp = findComponent(targetId);
                 if (comp && comp->componentType() == "buzzer") {
                     auto* buzzer = static_cast<BuzzerItem*>(comp);
@@ -721,6 +721,13 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                             triggerComponentEvent(buzzer->id(), "aoTocar");
                         }, Qt::QueuedConnection);
                     }
+                }
+            } else if (param == "BUZZER_NOTONE") {
+                ComponentItem* comp = findComponent(targetId);
+                if (comp && comp->componentType() == "buzzer") {
+                    auto* buzzer = static_cast<BuzzerItem*>(comp);
+                    buzzer->setActive(false);
+                    emit pinStateChanged(comp->id(), "1", false);
                 }
             } else if (param == "ROTATE_MOTOR") {
                 double angle = block.actionParam.toDouble();
