@@ -304,8 +304,21 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     
     QPushButton* btnPreview = new QPushButton("Preview Web");
     btnPreview->setStyleSheet(
-        "QPushButton { background: #E0F2FE; border: 1px solid #7DD3FC; border-radius: 6px; color: #0369A1; padding: 6px 16px; font-weight: bold; font-size: 13px; }"
-        "QPushButton:hover { background: #BAE6FD; }"
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #BAE6FD, stop:0.48 #38BDF8, stop:0.5 #0284C7, stop:1 #0369A1); "
+        "  border: 1px solid #0284C7; "
+        "  border-radius: 6px; "
+        "  color: white; "
+        "  padding: 6px 16px; "
+        "  font-weight: bold; "
+        "  font-size: 13px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E0F2FE, stop:0.48 #7DD3FC, stop:0.5 #0284C7, stop:1 #0369A1); "
+        "}"
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #0369A1, stop:1 #0284C7); "
+        "}"
     );
     connect(btnPreview, &QPushButton::clicked, this, [this](){
         // Generate static HTML for preview
@@ -371,8 +384,21 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
 
     QPushButton* btnSair = new QPushButton("Sair");
     btnSair->setStyleSheet(
-        "QPushButton { background: #FEE2E2; border: 1px solid #FCA5A5; border-radius: 6px; color: #991B1B; padding: 6px 16px; font-weight: bold; font-size: 13px; }"
-        "QPushButton:hover { background: #FECACA; }"
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FECACA, stop:0.48 #F87171, stop:0.5 #DC2626, stop:1 #B91C1C); "
+        "  border: 1px solid #B91C1C; "
+        "  border-radius: 6px; "
+        "  color: white; "
+        "  padding: 6px 16px; "
+        "  font-weight: bold; "
+        "  font-size: 13px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FEE2E2, stop:0.48 #FCA5A5, stop:0.5 #DC2626, stop:1 #B91C1C); "
+        "}"
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B91C1C, stop:1 #DC2626); "
+        "}"
     );
     connect(btnSair, &QPushButton::clicked, this, [this](){ reject(); });
 
