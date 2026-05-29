@@ -12,8 +12,9 @@
 
 HardwareSimulator::HardwareSimulator(QObject* parent) : QObject(parent) {}
 
-void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage) {
+void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage, const QJsonObject& webPageData) {
     m_scene = scene;
+    m_webPageData = webPageData;
     m_eventStorage = eventBlockStorage;
     m_isRunning = true;
     m_motorSpeeds.clear();
@@ -142,6 +143,8 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
             }
         }
     }
+    
+    startWebServer();
 }
 
 void HardwareSimulator::resetSimulation() {
@@ -204,6 +207,7 @@ void HardwareSimulator::updateEventStorage(const QMap<QString, QVector<EventLogi
 }
 
 void HardwareSimulator::stopSimulation() {
+    stopWebServer();
     m_soundThreadRunning = false;
     m_activeBuzzerFreq.store(0);
     if (m_soundThread.joinable()) {
@@ -239,6 +243,29 @@ void HardwareSimulator::stopSimulation() {
     }
     
     emit simulationStopped();
+}
+
+void HardwareSimulator::startWebServer() {
+    if (m_webServer) return;
+    m_webServer = new QTcpServer(this);
+    connect(m_webServer, &QTcpServer::newConnection, this, &HardwareSimulator::onNewConnection);
+    if (m_webServer->listen(QHostAddress::Any, 8080)) {
+        serialMessage("Servidor HTTP Local (Simulador Web) Iniciado na porta 8080", "SYSTEM");
+    } else {
+        serialMessage("Falha ao iniciar Servidor HTTP na porta 8080", "ERROR");
+    }
+}
+
+void HardwareSimulator::stopWebServer() {
+    if (m_webServer) {
+        for (auto* client : m_clients) {
+            client->disconnectFromHost();
+        }
+        m_clients.clear();
+        m_webServer->close();
+        m_webServer->deleteLater();
+        m_webServer = nullptr;
+    }
 }
 
 void HardwareSimulator::checkElectricalIntegrity() {
@@ -331,6 +358,166 @@ ComponentItem* HardwareSimulator::findComponent(const QString& target) {
         }
     }
     return nullptr;
+}
+
+#include <QUrlQuery>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+
+void HardwareSimulator::onNewConnection() {
+    while (m_webServer->hasPendingConnections()) {
+        QTcpSocket* client = m_webServer->nextPendingConnection();
+        connect(client, &QTcpSocket::readyRead, this, &HardwareSimulator::onReadyRead);
+        connect(client, &QTcpSocket::disconnected, this, &HardwareSimulator::onClientDisconnected);
+        m_clients.append(client);
+    }
+}
+
+void HardwareSimulator::onClientDisconnected() {
+    QTcpSocket* client = qobject_cast<QTcpSocket*>(sender());
+    if (client) {
+        m_clients.removeOne(client);
+        client->deleteLater();
+    }
+}
+
+void HardwareSimulator::onReadyRead() {
+    QTcpSocket* client = qobject_cast<QTcpSocket*>(sender());
+    if (!client) return;
+
+    if (!client->canReadLine()) return;
+    
+    QByteArray requestLine = client->readLine();
+    QString req = QString::fromUtf8(requestLine).trimmed();
+    
+    // Read all remaining headers (we don't care about them, just flush them)
+    while (client->canReadLine()) {
+        QByteArray line = client->readLine();
+        if (line == "\r\n" || line == "\n") break;
+    }
+
+    if (req.startsWith("GET /data")) {
+        // Build JSON response
+        QJsonObject json;
+        if (m_scene) {
+            QJsonObject webData = m_webPageData;
+            QJsonArray elements = webData["elements"].toArray();
+            for (int i = 0; i < elements.size(); ++i) {
+                QJsonObject el = elements[i].toObject();
+                QString type = el["type"].toString();
+                QString id = el["id"].toString();
+                if (type == "Text") {
+                    QString boundVar = el["boundVar"].toString();
+                    QString varName = boundVar.isEmpty() ? id : boundVar;
+                    QString val = m_simVariables.value(varName).toString();
+                    if (val.isEmpty() && boundVar.isEmpty()) val = el["text"].toString();
+                    json[id] = val;
+                    
+                    // Add format dynamically from sim variables if they exist
+                    json[id + "_color"] = m_simVariables.value("_webFormat_" + id + "_color", el["formatColor"].toString()).toString();
+                    json[id + "_size"] = m_simVariables.value("_webFormat_" + id + "_size", QString::number(el.contains("formatSize") ? el["formatSize"].toInt() : 16) + "px").toString();
+                    json[id + "_weight"] = m_simVariables.value("_webFormat_" + id + "_weight", el.contains("formatBold") && !el["formatBold"].toBool() ? "normal" : "bold").toString();
+                }
+            }
+        }
+        
+        QByteArray body = QJsonDocument(json).toJson(QJsonDocument::Compact);
+        QString response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n" + body;
+        client->write(response.toUtf8());
+        client->disconnectFromHost();
+    } else if (req.startsWith("POST /event")) {
+        // Parse URL params
+        QString url = req.split(" ").value(1);
+        QUrl qurl(url);
+        QUrlQuery query(qurl);
+        
+        if (query.hasQueryItem("btn")) {
+            QString btn = query.queryItemValue("btn");
+            triggerComponentEvent(btn, "aoClicar");
+        }
+        if (query.hasQueryItem("var")) {
+            QString varName = query.queryItemValue("var");
+            QString val = query.queryItemValue("val");
+            m_simVariables[varName] = val;
+        }
+        
+        QString response = "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n";
+        client->write(response.toUtf8());
+        client->disconnectFromHost();
+    } else if (req.startsWith("GET / ")) {
+        // Generate HTML
+        QString html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>";
+        html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+        html += "<style>";
+        html += "body { margin: 0; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; ";
+        html += "background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); min-height: 100vh; }";
+        html += ".container { position: relative; width: 100%; height: 80vh; background: rgba(255, 255, 255, 0.4); ";
+        html += "border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.8); overflow: hidden; }";
+        html += ".elem { position: absolute; }";
+        html += "button.elem { background: linear-gradient(180deg, #4fc3f7 0%, #0288d1 100%); color: white; border: none; border-radius: 30px; ";
+        html += "box-shadow: 0 4px 15px rgba(2,136,209,0.4), inset 0 2px 5px rgba(255,255,255,0.5); text-shadow: 0 1px 2px rgba(0,0,0,0.2); ";
+        html += "cursor: pointer; font-weight: bold; font-size: 14px; transition: all 0.2s ease; }";
+        html += "button.elem:active { transform: translateY(2px); box-shadow: 0 2px 5px rgba(2,136,209,0.4); }";
+        html += "input.elem { background: rgba(255,255,255,0.7); border: 1px solid #81d4fa; border-radius: 10px; padding: 8px 15px; ";
+        html += "box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); outline: none; font-size: 14px; color: #01579b; }";
+        html += "input.elem:focus { border-color: #0288d1; background: rgba(255,255,255,0.9); }";
+        html += ".text.elem { font-size: 16px; color: #01579b; font-weight: 600; text-shadow: 0 1px 1px rgba(255,255,255,0.8); }";
+        html += "</style></head><body>";
+        html += "<div class='container'>";
+        
+        QJsonObject webData = m_webPageData;
+        QJsonArray elements = webData["elements"].toArray();
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            QString type = el["type"].toString();
+            QString id = el["id"].toString();
+            int x = el["x"].toInt();
+            int y = el["y"].toInt();
+            QString text = el["text"].toString().toHtmlEscaped();
+            
+            if (type == "Text") {
+                int fs = el.contains("formatSize") ? el["formatSize"].toInt() : 16;
+                QString fc = el.contains("formatColor") ? el["formatColor"].toString() : "#01579b";
+                bool fb = el.contains("formatBold") ? el["formatBold"].toBool() : true;
+                QString fw = fb ? "bold" : "normal";
+                html += QString("<div class='elem text' style='left:%1px; top:%2px; font-size:%3px; color:%4; font-weight:%5;' id='%6'>%7 <span id='val_%6'></span></div>\n")
+                    .arg(x).arg(y).arg(fs).arg(fc).arg(fw).arg(id).arg(text);
+            } else if (type == "Button") {
+                html += QString("<button class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' onclick='sendEvent(\"%5\")'>%6</button>\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(100)).arg(el["height"].toInt(40)).arg(id).arg(text);
+            } else if (type == "Input") {
+                html += QString("<input type='text' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' id='%5' value='' onchange='sendVar(\"%5\", this.value)'>\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30)).arg(id);
+            }
+        }
+        
+        html += "</div>";
+        html += "<script>\n";
+        html += "function sendEvent(btn) { fetch('/event?btn=' + btn, {method: 'POST'}); }\n";
+        html += "function sendVar(varName, val) { fetch('/event?var=' + varName + '&val=' + val, {method: 'POST'}); }\n";
+        html += "setInterval(() => { fetch('/data').then(r=>r.json()).then(d => { \n";
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            QString type = el["type"].toString();
+            QString id = el["id"].toString();
+            if (type == "Text") {
+                html += QString("if(d.%1 !== undefined) document.getElementById('val_%1').innerText = d.%1; \n").arg(id);
+                html += QString("if(d.%1_color !== undefined) document.getElementById('%1').style.color = d.%1_color; \n").arg(id);
+                html += QString("if(d.%1_size !== undefined) document.getElementById('%1').style.fontSize = d.%1_size; \n").arg(id);
+                html += QString("if(d.%1_weight !== undefined) document.getElementById('%1').style.fontWeight = d.%1_weight; \n").arg(id);
+            }
+        }
+        html += "}); }, 1000);\n";
+        html += "</script></body></html>";
+
+        QString response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n" + html;
+        client->write(response.toUtf8());
+        client->disconnectFromHost();
+    } else {
+        client->write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
+        client->disconnectFromHost();
+    }
 }
 
 bool HardwareSimulator::evaluateExpression(const QString& expr) {

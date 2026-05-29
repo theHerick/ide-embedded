@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets SerialPort OPTIONAL_COMPONENTS Pdf PdfWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets SerialPort Network OPTIONAL_COMPONENTS Pdf PdfWidgets)
 
 add_executable(ide-embedded WIN32
     include/MainWindow.h
@@ -23,6 +23,7 @@ target_link_libraries(ide-embedded PRIVATE
     Qt6::Gui
     Qt6::Widgets
     Qt6::SerialPort
+    Qt6::Network
     workspace
     block_engine
     compiler

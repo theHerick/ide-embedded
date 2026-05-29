@@ -13,6 +13,8 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QCoreApplication>
+#include <QDesktopServices>
+#include <QUrl>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QMenu>
@@ -1447,7 +1449,7 @@ void MainWindow::toggleSimulation() {
         if (m_bottomTabs) m_bottomTabs->setCurrentIndex(1);
         
         // Start running with the actual block engine storage
-        m_simulator->startSimulation(m_scene, m_blockEditor->getEventBlockStorage());
+        m_simulator->startSimulation(m_scene, m_blockEditor->getEventBlockStorage(), m_webPageData);
         
         // Hook visual button toggles to simulator triggers
         for (auto* comp : m_scene->components()) {
@@ -1475,7 +1477,11 @@ void MainWindow::toggleSimulation() {
 
         playAction->setIcon(QIcon(":/icons/stop.svg"));
         playAction->setChecked(true);
-        statusBar()->showMessage("Simulação Ativa! Clique nos botões para ligar LEDs");
+        statusBar()->showMessage("Simulação Ativa! Servidor Web operando em localhost:8080");
+        
+        if (m_webPageData.value("enabled").toBool()) {
+            QDesktopServices::openUrl(QUrl("http://localhost:8080"));
+        }
     }
 }
 

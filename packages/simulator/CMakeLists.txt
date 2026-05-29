@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core Network)
 
 add_library(simulator STATIC
     include/HardwareSimulator.h
@@ -12,6 +12,7 @@ target_include_directories(simulator PUBLIC
 
 target_link_libraries(simulator PUBLIC
     Qt6::Core
+    Qt6::Network
     Qt6::Qml
     workspace
 )

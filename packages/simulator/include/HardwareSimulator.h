@@ -9,6 +9,8 @@
 
 #include <thread>
 #include <atomic>
+#include <QTcpServer>
+#include <QTcpSocket>
 
 class HardwareSimulator : public QObject {
     Q_OBJECT
@@ -22,7 +24,7 @@ public:
         }
     }
 
-    void startSimulation(WorkspaceScene* scene, const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage);
+    void startSimulation(WorkspaceScene* scene, const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage, const QJsonObject& webPageData = QJsonObject());
     void stopSimulation();
     void resetSimulation();
     void updateEventStorage(const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage);
@@ -61,6 +63,9 @@ private:
     // Persistent simulated storage
     QMap<QString, QVariant> m_eeprom;
 
+    // WebPage Config
+    QJsonObject m_webPageData;
+
     // Simulated variables
     QMap<QString, QVariant> m_simVariables;
 
@@ -75,4 +80,16 @@ private:
     std::thread m_soundThread;
     std::atomic<bool> m_soundThreadRunning{false};
     std::atomic<int> m_activeBuzzerFreq{0};
+
+    // Web Server for Simulation
+    QTcpServer* m_webServer = nullptr;
+    QList<QTcpSocket*> m_clients;
+    
+    void startWebServer();
+    void stopWebServer();
+    
+private slots:
+    void onNewConnection();
+    void onReadyRead();
+    void onClientDisconnected();
 };
