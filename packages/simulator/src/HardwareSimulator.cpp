@@ -112,8 +112,9 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
         while (m_soundThreadRunning) {
             int freq = m_activeBuzzerFreq.load();
             if (freq > 0) {
-                // Play shorter 30ms tones to be much more responsive to frequency changes and stops
-                Beep(freq, 30);
+                // Play longer 200ms tones to achieve a smooth, solid continuous beep,
+                // while maintaining a very fast stop response (within 200ms)
+                Beep(freq, 200);
             } else {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
