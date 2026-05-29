@@ -7,6 +7,7 @@
 class QGraphicsScene;
 class QGraphicsView;
 class QCheckBox;
+class QComboBox;
 
 class WebPageEditorDialog : public QDialog {
     Q_OBJECT
@@ -40,6 +41,7 @@ private:
     QGraphicsScene* m_scene;
     QGraphicsView* m_view;
     QCheckBox* m_enableSwitch;
+    QComboBox* m_orientationCombo;
     
     QStringList m_availableVars;
     QString m_editEventCompId;
