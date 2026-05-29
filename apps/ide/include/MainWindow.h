@@ -97,6 +97,7 @@ private:
     
     void buildLayout();
     void buildToolbar();
+    void updatePlayActionState();
     void applyTheme();
     void checkAndInstallToolchain();
     void checkPythonAsync();

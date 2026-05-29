@@ -707,6 +707,7 @@ void MainWindow::buildToolbar() {
     m_playAction->setIcon(QIcon(":/icons/play.svg"));
     m_playAction->setEnabled(true);
     connect(m_playAction, &QAction::triggered, this, &MainWindow::toggleSimulation);
+    updatePlayActionState();
 
     // PlatformIO Upload action (disk + DVD icon)
     auto* uploadAction = toolbar->addAction("");
@@ -1407,7 +1408,7 @@ void MainWindow::toggleSimulation() {
         if (m_undoAction)  m_undoAction->setEnabled(true);
         if (m_redoAction)  m_redoAction->setEnabled(true);
 
-        playAction->setIcon(QIcon(":/icons/play.svg"));
+        updatePlayActionState();
         playAction->setChecked(false);
         statusBar()->showMessage("Simulação finalizada");
         logMessage("Simulação interativa finalizada.", "SYSTEM");
@@ -1621,7 +1622,7 @@ void MainWindow::compileCode() {
     );
 
     if (m_compiledCode.startsWith("// ERROR:")) {
-        m_lastBuildOk = false;
+        m_lastBuildOk = false; updatePlayActionState();
         QString errorMsg = m_compiledCode.mid(QString("// ERROR:").length()).trimmed();
         logMessage("Erro de Roteamento/Alimentação: " + errorMsg, "ERROR");
         statusBar()->showMessage("Erro de Conexão no Projeto!", 5000);
@@ -1669,7 +1670,7 @@ void MainWindow::buildProject() {
         QString errorMsg = m_compiledCode.mid(QString("// ERROR:").length()).trimmed();
         QMessageBox::critical(this, "Erro de Conexão (Alimentação/GND)", errorMsg);
         m_compiledCode = "";
-        m_lastBuildOk = false;
+        m_lastBuildOk = false; updatePlayActionState();
         return;
     }
 
@@ -1677,7 +1678,7 @@ void MainWindow::buildProject() {
     if (m_compiledCode.trimmed().isEmpty()) {
         logMessage("Build falhou: código gerado está vazio.", "ERROR");
         QMessageBox::warning(this, "Build falhou", "Código gerado está vazio. Verifique o projeto.");
-        m_lastBuildOk = false;
+        m_lastBuildOk = false; updatePlayActionState();
         return;
     }
 
@@ -1687,7 +1688,7 @@ void MainWindow::buildProject() {
     if (opens != closes) {
         logMessage("Build falhou: chaves não balanceadas no código gerado.", "ERROR");
         QMessageBox::warning(this, "Build falhou", "Erro de sintaxe detectado: chaves não balanceadas.");
-        m_lastBuildOk = false;
+        m_lastBuildOk = false; updatePlayActionState();
         if (m_playAction) m_playAction->setEnabled(false);
         return;
     }
@@ -1711,14 +1712,14 @@ void MainWindow::buildProject() {
         if (!pioOk) {
             logMessage("Verificação de compilação do PlatformIO falhou! Corrija os erros acima.", "ERROR");
             QMessageBox::warning(this, "Erro de Compilação", "O PlatformIO detectou erros de compilação no código gerado. Verifique os logs no console.");
-            m_lastBuildOk = false;
+            m_lastBuildOk = false; updatePlayActionState();
             return;
         }
     } else {
         logMessage("Aviso: PlatformIO não está instalado no sistema. Ignorando a validação de compilação de hardware.", "WARNING");
     }
 
-    m_lastBuildOk = true;
+    m_lastBuildOk = true; updatePlayActionState();
     if (m_playAction) m_playAction->setEnabled(true);
     logMessage("Build concluído com sucesso. Simulação habilitada.", "SUCCESS");
     statusBar()->showMessage("Build concluído com sucesso.", 3000);
@@ -5263,4 +5264,16 @@ void MainWindow::showComponentModeling(ComponentItem* comp) {
     mainLayout->addLayout(footer);
 
     dialog.exec();
+}
+
+void MainWindow::updatePlayActionState() {
+    if (!m_playAction) return;
+    
+    if (m_lastBuildOk) {
+        m_playAction->setIcon(QIcon(":/icons/play.svg"));
+    } else {
+        QPixmap disabledPix = QIcon(":/icons/play.svg").pixmap(32, 32, QIcon::Disabled, QIcon::Off);
+        QIcon grayIcon(disabledPix);
+        m_playAction->setIcon(grayIcon);
+    }
 }
