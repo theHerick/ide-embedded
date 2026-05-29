@@ -481,7 +481,7 @@ void HardwareSimulator::onReadyRead() {
                 QString fc = el.contains("formatColor") ? el["formatColor"].toString() : "#01579b";
                 bool fb = el.contains("formatBold") ? el["formatBold"].toBool() : true;
                 QString fw = fb ? "bold" : "normal";
-                html += QString("<div class='elem text' style='left:%1px; top:%2px; font-size:%3px; color:%4; font-weight:%5;' id='%6'>%7 <span id='val_%6'></span></div>\n")
+                html += QString("<div class='elem text' style='left:%1px; top:%2px; font-size:%3px; color:%4; font-weight:%5;' id='%6'><span id='val_%6'>%7</span></div>\n")
                     .arg(x).arg(y).arg(fs).arg(fc).arg(fw).arg(id).arg(text);
             } else if (type == "Button") {
                 html += QString("<button class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' onclick='sendEvent(\"%5\")'>%6</button>\n")
