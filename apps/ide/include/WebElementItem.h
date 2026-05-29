@@ -28,6 +28,7 @@ public:
     void setFormatBold(bool b) { m_formatBold = b; update(); }
 
 protected:
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 

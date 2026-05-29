@@ -80,6 +80,17 @@ QJsonObject WebElementItem::toJson() const {
     return obj;
 }
 
+QVariant WebElementItem::itemChange(GraphicsItemChange change, const QVariant &value) {
+    if (change == ItemPositionChange && scene()) {
+        QPointF newPos = value.toPointF();
+        int gridSize = 20;
+        qreal x = qRound(newPos.x() / gridSize) * gridSize;
+        qreal y = qRound(newPos.y() / gridSize) * gridSize;
+        return QPointF(x, y);
+    }
+    return QGraphicsRectItem::itemChange(change, value);
+}
+
 void WebElementItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     Q_UNUSED(option);
     Q_UNUSED(widget);

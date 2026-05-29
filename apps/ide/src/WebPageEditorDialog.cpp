@@ -25,6 +25,7 @@
 #include <QUrl>
 #include <QDir>
 #include <QJsonArray>
+#include <QVarLengthArray>
 #include <QKeyEvent>
 #include <QPointer>
 #include <QTimer>
@@ -97,6 +98,21 @@ public:
 protected:
     void drawBackground(QPainter *painter, const QRectF &rect) override {
         QGraphicsScene::drawBackground(painter, rect);
+        
+        // Draw Grid
+        int gridSize = 20;
+        qreal left = int(rect.left()) - (int(rect.left()) % gridSize);
+        qreal top = int(rect.top()) - (int(rect.top()) % gridSize);
+        
+        QVarLengthArray<QLineF, 100> lines;
+        for (qreal x = left; x < rect.right(); x += gridSize)
+            lines.append(QLineF(x, rect.top(), x, rect.bottom()));
+        for (qreal y = top; y < rect.bottom(); y += gridSize)
+            lines.append(QLineF(rect.left(), y, rect.right(), y));
+            
+        painter->setPen(QPen(QColor(235, 235, 235), 1, Qt::SolidLine));
+        painter->drawLines(lines.data(), lines.size());
+
         // Draw a dashed border to represent the screen boundary
         QPen pen(Qt::darkGray, 2, Qt::DashLine);
         painter->setPen(pen);
