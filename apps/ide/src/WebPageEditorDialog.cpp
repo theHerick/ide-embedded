@@ -15,9 +15,16 @@
 #include <QComboBox>
 
 #include <QListWidget>
-
 #include <QCompleter>
 #include <QAbstractItemView>
+
+#include <QFile>
+#include <QTemporaryFile>
+#include <QStandardPaths>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QDir>
+#include <QJsonArray>
 #include <QKeyEvent>
 #include <QPointer>
 #include <QTimer>
@@ -278,6 +285,83 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     );
     connect(btnSave, &QPushButton::clicked, this, [this](){ accept(); });
     bottomLayout->addStretch();
+    
+    QPushButton* btnPreview = new QPushButton("Preview Web");
+    btnPreview->setStyleSheet(
+        "QPushButton { background: #E0F2FE; border: 1px solid #7DD3FC; border-radius: 6px; color: #0369A1; padding: 6px 16px; font-weight: bold; font-size: 13px; }"
+        "QPushButton:hover { background: #BAE6FD; }"
+    );
+    connect(btnPreview, &QPushButton::clicked, this, [this](){
+        // Generate static HTML for preview
+        QString html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>";
+        html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+        html += "<style>";
+        html += "body { margin: 0; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; ";
+        html += "background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); min-height: 100vh; }";
+        html += ".container { position: relative; width: 100%; height: 80vh; background: rgba(255, 255, 255, 0.4); ";
+        html += "border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.8); overflow: hidden; }";
+        html += ".elem { position: absolute; }";
+        html += "button.elem { background: linear-gradient(180deg, #4fc3f7 0%, #0288d1 100%); color: white; border: none; border-radius: 30px; ";
+        html += "box-shadow: 0 4px 15px rgba(2,136,209,0.4), inset 0 2px 5px rgba(255,255,255,0.5); text-shadow: 0 1px 2px rgba(0,0,0,0.2); ";
+        html += "cursor: pointer; font-weight: bold; font-size: 14px; transition: all 0.2s ease; }";
+        html += "button.elem:active { transform: translateY(2px); box-shadow: 0 2px 5px rgba(2,136,209,0.4); }";
+        html += "input.elem { background: rgba(255,255,255,0.7); border: 1px solid #81d4fa; border-radius: 10px; padding: 8px 15px; ";
+        html += "box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); outline: none; font-size: 14px; color: #01579b; }";
+        html += "input.elem:focus { border-color: #0288d1; background: rgba(255,255,255,0.9); }";
+        html += ".text.elem { font-size: 16px; color: #01579b; font-weight: 600; text-shadow: 0 1px 1px rgba(255,255,255,0.8); }";
+        html += "</style></head><body>";
+        html += "<div class='container'>";
+        
+        QJsonArray elements;
+        for (QGraphicsItem* item : m_scene->items()) {
+            if (auto* webItem = dynamic_cast<WebElementItem*>(item)) {
+                elements.append(webItem->toJson());
+            }
+        }
+        
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            QString type = el["type"].toString();
+            QString id = el["id"].toString();
+            int x = el["x"].toInt();
+            int y = el["y"].toInt();
+            QString text = el["text"].toString().toHtmlEscaped();
+            
+            if (type == "Text") {
+                int fs = el.contains("formatSize") ? el["formatSize"].toInt() : 16;
+                QString fc = el.contains("formatColor") ? el["formatColor"].toString() : "#01579b";
+                bool fb = el.contains("formatBold") ? el["formatBold"].toBool() : true;
+                QString fw = fb ? "bold" : "normal";
+                html += QString("<div class='elem text' style='left:%1px; top:%2px; font-size:%3px; color:%4; font-weight:%5;' id='%6'>%7</div>\n")
+                    .arg(x).arg(y).arg(fs).arg(fc).arg(fw).arg(id).arg(text);
+            } else if (type == "Button") {
+                html += QString("<button class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;'>%5</button>\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(100)).arg(el["height"].toInt(40)).arg(text);
+            } else if (type == "Input") {
+                html += QString("<input type='text' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' value=''>\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30));
+            }
+        }
+        html += "</div></body></html>";
+        
+        QString path = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/ide_preview.html";
+        QFile f(path);
+        if (f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            f.write(html.toUtf8());
+            f.close();
+            QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+        }
+    });
+
+    QPushButton* btnSair = new QPushButton("Sair");
+    btnSair->setStyleSheet(
+        "QPushButton { background: #FEE2E2; border: 1px solid #FCA5A5; border-radius: 6px; color: #991B1B; padding: 6px 16px; font-weight: bold; font-size: 13px; }"
+        "QPushButton:hover { background: #FECACA; }"
+    );
+    connect(btnSair, &QPushButton::clicked, this, [this](){ reject(); });
+
+    bottomLayout->addWidget(btnPreview);
+    bottomLayout->addWidget(btnSair);
     bottomLayout->addWidget(btnSave);
     
     mainLayout->addLayout(bottomLayout);
