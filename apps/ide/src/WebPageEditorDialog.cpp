@@ -218,21 +218,28 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     
     m_view = new QGraphicsView(m_scene);
     m_view->setRenderHint(QPainter::Antialiasing);
-    
-    QLinearGradient aeroGradient(0, 0, 0, 1000);
-    aeroGradient.setColorAt(0.0, QColor(195, 235, 255)); // Light sky blue
-    aeroGradient.setColorAt(0.4, QColor(140, 205, 245)); // Glossy mid blue
-    aeroGradient.setColorAt(0.41, QColor(115, 185, 235)); // Glossy sharp drop
-    aeroGradient.setColorAt(1.0, QColor(170, 240, 195)); // Light grass green
-    m_view->setBackgroundBrush(QBrush(aeroGradient));
+    m_view->setBackgroundBrush(Qt::white);
     
     mainLayout->addWidget(m_view);
     
     QHBoxLayout* bottomLayout = new QHBoxLayout();
     QPushButton* btnSave = new QPushButton("Salvar e Fechar");
     btnSave->setStyleSheet(
-        "QPushButton { background-color: #10B981; color: white; border: none; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
-        "QPushButton:hover { background-color: #059669; }"
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #A7F3D0, stop:0.48 #34D399, stop:0.5 #10B981, stop:1 #059669); "
+        "  border: 1px solid #047857; "
+        "  border-radius: 6px; "
+        "  color: white; "
+        "  padding: 6px 16px; "
+        "  font-weight: bold; "
+        "  font-size: 13px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #6EE7B7, stop:0.48 #10B981, stop:0.5 #059669, stop:1 #047857); "
+        "}"
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #059669, stop:1 #047857); "
+        "}"
     );
     connect(btnSave, &QPushButton::clicked, this, [this](){ accept(); });
     bottomLayout->addStretch();
