@@ -84,10 +84,14 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
                 if (comp->componentType() == "buzzer") {
                     auto* buzzer = static_cast<BuzzerItem*>(comp);
                     if (buzzer->isActive()) {
-                        if (buzzer->isPassive()) {
+                        // Play the exact frequency if it has been set by a tone() block,
+                        // otherwise fallback to defaults based on type (active/passive).
+                        if (buzzer->frequency() > 0) {
                             maxFreq = qMax(maxFreq, buzzer->frequency());
+                        } else if (buzzer->isPassive()) {
+                            maxFreq = qMax(maxFreq, 1000); // 1000 Hz default for passive
                         } else {
-                            maxFreq = qMax(maxFreq, 2500); // 2500 Hz default for active buzzer
+                            maxFreq = qMax(maxFreq, 2500); // 2500 Hz default for active
                         }
                     }
                 }
@@ -108,9 +112,10 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
         while (m_soundThreadRunning) {
             int freq = m_activeBuzzerFreq.load();
             if (freq > 0) {
-                Beep(freq, 50); // Play a 50ms tone
+                // Play shorter 30ms tones to be much more responsive to frequency changes and stops
+                Beep(freq, 30);
             } else {
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         }
         #else
@@ -727,6 +732,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 if (comp && comp->componentType() == "buzzer") {
                     auto* buzzer = static_cast<BuzzerItem*>(comp);
                     buzzer->setActive(false);
+                    buzzer->setFrequency(0);
                     emit pinStateChanged(comp->id(), "1", false);
                 }
             } else if (param == "ROTATE_MOTOR") {
