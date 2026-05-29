@@ -102,8 +102,12 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
     QHBoxLayout* topLayout = new QHBoxLayout();
-    m_enableSwitch = new QCheckBox("Ativar Web Page no ESP (Servidor Web)");
+    
+    m_enableSwitch = new QCheckBox("Habilitar WebPage");
     m_enableSwitch->setChecked(m_data.contains("enabled") ? m_data["enabled"].toBool() : false);
+    m_enableSwitch->setStyleSheet(
+        "QCheckBox { color: #0F172A; font-weight: bold; font-size: 12px; }"
+    );
     topLayout->addWidget(m_enableSwitch);
     
     topLayout->addStretch();
@@ -111,13 +115,24 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     m_orientationCombo = new QComboBox();
     m_orientationCombo->addItem("Desktop (16:9)", QSizeF(1280, 720));
     m_orientationCombo->addItem("Mobile (9:16)", QSizeF(405, 720));
+    m_orientationCombo->setStyleSheet(
+        "QComboBox { "
+        "  background: #FFFFFF; "
+        "  border: 1px solid #CBD5E1; "
+        "  border-radius: 4px; "
+        "  padding: 4px 10px; "
+        "  color: #0F172A; "
+        "  font-weight: 500; "
+        "}"
+        "QComboBox::drop-down { border: none; }"
+        "QComboBox QAbstractItemView { "
+        "  background: #FFFFFF; "
+        "  color: #0F172A; "
+        "  selection-background-color: #EEF2FF; "
+        "  selection-color: #1D4ED8; "
+        "}"
+    );
     topLayout->addWidget(m_orientationCombo);
-    
-    QPushButton* btnHelp = new QPushButton("Ajuda");
-    connect(btnHelp, &QPushButton::clicked, this, [](){
-        QMessageBox::information(nullptr, "Ajuda", "Clique duplo no canvas para adicionar elementos.\nBotão direito no elemento para vincular a variáveis globais do projeto.");
-    });
-    topLayout->addWidget(btnHelp);
     
     mainLayout->addLayout(topLayout);
     
