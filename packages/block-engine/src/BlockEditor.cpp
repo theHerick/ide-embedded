@@ -1913,6 +1913,10 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             m_activeBlocks.append(b);
             refreshListDisplay();
             emit blocksChanged();
+        } else if (text.contains("criar wifi") || text.contains("ap") || text.contains("ponto de acesso")) {
+            addBlock("wifiAP");
+        } else if (text.contains("conectar wifi") || text.contains("wifi")) {
+            addBlock("wifiConnect");
         } else if (text.contains("criar") || text.contains("declar") || text.contains("create") || text.contains("new")) {
             addCreateVarBlock();
         } else if (text.contains("atrib") || text.contains("defin") || text.contains("assign") || text == "=") {
@@ -1923,7 +1927,7 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             addBlock("elseif");
         } else if (text.contains("sen") || text.contains("else")) {
             addBlock("else");
-        } else if (text.contains("condi") || text.contains("se ") || text == "se" || text.contains("if")) {
+        } else if (text.contains("condi") || text.contains("se ") || text == "se" || text.split(" ").contains("if")) {
             addConditionBlock();
         } else if (text.contains("repetir para") || text.contains("para ") || text == "para" || text.contains("for")) {
             addBlock("for");
@@ -1949,10 +1953,6 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             addBlock("toggle");
         } else if (text.contains("chamar") || text.contains("call function") || text.contains("invocar")) {
             addBlock("callFunction");
-        } else if (text.contains("criar wifi") || text.contains("ap") || text.contains("ponto de acesso")) {
-            addBlock("wifiAP");
-        } else if (text.contains("conectar wifi") || text.contains("wifi")) {
-            addBlock("wifiConnect");
         } else if (text.contains("calcular bateria") || text.contains("bateria") || text.contains("calc bat")) {
             EventLogicBlock b;
             b.id = QUuid::createUuid().toString();
