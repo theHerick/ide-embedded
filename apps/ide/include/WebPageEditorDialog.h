@@ -14,7 +14,8 @@ public:
     explicit WebPageEditorDialog(QJsonObject& data, const QStringList& availableVars, QWidget* parent = nullptr);
     ~WebPageEditorDialog();
 
-    void addElement(const QString& type);
+    void addElement(const QString& type, const QPointF& pos = QPointF(100, 100));
+    void showQuickSearch(const QPointF& scenePos, const QPoint& globalPos);
 
     QString getEditEventCompId() const { return m_editEventCompId; }
     QString getEditEventName() const { return m_editEventName; }
@@ -30,7 +31,6 @@ private slots:
 
 private:
     void rebuildScene();
-    void showQuickSearch(const QPoint& pos);
     
     QJsonObject& m_data; // Reference to MainWindow's data
     QJsonArray m_elements;

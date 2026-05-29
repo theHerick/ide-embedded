@@ -13,6 +13,76 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QMessageBox>
 
+#include <QListWidget>
+
+// Custom Popup for Quick Search
+class WebQuickSearchPopup : public QWidget {
+public:
+    WebQuickSearchPopup(WebPageEditorDialog* dlg, const QPointF& sPos, const QPoint& gPos) : QWidget(nullptr, Qt::Popup | Qt::FramelessWindowHint), dialog(dlg), scenePos(sPos) {
+        setAttribute(Qt::WA_DeleteOnClose);
+        
+        QVBoxLayout* layout = new QVBoxLayout(this);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(0);
+        
+        QLineEdit* searchEdit = new QLineEdit(this);
+        searchEdit->setPlaceholderText("Busca rápida...");
+        searchEdit->setStyleSheet(
+            "QLineEdit { "
+            "  background: rgba(255, 255, 255, 0.98); "
+            "  border: 2px solid #BFDBFE; "
+            "  border-radius: 8px 8px 0 0; "
+            "  color: #0F172A; "
+            "  font-family: 'Segoe UI', Arial, sans-serif; "
+            "  font-size: 12px; "
+            "  font-weight: 500; "
+            "  padding: 6px 12px; "
+            "}"
+        );
+        layout->addWidget(searchEdit);
+        
+        QListWidget* listWidget = new QListWidget(this);
+        listWidget->setStyleSheet(
+            "QListWidget { "
+            "  background: #FFFFFF; "
+            "  border: 1px solid #BFDBFE; "
+            "  border-top: none; "
+            "  border-radius: 0 0 8px 8px; "
+            "  outline: none; "
+            "  font-family: 'Segoe UI', Arial, sans-serif; "
+            "  font-size: 11px; "
+            "  color: #334155; "
+            "}"
+            "QListWidget::item { padding: 8px 12px; border-bottom: 1px solid #F1F5F9; }"
+            "QListWidget::item:selected { background: #EEF2FF; color: #4F46E5; font-weight: bold; border-left: 3px solid #4F46E5; }"
+        );
+        listWidget->addItems({"Adicionar Texto", "Adicionar Botão", "Adicionar Input", "Adicionar Gráfico"});
+        layout->addWidget(listWidget);
+        
+        setGeometry(gPos.x(), gPos.y(), 200, 180);
+        
+        connect(searchEdit, &QLineEdit::textChanged, this, [listWidget](const QString& text) {
+            for (int i = 0; i < listWidget->count(); ++i) {
+                QListWidgetItem* item = listWidget->item(i);
+                item->setHidden(!item->text().contains(text, Qt::CaseInsensitive));
+            }
+        });
+        
+        connect(listWidget, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
+            if (item->text() == "Adicionar Texto") dialog->addElement("Text", scenePos);
+            else if (item->text() == "Adicionar Botão") dialog->addElement("Button", scenePos);
+            else if (item->text() == "Adicionar Input") dialog->addElement("Input", scenePos);
+            else if (item->text() == "Adicionar Gráfico") dialog->addElement("Chart", scenePos);
+            close();
+        });
+        
+        searchEdit->setFocus();
+    }
+private:
+    WebPageEditorDialog* dialog;
+    QPointF scenePos;
+};
+
 // Custom Scene to handle double click for quick search
 class WebScene : public QGraphicsScene {
 public:
@@ -20,12 +90,7 @@ public:
 protected:
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override {
         if (!itemAt(event->scenePos(), QTransform())) {
-            QMenu menu;
-            menu.addAction("Adicionar Texto", dialog, [this, event](){ dialog->addElement("Text"); });
-            menu.addAction("Adicionar Botão", dialog, [this, event](){ dialog->addElement("Button"); });
-            menu.addAction("Adicionar Input", dialog, [this, event](){ dialog->addElement("Input"); });
-            menu.addAction("Adicionar Gráfico", dialog, [this, event](){ dialog->addElement("Chart"); });
-            menu.exec(event->screenPos());
+            dialog->showQuickSearch(event->scenePos(), event->screenPos());
         } else {
             QGraphicsScene::mouseDoubleClickEvent(event);
         }
@@ -35,6 +100,11 @@ protected:
         if (auto* item = itemAt(event->scenePos(), QTransform())) {
             if (auto* webItem = dynamic_cast<WebElementItem*>(item)) {
                 QMenu menu;
+                menu.setStyleSheet(
+                    "QMenu { background: #FBFBFB; border: 1px solid #E2E8F0; color: #0F172A; padding: 4px; }"
+                    "QMenu::item { padding: 6px 20px; }"
+                    "QMenu::item:selected { background: #EEF2FF; color: #1D4ED8; }"
+                );
                 QString type = webItem->elementType();
                 
                 if (type == "Chart") {
@@ -127,7 +197,7 @@ void WebPageEditorDialog::rebuildScene() {
     }
 }
 
-void WebPageEditorDialog::addElement(const QString& type) {
+void WebPageEditorDialog::addElement(const QString& type, const QPointF& pos) {
     QJsonObject obj;
     obj["type"] = type;
     
@@ -135,9 +205,8 @@ void WebPageEditorDialog::addElement(const QString& type) {
     static int counter = 1;
     obj["id"] = QString("web%1_%2").arg(type.toLower()).arg(counter++);
     
-    // Default position at center of view roughly
-    obj["x"] = 100;
-    obj["y"] = 100;
+    obj["x"] = pos.x();
+    obj["y"] = pos.y();
     
     if (type == "Chart") {
         obj["width"] = 300;
@@ -172,4 +241,8 @@ void WebPageEditorDialog::requestEditEvent(const QString& compId, const QString&
 // Stubs for header slots
 void WebPageEditorDialog::handleDoubleClick(const QPoint&) {}
 void WebPageEditorDialog::showContextMenu(const QPoint&) {}
-void WebPageEditorDialog::showQuickSearch(const QPoint&) {}
+
+void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint& globalPos) {
+    WebQuickSearchPopup* popup = new WebQuickSearchPopup(this, scenePos, globalPos);
+    popup->show();
+}
