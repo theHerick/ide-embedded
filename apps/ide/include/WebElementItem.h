@@ -16,8 +16,16 @@ public:
     QString boundVar() const { return m_boundVar; }
     void setBoundVar(const QString& var);
 
-    QString text() const { return m_text; }
+    void setType(const QString& type) { m_type = type; }
     void setText(const QString& text);
+    
+    int formatSize() const { return m_formatSize; }
+    QString formatColor() const { return m_formatColor; }
+    bool formatBold() const { return m_formatBold; }
+    
+    void setFormatSize(int s) { m_formatSize = s; update(); }
+    void setFormatColor(const QString& c) { m_formatColor = c; update(); }
+    void setFormatBold(bool b) { m_formatBold = b; update(); }
 
 protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -28,5 +36,11 @@ private:
     QString m_type;
     QString m_boundVar;
     QString m_text;
+    
+    int m_formatSize = 16;
+    QString m_formatColor = "#0284c7"; // Default color
+    bool m_formatBold = true;
+
     QGraphicsTextItem* m_textItem;
+    QSizeF m_size;
 };

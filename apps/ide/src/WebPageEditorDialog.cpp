@@ -21,6 +21,12 @@
 #include <QKeyEvent>
 #include <QPointer>
 #include <QTimer>
+#include <QFormLayout>
+#include <QSpinBox>
+#include <QLineEdit>
+#include <QDialogButtonBox>
+#include <QPointer>
+#include <QTimer>
 #include <QTimer>
 
 #include <QDialogButtonBox>
@@ -133,6 +139,29 @@ protected:
                 } else if (type == "Text") {
                     menu.addAction("Editar Evento: Atualizar Texto", dialog, [this, webItem](){
                         dialog->requestEditEvent(webItem->id(), "aoAtualizar");
+                    });
+                    menu.addAction("Editar Formatação", dialog, [this, webItem](){
+                        QDialog fmtDlg(dialog);
+                        fmtDlg.setWindowTitle("Formatação de Texto");
+                        auto* layout = new QFormLayout(&fmtDlg);
+                        auto* sizeSpin = new QSpinBox();
+                        sizeSpin->setRange(8, 100);
+                        sizeSpin->setValue(webItem->formatSize());
+                        auto* colorEdit = new QLineEdit(webItem->formatColor());
+                        auto* boldCheck = new QCheckBox("Negrito");
+                        boldCheck->setChecked(webItem->formatBold());
+                        layout->addRow("Tamanho (px):", sizeSpin);
+                        layout->addRow("Cor (Hex):", colorEdit);
+                        layout->addRow("", boldCheck);
+                        auto* btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+                        layout->addRow(btns);
+                        connect(btns, &QDialogButtonBox::accepted, &fmtDlg, &QDialog::accept);
+                        connect(btns, &QDialogButtonBox::rejected, &fmtDlg, &QDialog::reject);
+                        if (fmtDlg.exec() == QDialog::Accepted) {
+                            webItem->setFormatSize(sizeSpin->value());
+                            webItem->setFormatColor(colorEdit->text());
+                            webItem->setFormatBold(boldCheck->isChecked());
+                        }
                     });
                 } else if (type == "Input") {
                     menu.addAction("Editar Evento: Ao Alterar Valor", dialog, [this, webItem](){

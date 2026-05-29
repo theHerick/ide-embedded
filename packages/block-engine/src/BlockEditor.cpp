@@ -1179,6 +1179,9 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         cmdCombo->addItem("RETORNAR VALOR", "RETURN");
         cmdCombo->addItem("CRIAR PONTO WIFI", "WIFI_AP");
         cmdCombo->addItem("CONECTAR WIFI", "WIFI_CONNECT");
+        cmdCombo->addItem("FORMATAR COR WEB", "FORMAT_WEB_COLOR");
+        cmdCombo->addItem("FORMATAR TAMANHO WEB", "FORMAT_WEB_SIZE");
+        cmdCombo->addItem("FORMATAR NEGRITO WEB", "FORMAT_WEB_BOLD");
 
         int cmdIndex = cmdCombo->findData(block.actionCommand);
         if (cmdIndex == -1) {
@@ -1246,6 +1249,21 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
             } else if (cmd == "WIFI_AP" || cmd == "WIFI_CONNECT") {
                 targetEdit->setPlaceholderText("Nome da Rede (SSID)");
                 paramEdit->setPlaceholderText("Senha (opcional)");
+                targetEdit->show();
+                paramEdit->show();
+            } else if (cmd == "FORMAT_WEB_COLOR") {
+                targetEdit->setPlaceholderText("ID do Componente Texto (Web)");
+                paramEdit->setPlaceholderText("Nova Cor (ex: #FF0000 ou red)");
+                targetEdit->show();
+                paramEdit->show();
+            } else if (cmd == "FORMAT_WEB_SIZE") {
+                targetEdit->setPlaceholderText("ID do Componente Texto (Web)");
+                paramEdit->setPlaceholderText("Tamanho (ex: 20)");
+                targetEdit->show();
+                paramEdit->show();
+            } else if (cmd == "FORMAT_WEB_BOLD") {
+                targetEdit->setPlaceholderText("ID do Componente Texto (Web)");
+                paramEdit->setPlaceholderText("Negrito? (1 ou 0)");
                 targetEdit->show();
                 paramEdit->show();
             } else {

@@ -581,19 +581,59 @@ static QString compileBlocks(
                 res += QString("%1if (%2 > 100.0) %2 = 100.0;\n").arg(indent).arg(destVar);
                 res += QString("%1if (%2 < 0.0) %2 = 0.0;\n").arg(indent).arg(destVar);
             } else if (actionCmd == "WIFI_AP") {
-                QString ssid = actionTgt.isEmpty() ? "ESP32_Network" : actionTgt;
+                QString ssid = actionTgt.isEmpty() ? "\"ESP32_Network\"" : actionTgt;
                 QString pwd = block.actionParam.trimmed();
+                
+                auto formatArg = [](const QString& arg) {
+                    QString s = arg.trimmed();
+                    if (s.isEmpty()) return QString("\"\"");
+                    if (s.startsWith("\"") && s.endsWith("\"")) return s;
+                    if (s.startsWith("'") && s.endsWith("'")) return s;
+                    // Let's assume valid identifier = variable, otherwise we quote it
+                    QRegularExpression varRegex("^[A-Za-z_][A-Za-z0-9_]*$");
+                    if (varRegex.match(s).hasMatch()) return s; 
+                    return QString("\"%1\"").arg(s);
+                };
+
+                QString fmtSsid = formatArg(ssid);
+                QString fmtPwd = formatArg(pwd);
+
                 res += QString("%1// Criar Ponto de Acesso (AP)\n").arg(indent);
-                if (pwd.isEmpty() || pwd.length() < 8) {
-                    res += QString("%1WiFi.softAP(\"%2\");\n").arg(indent).arg(ssid);
+                if (fmtPwd == "\"\"" || fmtPwd.isEmpty()) {
+                    res += QString("%1WiFi.softAP(%2);\n").arg(indent).arg(fmtSsid);
                 } else {
-                    res += QString("%1WiFi.softAP(\"%2\", \"%3\");\n").arg(indent).arg(ssid).arg(pwd);
+                    res += QString("%1WiFi.softAP(%2, %3);\n").arg(indent).arg(fmtSsid).arg(fmtPwd);
                 }
             } else if (actionCmd == "WIFI_CONNECT") {
                 QString ssid = actionTgt;
                 QString pwd = block.actionParam.trimmed();
+                
+                auto formatArg = [](const QString& arg) {
+                    QString s = arg.trimmed();
+                    if (s.isEmpty()) return QString("\"\"");
+                    if (s.startsWith("\"") && s.endsWith("\"")) return s;
+                    if (s.startsWith("'") && s.endsWith("'")) return s;
+                    QRegularExpression varRegex("^[A-Za-z_][A-Za-z0-9_]*$");
+                    if (varRegex.match(s).hasMatch()) return s; 
+                    return QString("\"%1\"").arg(s);
+                };
+                
+                QString fmtSsid = formatArg(ssid);
+                QString fmtPwd = formatArg(pwd);
+
                 res += QString("%1// Conectar a rede WiFi\n").arg(indent);
-                res += QString("%1WiFi.begin(\"%2\", \"%3\");\n").arg(indent).arg(ssid).arg(pwd);
+                res += QString("%1WiFi.begin(%2, %3);\n").arg(indent).arg(fmtSsid).arg(fmtPwd);
+            } else if (actionCmd == "FORMAT_WEB_COLOR") {
+                res += QString("%1_webFormat_%2_color = String(%3);\n").arg(indent).arg(actionTgt).arg(block.actionParam.isEmpty() ? "\"#000000\"" : block.actionParam);
+            } else if (actionCmd == "FORMAT_WEB_SIZE") {
+                res += QString("%1_webFormat_%2_size = String(%3) + \"px\";\n").arg(indent).arg(actionTgt).arg(block.actionParam.isEmpty() ? "\"16\"" : block.actionParam);
+            } else if (actionCmd == "FORMAT_WEB_BOLD") {
+                QString param = block.actionParam.trimmed();
+                res += QString("%1if (String(%2) == \"1\" || String(%2).equalsIgnoreCase(\"true\") || String(%2).equalsIgnoreCase(\"high\")) {\n").arg(indent).arg(param.isEmpty() ? "\"0\"" : param);
+                res += QString("%1    _webFormat_%2_weight = \"bold\";\n").arg(indent).arg(actionTgt);
+                res += QString("%1} else {\n").arg(indent);
+                res += QString("%1    _webFormat_%2_weight = \"normal\";\n").arg(indent).arg(actionTgt);
+                res += QString("%1}\n").arg(indent);
             }
         }
         else if (block.type == LogicBlockType::SERIAL_PRINT) {
@@ -1379,6 +1419,24 @@ QString CodeGenerator::generateArduinoCode(
         }
         code += "\n";
     }
+    
+    if (webPageData.value("enabled").toBool()) {
+        QJsonArray elements = webPageData["elements"].toArray();
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            if (el["type"].toString() == "Text") {
+                QString id = el["id"].toString();
+                QString fc = el.contains("formatColor") ? el["formatColor"].toString() : "#01579b";
+                int fs = el.contains("formatSize") ? el["formatSize"].toInt() : 16;
+                bool fb = el.contains("formatBold") ? el["formatBold"].toBool() : true;
+                
+                code += QString("String _webFormat_%1_color = \"%2\";\n").arg(id).arg(fc);
+                code += QString("String _webFormat_%1_size = \"%2px\";\n").arg(id).arg(fs);
+                code += QString("String _webFormat_%1_weight = \"%2\";\n").arg(id).arg(fb ? "bold" : "normal");
+            }
+        }
+    }
+    
     code += emitStateVariables(components, eventBlockStorage, sanitized);
 
     // ── INSTANCIAÇÃO E GLOBAIS DO DHT22 ──
@@ -2003,8 +2061,12 @@ QString CodeGenerator::generateArduinoCode(
             QString var = el["boundVar"].toString();
             
             if (type == "Text") {
-                code += QString("  html += \"<div class='elem text' style='left:%1px; top:%2px;' id='%2'>%3 <span id='val_%2'></span></div>\";\n")
-                    .arg(x).arg(id).arg(text);
+                int fs = el.contains("formatSize") ? el["formatSize"].toInt() : 16;
+                QString fc = el.contains("formatColor") ? el["formatColor"].toString() : "#01579b";
+                bool fb = el.contains("formatBold") ? el["formatBold"].toBool() : true;
+                QString fw = fb ? "bold" : "normal";
+                code += QString("  html += \"<div class='elem text' style='left:%1px; top:%2px; font-size:%3px; color:%4; font-weight:%5;' id='%6'>%7 <span id='val_%6'></span></div>\";\n")
+                    .arg(x).arg(y).arg(fs).arg(fc).arg(fw).arg(id).arg(text);
             } else if (type == "Button") {
                 code += QString("  html += \"<button class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' onclick='sendEvent(\\\"%5\\\")'>%6</button>\";\n")
                     .arg(x).arg(y).arg(el["width"].toInt(100)).arg(el["height"].toInt(40)).arg(id).arg(text);
@@ -2028,6 +2090,9 @@ QString CodeGenerator::generateArduinoCode(
             QString id = el["id"].toString();
             if (type == "Text") {
                 code += QString("  html += \"if(d.%1 !== undefined) document.getElementById('val_%1').innerText = d.%1; \";\n").arg(id);
+                code += QString("  html += \"if(d.%1_color !== undefined) document.getElementById('%1').style.color = d.%1_color; \";\n").arg(id);
+                code += QString("  html += \"if(d.%1_size !== undefined) document.getElementById('%1').style.fontSize = d.%1_size; \";\n").arg(id);
+                code += QString("  html += \"if(d.%1_weight !== undefined) document.getElementById('%1').style.fontWeight = d.%1_weight; \";\n").arg(id);
             } else if (type == "Chart" && !el["boundVar"].toString().isEmpty()) {
                 // We'll leave the chart fetching logic empty or minimal for now
             }
@@ -2049,9 +2114,16 @@ QString CodeGenerator::generateArduinoCode(
             QString type = el["type"].toString();
             QString id = el["id"].toString();
             if (type == "Text") {
+                QString boundVar = el["boundVar"].toString();
+                if (!boundVar.isEmpty()) {
+                    if (!firstVar) code += "  json += \",\";\n";
+                    code += QString("  json += \"\\\"%1\\\":\\\"\" + String(%2) + \"\\\"\";\n").arg(id).arg(boundVar);
+                    firstVar = false;
+                }
                 if (!firstVar) code += "  json += \",\";\n";
-                // Output the text variable value
-                code += QString("  json += \"\\\"%1\\\":\\\"\" + val_%1 + \"\\\"\";\n").arg(id);
+                code += QString("  json += \"\\\"%1_color\\\":\\\"\" + _webFormat_%1_color + \"\\\",\";\n").arg(id);
+                code += QString("  json += \"\\\"%1_size\\\":\\\"\" + _webFormat_%1_size + \"\\\",\";\n").arg(id);
+                code += QString("  json += \"\\\"%1_weight\\\":\\\"\" + _webFormat_%1_weight + \"\\\"\";\n").arg(id);
                 firstVar = false;
             } else if (type == "Chart") {
                 QString var = el["boundVar"].toString();

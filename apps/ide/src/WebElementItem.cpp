@@ -15,6 +15,10 @@ WebElementItem::WebElementItem(const QJsonObject& data, QGraphicsItem* parent)
     m_boundVar = data.contains("bound_var") ? data["bound_var"].toString() : "";
     m_text = data.contains("text") ? data["text"].toString() : m_type;
     
+    m_formatSize = data.contains("formatSize") ? data["formatSize"].toInt() : 16;
+    m_formatColor = data.contains("formatColor") ? data["formatColor"].toString() : "#0284c7";
+    m_formatBold = data.contains("formatBold") ? data["formatBold"].toBool() : true;
+
     double x = data.contains("x") ? data["x"].toDouble() : 0;
     double y = data.contains("y") ? data["y"].toDouble() : 0;
     double w = data.contains("width") ? data["width"].toDouble() : 120;
@@ -26,20 +30,14 @@ WebElementItem::WebElementItem(const QJsonObject& data, QGraphicsItem* parent)
     m_textItem = new QGraphicsTextItem(this);
     
     QFont f = m_textItem->font();
-    if (m_type == "Text") {
-        f.setPixelSize(16);
-        f.setBold(true);
-    } else {
-        f.setBold(true);
-    }
+    f.setPixelSize(m_formatSize);
+    f.setBold(m_formatBold);
     m_textItem->setFont(f);
     
     if (m_type == "Button") {
         m_textItem->setDefaultTextColor(Qt::white);
-    } else if (m_type == "Text") {
-        m_textItem->setDefaultTextColor(QColor("#01579b"));
-    } else if (m_type == "Chart") {
-        m_textItem->setDefaultTextColor(QColor("#0288d1"));
+    } else {
+        m_textItem->setDefaultTextColor(QColor(m_formatColor));
     }
     
     setText(m_text);
@@ -74,6 +72,11 @@ QJsonObject WebElementItem::toJson() const {
     obj["y"] = pos().y();
     obj["width"] = rect().width();
     obj["height"] = rect().height();
+    
+    obj["formatSize"] = m_formatSize;
+    obj["formatColor"] = m_formatColor;
+    obj["formatBold"] = m_formatBold;
+    
     return obj;
 }
 
