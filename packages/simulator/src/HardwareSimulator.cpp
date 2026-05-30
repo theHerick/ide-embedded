@@ -388,7 +388,7 @@ ComponentItem* HardwareSimulator::findComponentByEspPin(int pinNum) {
             if (pin.connectedToComponent.isEmpty()) continue;
 
             // Direct connection
-            if (pin.connectedToComponent.startsWith("esp32_")) {
+            if (pin.connectedToComponent.startsWith("esp32")) {
                 QString num = extractPinNumber(pin.connectedToPin);
                 if (num == QString::number(pinNum)) return comp;
                 continue;
@@ -404,7 +404,7 @@ ComponentItem* HardwareSimulator::findComponentByEspPin(int pinNum) {
             for (const auto& nextPin : next->pins()) {
                 if (nextPin.connectedToComponent.isEmpty()) continue;
                 if (nextPin.connectedToComponent == comp->id()) continue;
-                if (nextPin.connectedToComponent.startsWith("esp32_")) {
+                if (nextPin.connectedToComponent.startsWith("esp32")) {
                     QString num = extractPinNumber(nextPin.connectedToPin);
                     if (num == QString::number(pinNum)) return comp;
                 }
