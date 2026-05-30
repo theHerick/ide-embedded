@@ -73,6 +73,7 @@ private:
     bool evaluateCondition(const QString& compId, const QString& param);
     bool evaluatePotCondition(const QString& compId, const QString& param);
     bool evaluateExpression(const QString& expr);
+    double evaluateNumericExpression(const QString& expr);
     ComponentItem* findComponent(const QString& target);
     ComponentItem* findComponentByEspPin(int pinNum);
     

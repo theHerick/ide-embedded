@@ -695,6 +695,44 @@ bool HardwareSimulator::evaluateExpression(const QString& expr) {
     return false;
 }
 
+double HardwareSimulator::evaluateNumericExpression(const QString& expr) {
+    QString s = expr.trimmed();
+    if (s.isEmpty()) return 0;
+    
+    // First, resolve pure variables
+    if (!s.contains("+") && !s.contains("-") && !s.contains("*") && !s.contains("/")) {
+        if (m_simVariables.contains(s)) return m_simVariables[s].toDouble();
+        bool ok = false;
+        double v = s.toDouble(&ok);
+        if (ok) return v;
+        return 0;
+    }
+    
+    // Naive evaluation using reverse precedence
+    int plus = s.lastIndexOf('+');
+    if (plus > 0) return evaluateNumericExpression(s.mid(0, plus)) + evaluateNumericExpression(s.mid(plus + 1));
+    
+    int minus = s.lastIndexOf('-');
+    // Ensure we don't split on a negative sign for the first number (e.g. "-10")
+    if (minus > 0 && s.at(minus - 1) != '*' && s.at(minus - 1) != '/' && s.at(minus - 1) != '+' && s.at(minus - 1) != '-') {
+        return evaluateNumericExpression(s.mid(0, minus)) - evaluateNumericExpression(s.mid(minus + 1));
+    }
+    
+    int mult = s.lastIndexOf('*');
+    if (mult > 0) return evaluateNumericExpression(s.mid(0, mult)) * evaluateNumericExpression(s.mid(mult + 1));
+    
+    int div = s.lastIndexOf('/');
+    if (div > 0) {
+        double denom = evaluateNumericExpression(s.mid(div + 1));
+        return (denom != 0) ? evaluateNumericExpression(s.mid(0, div)) / denom : 0;
+    }
+    
+    // Fallback if parsing fails (e.g. leading negative sign that didn't get caught)
+    bool ok = false;
+    double v = s.toDouble(&ok);
+    return ok ? v : 0;
+}
+
 void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks) {
     struct LevelState {
         bool active;
@@ -1187,7 +1225,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
             }
  else if (param == "DELAY") {
                 // Assuming actionTarget has the delay ms since it doesn't fit the UI perfectly yet
-                int ms = targetId.toInt();
+                int ms = static_cast<int>(evaluateNumericExpression(targetId));
                 if (ms == 0) ms = 500; // default
                 QEventLoop loop;
                 QTimer::singleShot(ms, &loop, &QEventLoop::quit);
