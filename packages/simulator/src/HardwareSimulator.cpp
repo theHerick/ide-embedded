@@ -111,7 +111,16 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
     m_soundThreadRunning = true;
     m_soundThread = std::thread([this]() {
         while (m_soundThreadRunning) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            int freq = m_activeBuzzerFreq.load();
+            if (freq > 0) {
+#ifdef _WIN32
+                Beep(freq, 60);
+#else
+                std::this_thread::sleep_for(std::chrono::milliseconds(60));
+#endif
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            }
         }
     });
     
