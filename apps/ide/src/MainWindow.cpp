@@ -757,6 +757,22 @@ void MainWindow::buildToolbar() {
                 }
             }
         }
+        
+        // Extract variables created in BlockEditor (scope variables)
+        if (m_blockEditor) {
+            auto eventStorage = m_blockEditor->getEventBlockStorage();
+            for (auto it = eventStorage.begin(); it != eventStorage.end(); ++it) {
+                for (const auto& block : it.value()) {
+                    if (block.type == LogicBlockType::CREATE_VAR) {
+                        QString varName = block.createVarName.trimmed().remove(" ");
+                        if (!varName.isEmpty()) {
+                            availableVars.append(varName);
+                        }
+                    }
+                }
+            }
+        }
+        
         availableVars.removeDuplicates();
         
         WebPageEditorDialog dlg(m_webPageData, availableVars, this);
