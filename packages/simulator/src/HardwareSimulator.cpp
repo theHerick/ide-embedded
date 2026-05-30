@@ -360,6 +360,60 @@ ComponentItem* HardwareSimulator::findComponent(const QString& target) {
     return nullptr;
 }
 
+ComponentItem* HardwareSimulator::findComponentByEspPin(int pinNum) {
+    if (!m_scene) return nullptr;
+    
+    auto extractPinNumber = [](const QString& name) -> QString {
+        QRegularExpression re("GPIO(\\d+)");
+        auto match = re.match(name);
+        if (match.hasMatch()) return match.captured(1);
+        if (name.startsWith("D")) {
+            bool ok;
+            int n = name.mid(1).toInt(&ok);
+            if (ok) return QString::number(n);
+        }
+        return "";
+    };
+
+    auto isPassiveComponent = [](const QString& type) -> bool {
+        return type == "resistor" || type == "capacitor" || type == "inductor" || type == "diode";
+    };
+
+    // Trace through passive components to find the actual component
+    for (auto* comp : m_scene->components()) {
+        if (comp->componentType() == "esp32") continue;
+        if (isPassiveComponent(comp->componentType())) continue;
+
+        for (const auto& pin : comp->pins()) {
+            if (pin.connectedToComponent.isEmpty()) continue;
+
+            // Direct connection
+            if (pin.connectedToComponent.startsWith("esp32_")) {
+                QString num = extractPinNumber(pin.connectedToPin);
+                if (num == QString::number(pinNum)) return comp;
+                continue;
+            }
+
+            // Connection via passive (1 level)
+            ComponentItem* next = nullptr;
+            for (auto* c : m_scene->components()) {
+                if (c->id() == pin.connectedToComponent) { next = c; break; }
+            }
+            if (!next || !isPassiveComponent(next->componentType())) continue;
+
+            for (const auto& nextPin : next->pins()) {
+                if (nextPin.connectedToComponent.isEmpty()) continue;
+                if (nextPin.connectedToComponent == comp->id()) continue;
+                if (nextPin.connectedToComponent.startsWith("esp32_")) {
+                    QString num = extractPinNumber(nextPin.connectedToPin);
+                    if (num == QString::number(pinNum)) return comp;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
 #include <QUrlQuery>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -822,8 +876,24 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
             QString targetId = block.actionTarget;
             QString param = block.actionCommand;
 
+            ComponentItem* comp = findComponent(targetId);
+            
+            // If we didn't find by name, try to find by ESP32 pin number
+            if (!comp) {
+                bool ok;
+                int pinNum = -1;
+                if (m_simVariables.contains(targetId)) {
+                    pinNum = m_simVariables[targetId].toInt();
+                } else {
+                    pinNum = targetId.toInt(&ok);
+                    if (!ok) pinNum = -1;
+                }
+                if (pinNum != -1) {
+                    comp = findComponentByEspPin(pinNum);
+                }
+            }
+
             if (param == "HIGH" || param == "LOW" || param == "TOGGLE") {
-                ComponentItem* comp = findComponent(targetId);
                 if (comp) {
                     if (comp->componentType() == "led") {
                         auto* led = static_cast<LEDItem*>(comp);
@@ -878,7 +948,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                     }
                 }
             } else if (param == "SET_FREQUENCY" || param == "BUZZER_TONE") {
-                ComponentItem* comp = findComponent(targetId);
+
                 if (comp && comp->componentType() == "buzzer") {
                     auto* buzzer = static_cast<BuzzerItem*>(comp);
                     int freq = 1000;
@@ -903,7 +973,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                     }
                 }
             } else if (param == "BUZZER_NOTONE") {
-                ComponentItem* comp = findComponent(targetId);
+
                 if (comp && comp->componentType() == "buzzer") {
                     auto* buzzer = static_cast<BuzzerItem*>(comp);
                     buzzer->setActive(false);
@@ -912,21 +982,21 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 }
             } else if (param == "ROTATE_MOTOR") {
                 double angle = block.actionParam.toDouble();
-                ComponentItem* comp = findComponent(targetId);
+
                 if (comp && comp->componentType() == "motor") {
                     auto* motor = static_cast<MotorItem*>(comp);
                     m_motorSpeeds[comp->id()] = 0.0; // Parar rotação contínua
                     motor->setCurrentAngle(angle);
                 }
             } else if (param == "CALC_BATTERY") {
-                ComponentItem* comp = findComponent(targetId);
+
                 if (comp && comp->componentType() == "bess") {
                     double level = static_cast<BessItem*>(comp)->chargeLevel();
                     qDebug() << "Bateria calculada no simulador:" << level << "%";
                 }
             } else if (param == "MOTOR_SPIN_INFINITE") {
                 double speed = block.actionParam.toDouble();
-                ComponentItem* comp = findComponent(targetId);
+
                 if (comp && comp->componentType() == "motor") {
                     m_motorSpeeds[comp->id()] = speed; // Iniciar rotação contínua
                 }
@@ -934,14 +1004,12 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 double speed = block.actionParam.toDouble();
                 int ms = block.actionParam2.toInt();
                 if (block.actionParam3 == "s") ms *= 1000;
-                ComponentItem* comp = findComponent(targetId);
                 if (comp && comp->componentType() == "motor") {
                     m_motorSpeeds[comp->id()] = speed; // Iniciar rotação contínua por tempo
                 }
                 QEventLoop loop;
                 QTimer::singleShot(ms, &loop, &QEventLoop::quit);
                 loop.exec();
-                comp = findComponent(targetId);
                 if (comp && comp->componentType() == "motor") {
                     auto* motor = static_cast<MotorItem*>(comp);
                     m_motorSpeeds[comp->id()] = 0.0; // Parar rotação contínua

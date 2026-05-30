@@ -74,6 +74,7 @@ private:
     bool evaluatePotCondition(const QString& compId, const QString& param);
     bool evaluateExpression(const QString& expr);
     ComponentItem* findComponent(const QString& target);
+    ComponentItem* findComponentByEspPin(int pinNum);
     
     void checkElectricalIntegrity();
 
