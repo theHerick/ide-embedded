@@ -440,7 +440,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
                 QStringList vars = boundVar.split(",");
                 QStringList colors = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#6366f1"};
                 
-                if (chartType == "pie" || chartType == "doughnut") {
+                if (chartType == "pie" || chartType == "doughnut" || chartType == "bar") {
                     QString labelsStr = "[";
                     QString colorsStr = "[";
                     for (int j = 0; j < vars.size(); ++j) {
@@ -475,7 +475,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
         html += "setInterval(() => {\n";
         html += "  for (let id in charts) {\n";
         html += "    let c = charts[id];\n";
-        html += "    if (c.config.type === 'pie' || c.config.type === 'doughnut') {\n";
+        html += "    if (c.config.type === 'pie' || c.config.type === 'doughnut' || c.config.type === 'bar') {\n";
         html += "       for (let i = 0; i < c.data.datasets[0].data.length; i++) {\n";
         html += "           c.data.datasets[0].data[i] = Math.max(1, c.data.datasets[0].data[i] + (Math.random() - 0.5) * 10);\n";
         html += "       }\n";

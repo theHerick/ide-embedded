@@ -2114,7 +2114,7 @@ QString CodeGenerator::generateArduinoCode(
                 QStringList vars = boundVar.split(",");
                 QStringList colors = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#6366f1"};
                 
-                if (chartType == "pie" || chartType == "doughnut") {
+                if (chartType == "pie" || chartType == "doughnut" || chartType == "bar") {
                     QString labelsStr = "[";
                     QString colorsStr = "[";
                     for (int j = 0; j < vars.size(); ++j) {
@@ -2166,7 +2166,7 @@ QString CodeGenerator::generateArduinoCode(
                 QStringList vars = el["boundVar"].toString().split(",");
                 code += QString("  html += \"if(charts['%1']) { \";\n").arg(id);
                 code += QString("  html += \"  let c = charts['%1']; \";\n").arg(id);
-                if (chartType == "pie" || chartType == "doughnut") {
+                if (chartType == "pie" || chartType == "doughnut" || chartType == "bar") {
                     for (int j = 0; j < vars.size(); ++j) {
                         QString v = vars[j].trimmed();
                         if (v.isEmpty()) continue;
