@@ -346,6 +346,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
         // Generate static HTML for preview
         QString html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>";
         html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+        html += "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>";
         html += "<style>";
         html += "body { margin: 0; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; ";
         html += "background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); min-height: 100vh; }";
@@ -395,9 +396,8 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
                 html += QString("<input type='text' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' value=''>\n")
                     .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30));
             } else if (type == "Chart") {
-                QString var = el["boundVar"].toString();
-                html += QString("<div class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px; background:rgba(255,255,255,0.8); border-radius:10px; border:1px solid #4fc3f7; padding:10px; display:flex; align-items:center; justify-content:center; color:#0288d1; font-weight:bold;'>[Gráfico: %5]</div>\n")
-                    .arg(x).arg(y).arg(el["width"].toInt(300)).arg(el["height"].toInt(200)).arg(var.isEmpty() ? text : var);
+                html += QString("<div class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px; background:rgba(255,255,255,0.9); border-radius:10px; border:1px solid #4fc3f7; padding:10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'><canvas id='%5'></canvas></div>\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(300)).arg(el["height"].toInt(200)).arg(id);
             } else if (type == "Slider") {
                 html += QString("<input type='range' class='elem' min='0' max='255' value='0' style='left:%1px; top:%2px; width:%3px;'>\n")
                     .arg(x).arg(y).arg(el["width"].toInt(150));
@@ -407,7 +407,47 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
                     .arg(x).arg(y).arg(size);
             }
         }
-        html += "</div></body></html>";
+        html += "</div>";
+        
+        // Initialize charts for preview
+        html += "<script>\n";
+        html += "const charts = {};\n";
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            if (el["type"].toString() == "Chart") {
+                QString id = el["id"].toString();
+                QString boundVar = el["boundVar"].toString();
+                if (boundVar.isEmpty()) boundVar = el["text"].toString();
+                
+                QStringList vars = boundVar.split(",");
+                QString datasetsStr = "[";
+                QStringList colors = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"};
+                for (int j = 0; j < vars.size(); ++j) {
+                    QString v = vars[j].trimmed();
+                    if (v.isEmpty()) continue;
+                    QString col = colors[j % colors.size()];
+                    datasetsStr += QString("{label: '%1', data: [], borderColor: '%2', backgroundColor: '%255', tension: 0.4, pointRadius: 0, borderWidth: 2},").arg(v).arg(col);
+                }
+                if (datasetsStr.endsWith(",")) datasetsStr.chop(1);
+                datasetsStr += "]";
+                
+                html += QString("charts['%1'] = new Chart(document.getElementById('%1').getContext('2d'), { type: 'line', data: { labels: [], datasets: %2 }, options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { beginAtZero: true } } } });\n")
+                    .arg(id).arg(datasetsStr);
+            }
+        }
+        html += "setInterval(() => {\n";
+        html += "  for (let id in charts) {\n";
+        html += "    let c = charts[id];\n";
+        html += "    c.data.labels.push('');\n";
+        html += "    if(c.data.labels.length > 20) c.data.labels.shift();\n";
+        html += "    for(let ds of c.data.datasets) {\n";
+        html += "       ds.data.push(Math.random() * 100);\n";
+        html += "       if(ds.data.length > 20) ds.data.shift();\n";
+        html += "    }\n";
+        html += "    c.update();\n";
+        html += "  }\n";
+        html += "}, 1000);\n";
+        html += "</script></body></html>";
         
         QString path = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/ide_preview.html";
         QFile f(path);

@@ -2038,6 +2038,7 @@ QString CodeGenerator::generateArduinoCode(
         code += "WebServer server(80);\n";
         code += "String getHtmlPage() {\n";
         code += "  String html = \"<!DOCTYPE html><html><head><meta charset='UTF-8'>\";\n";
+        code += "  html += \"<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>\";\n";
         code += "  html += \"<meta name='viewport' content='width=device-width, initial-scale=1.0'>\";\n";
         code += "  html += \"<style>\";\n";
         code += "  html += \"body { margin: 0; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; \";\n";
@@ -2083,8 +2084,8 @@ QString CodeGenerator::generateArduinoCode(
                 code += QString("  html += \"<input type='text' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' id='%5' value='' onchange='sendVar(\\\"%5\\\", this.value)'>\";\n")
                     .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30)).arg(id);
             } else if (type == "Chart") {
-                code += QString("  html += \"<div class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px; background:rgba(255,255,255,0.8); border-radius:10px; border:1px solid #4fc3f7; padding:10px; display:flex; align-items:center; justify-content:center; color:#0288d1; font-weight:bold;'>[Gráfico: %5]</div>\";\n")
-                    .arg(x).arg(y).arg(el["width"].toInt(300)).arg(el["height"].toInt(200)).arg(var.isEmpty() ? text : var);
+                code += QString("  html += \"<div class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px; background:rgba(255,255,255,0.9); border-radius:10px; border:1px solid #4fc3f7; padding:10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'><canvas id='%5'></canvas></div>\";\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(300)).arg(el["height"].toInt(200)).arg(id);
             } else if (type == "Slider") {
                 code += QString("  html += \"<input type='range' class='elem' min='0' max='255' value='0' style='left:%1px; top:%2px; width:%3px;' id='%4' onchange='sendVar(\\\"%4\\\", this.value)'>\";\n")
                     .arg(x).arg(y).arg(el["width"].toInt(150)).arg(id);
@@ -2099,6 +2100,32 @@ QString CodeGenerator::generateArduinoCode(
         code += "  html += \"<script>\";\n";
         code += "  html += \"function sendEvent(btn) { fetch('/event?btn=' + btn, {method: 'POST'}); }\";\n";
         code += "  html += \"function sendVar(varName, val) { fetch('/event?var=' + varName + '&val=' + val, {method: 'POST'}); }\";\n";
+        
+        // Initialize charts
+        code += "  html += \"const charts = {};\";\n";
+        for (int i = 0; i < elements.size(); ++i) {
+            QJsonObject el = elements[i].toObject();
+            if (el["type"].toString() == "Chart") {
+                QString id = el["id"].toString();
+                QString boundVar = el["boundVar"].toString();
+                if (boundVar.isEmpty()) boundVar = el["text"].toString();
+                
+                QStringList vars = boundVar.split(",");
+                QString datasetsStr = "[";
+                QStringList colors = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"};
+                for (int j = 0; j < vars.size(); ++j) {
+                    QString v = vars[j].trimmed();
+                    if (v.isEmpty()) continue;
+                    QString col = colors[j % colors.size()];
+                    datasetsStr += QString("{label: '%1', data: [], borderColor: '%2', backgroundColor: '%255', tension: 0.4, pointRadius: 0, borderWidth: 2},").arg(v).arg(col);
+                }
+                if (datasetsStr.endsWith(",")) datasetsStr.chop(1);
+                datasetsStr += "]";
+                
+                code += QString("  html += \"charts['%1'] = new Chart(document.getElementById('%1').getContext('2d'), { type: 'line', data: { labels: [], datasets: %2 }, options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { beginAtZero: true } } } });\";\n")
+                    .arg(id).arg(datasetsStr);
+            }
+        }
         code += "  html += \"setInterval(() => { fetch('/data').then(r=>r.json()).then(d => { \";\n";
         for (int i = 0; i < elements.size(); ++i) {
             QJsonObject el = elements[i].toObject();
@@ -2114,7 +2141,20 @@ QString CodeGenerator::generateArduinoCode(
             } else if (type == "Slider" || type == "Input") {
                 code += QString("  html += \"if(d.%1 !== undefined && document.activeElement !== document.getElementById('%1')) document.getElementById('%1').value = d.%1; \";\n").arg(id);
             } else if (type == "Chart" && !el["boundVar"].toString().isEmpty()) {
-                // We'll leave the chart fetching logic empty or minimal for now
+                QString id = el["id"].toString();
+                QStringList vars = el["boundVar"].toString().split(",");
+                code += QString("  html += \"if(charts['%1']) { \";\n").arg(id);
+                code += QString("  html += \"  let c = charts['%1']; \";\n").arg(id);
+                code += QString("  html += \"  c.data.labels.push(''); \";\n");
+                code += QString("  html += \"  if(c.data.labels.length > 20) c.data.labels.shift(); \";\n");
+                for (int j = 0; j < vars.size(); ++j) {
+                    QString v = vars[j].trimmed();
+                    if (v.isEmpty()) continue;
+                    code += QString("  html += \"  if(d.%1 !== undefined) c.data.datasets[%2].data.push(d.%1); else c.data.datasets[%2].data.push(0); \";\n").arg(v).arg(j);
+                    code += QString("  html += \"  if(c.data.datasets[%2].data.length > 20) c.data.datasets[%2].data.shift(); \";\n").arg(j);
+                }
+                code += QString("  html += \"  c.update(); \";\n");
+                code += QString("  html += \"} \";\n");
             }
         }
         code += "  html += \"}); }, 1000);\";\n";
