@@ -27,6 +27,9 @@ public:
     void setFormatColor(const QString& c) { m_formatColor = c; update(); }
     void setFormatBold(bool b) { m_formatBold = b; update(); }
 
+    QString chartType() const { return m_chartType; }
+    void setChartType(const QString& ct) { m_chartType = ct; update(); }
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -41,6 +44,8 @@ private:
     int m_formatSize = 16;
     QString m_formatColor = "#0284c7"; // Default color
     bool m_formatBold = true;
+    
+    QString m_chartType = "line"; // line, pie, bar, doughnut
 
     QGraphicsTextItem* m_textItem;
     QSizeF m_size;

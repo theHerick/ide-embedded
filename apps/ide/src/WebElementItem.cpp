@@ -18,6 +18,7 @@ WebElementItem::WebElementItem(const QJsonObject& data, QGraphicsItem* parent)
     m_formatSize = data.contains("formatSize") ? data["formatSize"].toInt() : 16;
     m_formatColor = data.contains("formatColor") ? data["formatColor"].toString() : "#0284c7";
     m_formatBold = data.contains("formatBold") ? data["formatBold"].toBool() : true;
+    m_chartType = data.contains("chartType") ? data["chartType"].toString() : "line";
 
     double x = data.contains("x") ? data["x"].toDouble() : 0;
     double y = data.contains("y") ? data["y"].toDouble() : 0;
@@ -76,6 +77,7 @@ QJsonObject WebElementItem::toJson() const {
     obj["formatSize"] = m_formatSize;
     obj["formatColor"] = m_formatColor;
     obj["formatBold"] = m_formatBold;
+    obj["chartType"] = m_chartType;
     
     return obj;
 }

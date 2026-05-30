@@ -156,6 +156,23 @@ protected:
                             webItem->setBoundVar(varDlg.getSelectedVars());
                         }
                     });
+                    menu.addAction("Editar Tipo de Gráfico", dialog, [this, webItem](){
+                        QStringList items = {"Linha (line)", "Barra (bar)", "Pizza (pie)", "Doughnut (doughnut)"};
+                        QString current = webItem->chartType();
+                        int currentIndex = 0;
+                        if (current == "bar") currentIndex = 1;
+                        else if (current == "pie") currentIndex = 2;
+                        else if (current == "doughnut") currentIndex = 3;
+                        
+                        bool ok;
+                        QString res = QInputDialog::getItem(dialog, "Tipo de Gráfico", "Selecione o tipo:", items, currentIndex, false, &ok);
+                        if (ok && !res.isEmpty()) {
+                            if (res.contains("line")) webItem->setChartType("line");
+                            else if (res.contains("bar")) webItem->setChartType("bar");
+                            else if (res.contains("pie")) webItem->setChartType("pie");
+                            else if (res.contains("doughnut")) webItem->setChartType("doughnut");
+                        }
+                    });
                 } else if (type == "Button") {
                     menu.addAction("Editar Evento: Ao Clicar", dialog, [this, webItem](){
                         dialog->requestEditEvent(webItem->id(), "aoClicar");
@@ -419,30 +436,56 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
                 QString boundVar = el["boundVar"].toString();
                 if (boundVar.isEmpty()) boundVar = el["text"].toString();
                 
+                QString chartType = el.contains("chartType") ? el["chartType"].toString() : "line";
                 QStringList vars = boundVar.split(",");
-                QString datasetsStr = "[";
-                QStringList colors = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"};
-                for (int j = 0; j < vars.size(); ++j) {
-                    QString v = vars[j].trimmed();
-                    if (v.isEmpty()) continue;
-                    QString col = colors[j % colors.size()];
-                    datasetsStr += QString("{label: '%1', data: [], borderColor: '%2', backgroundColor: '%255', tension: 0.4, pointRadius: 0, borderWidth: 2},").arg(v).arg(col);
-                }
-                if (datasetsStr.endsWith(",")) datasetsStr.chop(1);
-                datasetsStr += "]";
+                QStringList colors = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#6366f1"};
                 
-                html += QString("charts['%1'] = new Chart(document.getElementById('%1').getContext('2d'), { type: 'line', data: { labels: [], datasets: %2 }, options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { beginAtZero: true } } } });\n")
-                    .arg(id).arg(datasetsStr);
+                if (chartType == "pie" || chartType == "doughnut") {
+                    QString labelsStr = "[";
+                    QString colorsStr = "[";
+                    for (int j = 0; j < vars.size(); ++j) {
+                        QString v = vars[j].trimmed();
+                        if (v.isEmpty()) continue;
+                        labelsStr += QString("'%1',").arg(v);
+                        colorsStr += QString("'%1',").arg(colors[j % colors.size()]);
+                    }
+                    if (labelsStr.endsWith(",")) labelsStr.chop(1);
+                    if (colorsStr.endsWith(",")) colorsStr.chop(1);
+                    labelsStr += "]";
+                    colorsStr += "]";
+                    
+                    html += QString("charts['%1'] = new Chart(document.getElementById('%1').getContext('2d'), { type: '%2', data: { labels: %3, datasets: [{data: Array(%4).fill(10), backgroundColor: %5, borderWidth: 1}] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'right' } } } });\n")
+                        .arg(id).arg(chartType).arg(labelsStr).arg(vars.size()).arg(colorsStr);
+                } else {
+                    QString datasetsStr = "[";
+                    for (int j = 0; j < vars.size(); ++j) {
+                        QString v = vars[j].trimmed();
+                        if (v.isEmpty()) continue;
+                        QString col = colors[j % colors.size()];
+                        datasetsStr += QString("{label: '%1', data: [], borderColor: '%2', backgroundColor: '%255', tension: 0.4, pointRadius: 0, borderWidth: 2},").arg(v).arg(col);
+                    }
+                    if (datasetsStr.endsWith(",")) datasetsStr.chop(1);
+                    datasetsStr += "]";
+                    
+                    html += QString("charts['%1'] = new Chart(document.getElementById('%1').getContext('2d'), { type: '%2', data: { labels: [], datasets: %3 }, options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { beginAtZero: true } } } });\n")
+                        .arg(id).arg(chartType).arg(datasetsStr);
+                }
             }
         }
         html += "setInterval(() => {\n";
         html += "  for (let id in charts) {\n";
         html += "    let c = charts[id];\n";
-        html += "    c.data.labels.push('');\n";
-        html += "    if(c.data.labels.length > 20) c.data.labels.shift();\n";
-        html += "    for(let ds of c.data.datasets) {\n";
-        html += "       ds.data.push(Math.random() * 100);\n";
-        html += "       if(ds.data.length > 20) ds.data.shift();\n";
+        html += "    if (c.config.type === 'pie' || c.config.type === 'doughnut') {\n";
+        html += "       for (let i = 0; i < c.data.datasets[0].data.length; i++) {\n";
+        html += "           c.data.datasets[0].data[i] = Math.max(1, c.data.datasets[0].data[i] + (Math.random() - 0.5) * 10);\n";
+        html += "       }\n";
+        html += "    } else {\n";
+        html += "       c.data.labels.push('');\n";
+        html += "       if(c.data.labels.length > 20) c.data.labels.shift();\n";
+        html += "       for(let ds of c.data.datasets) {\n";
+        html += "          ds.data.push(Math.random() * 100);\n";
+        html += "          if(ds.data.length > 20) ds.data.shift();\n";
+        html += "       }\n";
         html += "    }\n";
         html += "    c.update();\n";
         html += "  }\n";

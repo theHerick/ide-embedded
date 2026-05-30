@@ -2106,24 +2106,44 @@ QString CodeGenerator::generateArduinoCode(
         for (int i = 0; i < elements.size(); ++i) {
             QJsonObject el = elements[i].toObject();
             if (el["type"].toString() == "Chart") {
+                QString chartType = el.contains("chartType") ? el["chartType"].toString() : "line";
                 QString id = el["id"].toString();
                 QString boundVar = el["boundVar"].toString();
                 if (boundVar.isEmpty()) boundVar = el["text"].toString();
                 
                 QStringList vars = boundVar.split(",");
-                QString datasetsStr = "[";
-                QStringList colors = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"};
-                for (int j = 0; j < vars.size(); ++j) {
-                    QString v = vars[j].trimmed();
-                    if (v.isEmpty()) continue;
-                    QString col = colors[j % colors.size()];
-                    datasetsStr += QString("{label: '%1', data: [], borderColor: '%2', backgroundColor: '%255', tension: 0.4, pointRadius: 0, borderWidth: 2},").arg(v).arg(col);
-                }
-                if (datasetsStr.endsWith(",")) datasetsStr.chop(1);
-                datasetsStr += "]";
+                QStringList colors = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#6366f1"};
                 
-                code += QString("  html += \"charts['%1'] = new Chart(document.getElementById('%1').getContext('2d'), { type: 'line', data: { labels: [], datasets: %2 }, options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { beginAtZero: true } } } });\";\n")
-                    .arg(id).arg(datasetsStr);
+                if (chartType == "pie" || chartType == "doughnut") {
+                    QString labelsStr = "[";
+                    QString colorsStr = "[";
+                    for (int j = 0; j < vars.size(); ++j) {
+                        QString v = vars[j].trimmed();
+                        if (v.isEmpty()) continue;
+                        labelsStr += QString("'%1',").arg(v);
+                        colorsStr += QString("'%1',").arg(colors[j % colors.size()]);
+                    }
+                    if (labelsStr.endsWith(",")) labelsStr.chop(1);
+                    if (colorsStr.endsWith(",")) colorsStr.chop(1);
+                    labelsStr += "]";
+                    colorsStr += "]";
+                    
+                    code += QString("  html += \"charts['%1'] = new Chart(document.getElementById('%1').getContext('2d'), { type: '%2', data: { labels: %3, datasets: [{data: Array(%4).fill(0), backgroundColor: %5, borderWidth: 1}] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'right' } } } });\";\n")
+                        .arg(id).arg(chartType).arg(labelsStr).arg(vars.size()).arg(colorsStr);
+                } else {
+                    QString datasetsStr = "[";
+                    for (int j = 0; j < vars.size(); ++j) {
+                        QString v = vars[j].trimmed();
+                        if (v.isEmpty()) continue;
+                        QString col = colors[j % colors.size()];
+                        datasetsStr += QString("{label: '%1', data: [], borderColor: '%2', backgroundColor: '%255', tension: 0.4, pointRadius: 0, borderWidth: 2},").arg(v).arg(col);
+                    }
+                    if (datasetsStr.endsWith(",")) datasetsStr.chop(1);
+                    datasetsStr += "]";
+                    
+                    code += QString("  html += \"charts['%1'] = new Chart(document.getElementById('%1').getContext('2d'), { type: '%2', data: { labels: [], datasets: %3 }, options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { beginAtZero: true } } } });\";\n")
+                        .arg(id).arg(chartType).arg(datasetsStr);
+                }
             }
         }
         code += "  html += \"setInterval(() => { fetch('/data').then(r=>r.json()).then(d => { \";\n";
@@ -2142,16 +2162,25 @@ QString CodeGenerator::generateArduinoCode(
                 code += QString("  html += \"if(d.%1 !== undefined && document.activeElement !== document.getElementById('%1')) document.getElementById('%1').value = d.%1; \";\n").arg(id);
             } else if (type == "Chart" && !el["boundVar"].toString().isEmpty()) {
                 QString id = el["id"].toString();
+                QString chartType = el.contains("chartType") ? el["chartType"].toString() : "line";
                 QStringList vars = el["boundVar"].toString().split(",");
                 code += QString("  html += \"if(charts['%1']) { \";\n").arg(id);
                 code += QString("  html += \"  let c = charts['%1']; \";\n").arg(id);
-                code += QString("  html += \"  c.data.labels.push(''); \";\n");
-                code += QString("  html += \"  if(c.data.labels.length > 20) c.data.labels.shift(); \";\n");
-                for (int j = 0; j < vars.size(); ++j) {
-                    QString v = vars[j].trimmed();
-                    if (v.isEmpty()) continue;
-                    code += QString("  html += \"  if(d.%1 !== undefined) c.data.datasets[%2].data.push(d.%1); else c.data.datasets[%2].data.push(0); \";\n").arg(v).arg(j);
-                    code += QString("  html += \"  if(c.data.datasets[%2].data.length > 20) c.data.datasets[%2].data.shift(); \";\n").arg(j);
+                if (chartType == "pie" || chartType == "doughnut") {
+                    for (int j = 0; j < vars.size(); ++j) {
+                        QString v = vars[j].trimmed();
+                        if (v.isEmpty()) continue;
+                        code += QString("  html += \"  if(d.%1 !== undefined) c.data.datasets[0].data[%2] = d.%1; \";\n").arg(v).arg(j);
+                    }
+                } else {
+                    code += QString("  html += \"  c.data.labels.push(''); \";\n");
+                    code += QString("  html += \"  if(c.data.labels.length > 20) c.data.labels.shift(); \";\n");
+                    for (int j = 0; j < vars.size(); ++j) {
+                        QString v = vars[j].trimmed();
+                        if (v.isEmpty()) continue;
+                        code += QString("  html += \"  if(d.%1 !== undefined) c.data.datasets[%2].data.push(d.%1); else c.data.datasets[%2].data.push(0); \";\n").arg(v).arg(j);
+                        code += QString("  html += \"  if(c.data.datasets[%2].data.length > 20) c.data.datasets[%2].data.shift(); \";\n").arg(j);
+                    }
                 }
                 code += QString("  html += \"  c.update(); \";\n");
                 code += QString("  html += \"} \";\n");
