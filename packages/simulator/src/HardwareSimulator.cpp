@@ -678,7 +678,16 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
     execStack.push_back({true, false, -1, "", 0, 0, ""}); // Root level
 
     int pc = 0;
+    int stepCount = 0;
+    const int MAX_STEPS = 5000;
+    
     while (pc < blocks.size()) {
+        stepCount++;
+        if (stepCount > MAX_STEPS) {
+            emit serialMessage("Simulador: Loop infinito ou muito longo detectado! Execução abortada por segurança.", "ERROR");
+            break;
+        }
+        
         if (!m_isRunning) return;
         const auto& block = blocks[pc];
 
@@ -819,10 +828,30 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 // If this FIM closes a FOR loop
                 if (lastState.loopStartPc != -1 && lastState.active) {
                     if (lastState.loopVar == "$WHILE$") {
-                        // While loop: simply jump back to re-evaluate the condition
-                        pc = lastState.loopStartPc;
-                        execStack.pop_back();
-                        continue;
+                        // Re-evaluate while condition
+                        const auto& loopBlock = blocks[lastState.loopStartPc];
+                        QString expr = loopBlock.conditionExpression.trimmed();
+                        QString subExpr = expr;
+                        if (subExpr.toLower().startsWith("while")) {
+                            subExpr.remove(0, 5);
+                            if (subExpr.trimmed().startsWith("(")) {
+                                subExpr = subExpr.trimmed().mid(1);
+                                if (subExpr.endsWith(")")) subExpr.chop(1);
+                            }
+                        }
+                        subExpr = subExpr.trimmed();
+                        
+                        bool cond = false;
+                        if (subExpr.isEmpty() || subExpr == "true" || subExpr == "1") {
+                            cond = true;
+                        } else {
+                            cond = evaluateExpression(subExpr);
+                        }
+                        
+                        if (cond) {
+                            pc = lastState.loopStartPc + 1; // Jump back to INSIDE the loop
+                            continue;
+                        }
                     } else {
                         // Increment the loop variable
                         int curVal = m_simVariables[lastState.loopVar].toInt();
@@ -837,9 +866,8 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                         else if (lastState.loopConditionOp == ">=") cond = curVal >= lastState.loopEnd;
                         
                         if (cond) {
-                            pc = lastState.loopStartPc; // Jump back to the CONDITION block!
-                            execStack.pop_back();
-                            continue; // Skip the pc++ below!
+                            pc = lastState.loopStartPc + 1; // Jump back to INSIDE the loop
+                            continue;
                         }
                     }
                 }
