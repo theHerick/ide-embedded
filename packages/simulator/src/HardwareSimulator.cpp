@@ -41,6 +41,7 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
         connect(m_simTimer, &QTimer::timeout, this, [this]() {
             if (!m_scene) return;
             
+            updateSensorVariables();
             triggerLoopEvents();
 
             int activeConsumers = 0;
@@ -115,6 +116,7 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
     });
     
     // Trigger ESP32's 'aoIniciar' boot event
+    updateSensorVariables();
     for (auto* comp : m_scene->components()) {
         if (comp->componentType() == "esp32") {
             triggerComponentEvent(comp->id(), "aoIniciar");
@@ -194,6 +196,8 @@ void HardwareSimulator::resetSimulation() {
         m_simVariables[it.key()] = it.value();
     }
     
+    updateSensorVariables();
+
     // Re-trigger boot event (setup)
     for (auto* comp : m_scene->components()) {
         if (comp->componentType() == "esp32") {
@@ -323,6 +327,33 @@ void HardwareSimulator::triggerLoopEvents() {
     if (!m_isRunning || !m_scene) return;
     for (auto* comp : m_scene->components()) {
         triggerComponentEvent(comp->id(), "aoLoop");
+    }
+}
+
+void HardwareSimulator::updateSensorVariables() {
+    if (!m_scene) return;
+    
+    auto getSuffix = [](const QString& name) -> QString {
+        int sep = name.lastIndexOf('-');
+        if (sep == -1) sep = name.lastIndexOf('_');
+        if (sep != -1) {
+            bool ok = false;
+            int num = name.mid(sep + 1).toInt(&ok);
+            if (ok) return QString("_%1").arg(num);
+        }
+        return "";
+    };
+
+    for (auto* comp : m_scene->components()) {
+        if (comp->componentType() == "hcsr04") {
+            auto* hcsr = static_cast<HCSR04Item*>(comp);
+            m_simVariables["distancia" + getSuffix(hcsr->name())] = hcsr->distance();
+        } else if (comp->componentType() == "dht22") {
+            auto* dht = static_cast<DHT22Item*>(comp);
+            QString suf = getSuffix(dht->name());
+            m_simVariables["umidade" + suf] = dht->humidity();
+            m_simVariables["temperatura" + suf] = dht->temperature();
+        }
     }
 }
 

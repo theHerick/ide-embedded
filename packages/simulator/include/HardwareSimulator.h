@@ -77,6 +77,7 @@ private:
     ComponentItem* findComponentByEspPin(int pinNum);
     
     void checkElectricalIntegrity();
+    void updateSensorVariables();
 
     std::thread m_soundThread;
     std::atomic<bool> m_soundThreadRunning{false};
