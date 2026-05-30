@@ -131,6 +131,41 @@ void WebElementItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
         if (!isSelected()) painter->setPen(QPen(QColor("#4fc3f7"), 1));
         else painter->setPen(pen);
         painter->drawRoundedRect(r, 10, 10);
+    } else if (m_type == "Slider") {
+        painter->setBrush(Qt::NoBrush);
+        if (isSelected()) painter->setPen(pen);
+        else painter->setPen(Qt::NoPen);
+        painter->drawRect(r);
+        
+        // Draw track
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(200, 200, 200));
+        painter->drawRoundedRect(QRectF(r.x(), r.y() + r.height()/2 - 4, r.width(), 8), 4, 4);
+        
+        // Draw knob
+        painter->setBrush(QColor("#0288d1"));
+        painter->drawEllipse(QPointF(r.x() + r.width()/2, r.y() + r.height()/2), 10, 10);
+    } else if (m_type == "LED") {
+        painter->setBrush(Qt::NoBrush);
+        if (isSelected()) painter->setPen(pen);
+        else painter->setPen(Qt::NoPen);
+        painter->drawRect(r);
+        
+        // Draw LED circle
+        painter->setBrush(QColor("#ef4444")); // Red by default
+        painter->setPen(QPen(QColor("#b91c1c"), 2));
+        qreal radius = qMin(r.width(), r.height()) / 2 - 2;
+        painter->drawEllipse(r.center(), radius, radius);
+        
+        // Glossy
+        painter->setBrush(QColor(255, 255, 255, 100));
+        painter->setPen(Qt::NoPen);
+        painter->drawEllipse(QPointF(r.center().x() - radius/3, r.center().y() - radius/3), radius/2, radius/2);
+    } else if (m_type == "Input") {
+        painter->setBrush(QColor(255, 255, 255, 230));
+        if (!isSelected()) painter->setPen(QPen(QColor("#81d4fa"), 2));
+        else painter->setPen(pen);
+        painter->drawRoundedRect(r, 6, 6);
     }
 }
 

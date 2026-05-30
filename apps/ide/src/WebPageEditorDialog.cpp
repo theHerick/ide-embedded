@@ -230,6 +230,27 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     );
     topLayout->addWidget(m_enableSwitch);
     
+    // Auth Panel
+    m_authEnable = new QCheckBox("Exigir Senha");
+    m_authEnable->setChecked(m_data.contains("auth_enabled") ? m_data["auth_enabled"].toBool() : false);
+    m_authEnable->setStyleSheet("QCheckBox { color: #0F172A; font-size: 11px; margin-left: 10px; }");
+    topLayout->addWidget(m_authEnable);
+    
+    m_authUser = new QLineEdit();
+    m_authUser->setPlaceholderText("Usuário");
+    m_authUser->setText(m_data.contains("auth_user") ? m_data["auth_user"].toString() : "admin");
+    m_authUser->setFixedWidth(80);
+    m_authUser->setStyleSheet("QLineEdit { border: 1px solid #CBD5E1; border-radius: 4px; padding: 2px 4px; font-size: 11px; }");
+    topLayout->addWidget(m_authUser);
+    
+    m_authPass = new QLineEdit();
+    m_authPass->setPlaceholderText("Senha");
+    m_authPass->setText(m_data.contains("auth_pass") ? m_data["auth_pass"].toString() : "1234");
+    m_authPass->setEchoMode(QLineEdit::Password);
+    m_authPass->setFixedWidth(80);
+    m_authPass->setStyleSheet("QLineEdit { border: 1px solid #CBD5E1; border-radius: 4px; padding: 2px 4px; font-size: 11px; }");
+    topLayout->addWidget(m_authPass);
+
     topLayout->addStretch();
     
     m_orientationCombo = new QComboBox();
@@ -469,6 +490,9 @@ void WebPageEditorDialog::addElement(const QString& type, const QPointF& pos) {
 
 void WebPageEditorDialog::done(int r) {
     m_data["enabled"] = m_enableSwitch->isChecked();
+    m_data["auth_enabled"] = m_authEnable->isChecked();
+    m_data["auth_user"] = m_authUser->text();
+    m_data["auth_pass"] = m_authPass->text();
     m_data["orientation"] = m_orientationCombo->currentIndex();
     
     QJsonArray newElements;
@@ -529,7 +553,7 @@ void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint&
     searchEdit->installEventFilter(this);
 
     QStringList componentsList;
-    componentsList << "Texto" << "Botão" << "Gráfico";
+    componentsList << "Texto" << "Botão" << "Gráfico" << "Slider" << "LED Virtual" << "Input Texto";
 
     QCompleter* completer = new QCompleter(componentsList, searchEdit);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
@@ -575,6 +599,9 @@ void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint&
         if (text == "Texto") addElement("Text", scenePos);
         else if (text == "Botão") addElement("Button", scenePos);
         else if (text == "Gráfico") addElement("Chart", scenePos);
+        else if (text == "Slider") addElement("Slider", scenePos);
+        else if (text == "LED Virtual") addElement("LED", scenePos);
+        else if (text == "Input Texto") addElement("Input", scenePos);
 
         searchEdit->deleteLater();
     };

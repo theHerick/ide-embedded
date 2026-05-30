@@ -8,6 +8,7 @@ class QGraphicsScene;
 class QGraphicsView;
 class QCheckBox;
 class QComboBox;
+class QLineEdit;
 
 class WebPageEditorDialog : public QDialog {
     Q_OBJECT
@@ -50,4 +51,8 @@ private:
     QStringList m_availableVars;
     QString m_editEventCompId;
     QString m_editEventName;
+    
+    QCheckBox* m_authEnable;
+    QLineEdit* m_authUser;
+    QLineEdit* m_authPass;
 };

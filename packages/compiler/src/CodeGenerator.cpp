@@ -2053,6 +2053,9 @@ QString CodeGenerator::generateArduinoCode(
         code += "  html += \"box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); outline: none; font-size: 14px; color: #01579b; }\";\n";
         code += "  html += \"input.elem:focus { border-color: #0288d1; background: rgba(255,255,255,0.9); }\";\n";
         code += "  html += \".text.elem { font-size: 16px; color: #01579b; font-weight: 600; text-shadow: 0 1px 1px rgba(255,255,255,0.8); }\";\n";
+        code += "  html += \"input[type='range'].elem { -webkit-appearance: none; background: #e0e0e0; height: 8px; border-radius: 4px; outline: none; }\";\n";
+        code += "  html += \"input[type='range'].elem::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #0288d1; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }\";\n";
+        code += "  html += \".led { border-radius: 50%; border: 2px solid #b91c1c; box-shadow: inset 0 -2px 6px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2); }\";\n";
         code += "  html += \"</style></head><body>\";\n";
         code += "  html += \"<div class='container'>\";\n";
         
@@ -2082,6 +2085,13 @@ QString CodeGenerator::generateArduinoCode(
             } else if (type == "Chart") {
                 code += QString("  html += \"<div class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px; background:rgba(255,255,255,0.8); border-radius:10px; border:1px solid #4fc3f7; padding:10px; display:flex; align-items:center; justify-content:center; color:#0288d1; font-weight:bold;'>[Gráfico: %5]</div>\";\n")
                     .arg(x).arg(y).arg(el["width"].toInt(300)).arg(el["height"].toInt(200)).arg(var.isEmpty() ? text : var);
+            } else if (type == "Slider") {
+                code += QString("  html += \"<input type='range' class='elem' min='0' max='255' value='0' style='left:%1px; top:%2px; width:%3px;' id='%4' onchange='sendVar(\\\"%4\\\", this.value)'>\";\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(150)).arg(id);
+            } else if (type == "LED") {
+                int size = el.contains("width") ? qMin(el["width"].toInt(), el["height"].toInt()) : 40;
+                code += QString("  html += \"<div class='elem led' style='left:%1px; top:%2px; width:%3px; height:%3px; background-color:#ef4444;' id='%4'></div>\";\n")
+                    .arg(x).arg(y).arg(size).arg(id);
             }
         }
         
@@ -2099,6 +2109,10 @@ QString CodeGenerator::generateArduinoCode(
                 code += QString("  html += \"if(d.%1_color !== undefined) document.getElementById('%1').style.color = d.%1_color; \";\n").arg(id);
                 code += QString("  html += \"if(d.%1_size !== undefined) document.getElementById('%1').style.fontSize = d.%1_size; \";\n").arg(id);
                 code += QString("  html += \"if(d.%1_weight !== undefined) document.getElementById('%1').style.fontWeight = d.%1_weight; \";\n").arg(id);
+            } else if (type == "LED") {
+                code += QString("  html += \"if(d.%1_state !== undefined) { document.getElementById('%1').style.backgroundColor = (d.%1_state == 1 || d.%1_state == 'true') ? '#22c55e' : '#ef4444'; document.getElementById('%1').style.borderColor = (d.%1_state == 1 || d.%1_state == 'true') ? '#15803d' : '#b91c1c'; }\";\n").arg(id);
+            } else if (type == "Slider" || type == "Input") {
+                code += QString("  html += \"if(d.%1 !== undefined && document.activeElement !== document.getElementById('%1')) document.getElementById('%1').value = d.%1; \";\n").arg(id);
             } else if (type == "Chart" && !el["boundVar"].toString().isEmpty()) {
                 // We'll leave the chart fetching logic empty or minimal for now
             }
@@ -2108,11 +2122,20 @@ QString CodeGenerator::generateArduinoCode(
         code += "  return html;\n";
         code += "}\n\n";
         
+        QString authStr = "";
+        if (webPageData.value("auth_enabled").toBool()) {
+            QString user = webPageData.value("auth_user").toString();
+            QString pass = webPageData.value("auth_pass").toString();
+            authStr = QString("  if (!server.authenticate(\"%1\", \"%2\")) { return server.requestAuthentication(); }\n").arg(user).arg(pass);
+        }
+
         code += "void handleRoot() {\n";
+        code += authStr;
         code += "  server.send(200, \"text/html\", getHtmlPage());\n";
         code += "}\n\n";
         
         code += "void handleData() {\n";
+        code += authStr;
         code += "  String json = \"{\";\n";
         bool firstVar = true;
         for (int i = 0; i < elements.size(); ++i) {
@@ -2143,6 +2166,20 @@ QString CodeGenerator::generateArduinoCode(
                         firstVar = false;
                     }
                 }
+            } else if (type == "Slider" || type == "Input") {
+                QString boundVar = el["boundVar"].toString();
+                if (!boundVar.isEmpty()) {
+                    if (!firstVar) code += "  json += \",\";\n";
+                    code += QString("  json += \"\\\"%1\\\":\\\"\" + String(%2) + \"\\\"\";\n").arg(id).arg(boundVar);
+                    firstVar = false;
+                }
+            } else if (type == "LED") {
+                QString boundVar = el["boundVar"].toString();
+                if (!boundVar.isEmpty()) {
+                    if (!firstVar) code += "  json += \",\";\n";
+                    code += QString("  json += \"\\\"%1_state\\\":\\\"\" + String(%2) + \"\\\"\";\n").arg(id).arg(boundVar);
+                    firstVar = false;
+                }
             }
         }
         code += "  json += \"}\";\n";
@@ -2150,6 +2187,7 @@ QString CodeGenerator::generateArduinoCode(
         code += "}\n\n";
         
         code += "void handleEvent() {\n";
+        code += authStr;
         code += "  if (server.hasArg(\"btn\")) {\n";
         code += "    String btn = server.arg(\"btn\");\n";
         // Call Web Button events
@@ -2179,7 +2217,7 @@ QString CodeGenerator::generateArduinoCode(
         // Call Web Input events
         for (int i = 0; i < elements.size(); ++i) {
             QJsonObject el = elements[i].toObject();
-            if (el["type"].toString() == "Input") {
+            if (el["type"].toString() == "Input" || el["type"].toString() == "Slider") {
                 QString id = el["id"].toString();
                 QString eventKey = QString("%1:aoAlterar").arg(id);
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
