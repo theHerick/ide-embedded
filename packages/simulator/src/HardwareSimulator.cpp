@@ -963,7 +963,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                     } else if (evaluateExpression(expr)) {
                         val = 1.0;
                     } else {
-                        val = 0.0;
+                        val = evaluateNumericExpression(expr);
                     }
                 }
             }
@@ -976,24 +976,10 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
             }
         }
         else if (shouldExecute && block.type == LogicBlockType::MATH) {
-            double op1 = 0;
-            double op2 = 0;
             QString operand1 = block.mathOperand1.trimmed();
             QString operand2 = block.mathOperand2.trimmed();
-            if (m_simVariables.contains(operand1)) {
-                op1 = m_simVariables[operand1].toDouble();
-            } else {
-                bool ok;
-                double val = operand1.toDouble(&ok);
-                if (ok) op1 = val;
-            }
-            if (m_simVariables.contains(operand2)) {
-                op2 = m_simVariables[operand2].toDouble();
-            } else {
-                bool ok;
-                double val = operand2.toDouble(&ok);
-                if (ok) op2 = val;
-            }
+            double op1 = evaluateNumericExpression(operand1);
+            double op2 = evaluateNumericExpression(operand2);
             double res = 0;
             QString op = block.mathOperator;
             if (op == "+") res = op1 + op2;
@@ -1032,7 +1018,14 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                                 }
                             }
                         }
-                        if (!found) output += part; // Just print the variable name if not found
+                        if (!found) {
+                            double num = evaluateNumericExpression(part);
+                            if (num != 0 || part.trimmed() == "0") {
+                                output += QString::number(num);
+                            } else {
+                                output += part; // Just print the variable name if not found
+                            }
+                        }
                     }
                 }
             }
@@ -1060,10 +1053,12 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 } else if (evaluateExpression(targetVar)) {
                     valToSave = 1.0;
                 } else {
-                    bool ok;
-                    double literal = targetVarTrimmed.toDouble(&ok);
-                    if (ok) valToSave = literal;
-                    else valToSave = targetVar; // Fallback to raw string for literals like HIGH/LOW
+                    double num = evaluateNumericExpression(targetVarTrimmed);
+                    if (num != 0 || targetVarTrimmed == "0" || targetVarTrimmed.contains(QRegularExpression("^\\s*0\\s*$"))) {
+                        valToSave = num;
+                    } else {
+                        valToSave = targetVar; // Fallback to raw string for literals like HIGH/LOW
+                    }
                 }
 
                 m_eeprom[keyName] = valToSave; 
@@ -1158,15 +1153,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
 
                 if (comp && comp->componentType() == "buzzer") {
                     auto* buzzer = static_cast<BuzzerItem*>(comp);
-                    int freq = 1000;
-                    QString freqStr = block.actionParam.trimmed();
-                    if (m_simVariables.contains(freqStr)) {
-                        freq = m_simVariables[freqStr].toInt();
-                    } else {
-                        bool ok;
-                        int val = freqStr.toInt(&ok);
-                        if (ok) freq = val;
-                    }
+                    int freq = static_cast<int>(evaluateNumericExpression(block.actionParam));
                     if (freq <= 0) freq = 1000;
                     buzzer->setFrequency(freq);
                     
@@ -1188,7 +1175,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                     emit pinStateChanged(comp->id(), "1", false);
                 }
             } else if (param == "ROTATE_MOTOR") {
-                double angle = block.actionParam.toDouble();
+                double angle = evaluateNumericExpression(block.actionParam);
 
                 if (comp && comp->componentType() == "motor") {
                     auto* motor = static_cast<MotorItem*>(comp);
@@ -1202,14 +1189,14 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                     qDebug() << "Bateria calculada no simulador:" << level << "%";
                 }
             } else if (param == "MOTOR_SPIN_INFINITE") {
-                double speed = block.actionParam.toDouble();
+                double speed = evaluateNumericExpression(block.actionParam);
 
                 if (comp && comp->componentType() == "motor") {
                     m_motorSpeeds[comp->id()] = speed; // Iniciar rotação contínua
                 }
             } else if (param == "MOTOR_SPIN_TIME") {
-                double speed = block.actionParam.toDouble();
-                int ms = block.actionParam2.toInt();
+                double speed = evaluateNumericExpression(block.actionParam);
+                int ms = static_cast<int>(evaluateNumericExpression(block.actionParam2));
                 if (block.actionParam3 == "s") ms *= 1000;
                 if (comp && comp->componentType() == "motor") {
                     m_motorSpeeds[comp->id()] = speed; // Iniciar rotação contínua por tempo
