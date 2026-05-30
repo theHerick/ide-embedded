@@ -519,14 +519,18 @@ static QString compileBlocks(
             }
 
             QString tgtName = "UNKNOWN";
+            bool isComponent = false;
             for (auto* c : components) {
                 QString sName = sanitizedMap ? sanitizedMap->value(c, sanitizeIdentifier(c->name())) : sanitizeIdentifier(c->name());
                 if (c->name() == actionTgt || c->id() == actionTgt || sName == actionTgt || (QString("PIN_") + sName) == actionTgt) {
                     tgtName = sName;
+                    isComponent = true;
                     break;
                 }
             }
-            if (tgtName == "UNKNOWN") tgtName = actionTgt; // Fallback to raw string if it's a variable or pin
+            if (!isComponent) tgtName = actionTgt; // Fallback to raw string if it's a variable or pin
+
+            QString resolvedPin = isComponent ? QString("PIN_%1").arg(tgtName) : tgtName;
 
             if (actionCmd == "HIGH" || actionCmd == "LOW") {
                 bool isBuzzer = false;
@@ -538,17 +542,17 @@ static QString compileBlocks(
                     }
                 }
                 if (isBuzzer && actionCmd == "LOW") {
-                    res += QString("%1noTone(PIN_%2);\n").arg(indent).arg(tgtName);
+                    res += QString("%1noTone(%2);\n").arg(indent).arg(resolvedPin);
                 } else {
-                    res += QString("%1digitalWrite(PIN_%2, %3);\n").arg(indent).arg(tgtName).arg(actionCmd);
+                    res += QString("%1digitalWrite(%2, %3);\n").arg(indent).arg(resolvedPin).arg(actionCmd);
                 }
             } else if (actionCmd == "SET_FREQUENCY" || actionCmd == "BUZZER_TONE") {
                 QString freq = block.actionParam.trimmed().isEmpty() ? "1000" : block.actionParam.trimmed();
-                res += QString("%1tone(PIN_%2, %3);\n").arg(indent).arg(tgtName).arg(freq);
+                res += QString("%1tone(%2, %3);\n").arg(indent).arg(resolvedPin).arg(freq);
             } else if (actionCmd == "BUZZER_NOTONE") {
-                res += QString("%1noTone(PIN_%2);\n").arg(indent).arg(tgtName);
+                res += QString("%1noTone(%2);\n").arg(indent).arg(resolvedPin);
             } else if (actionCmd == "TOGGLE") {
-                res += QString("%1digitalWrite(PIN_%2, !digitalRead(PIN_%2));\n").arg(indent).arg(tgtName);
+                res += QString("%1digitalWrite(%2, !digitalRead(%2));\n").arg(indent).arg(resolvedPin);
             } else if (actionCmd == "DELAY") {
                 QString param = block.actionParam.trimmed().isEmpty() ? tgtName : block.actionParam.trimmed();
                 res += QString("%1delay(%2);\n").arg(indent).arg(param);
@@ -575,7 +579,7 @@ static QString compileBlocks(
             } else if (actionCmd == "CALC_BATTERY") {
                 QString destVar = block.actionParam.trimmed().isEmpty() ? "nivelBateria" : block.actionParam.trimmed();
                 res += QString("%1// Calculando %% da bateria via divisor (2 resistores iguais)\n").arg(indent);
-                res += QString("%1int rawADC_%2 = analogRead(PIN_%3);\n").arg(indent).arg(tgtName).arg(tgtName);
+                res += QString("%1int rawADC_%2 = analogRead(%3);\n").arg(indent).arg(tgtName).arg(resolvedPin);
                 res += QString("%1float vADC_%2 = (rawADC_%3 / 4095.0) * 3.3;\n").arg(indent).arg(tgtName).arg(tgtName);
                 res += QString("%1%2 = (vADC_%3 * 2.0 / 4.2) * 100.0;\n").arg(indent).arg(destVar).arg(tgtName);
                 res += QString("%1if (%2 > 100.0) %2 = 100.0;\n").arg(indent).arg(destVar);
@@ -810,21 +814,6 @@ static QString emitPinDefinitions(
 
         QString macroName = sanitized[comp];
         code += QString("#define PIN_%1 %2%3\n").arg(macroName).arg(gpio).arg(comment);
-
-        // Also define the sanitized name directly to the PIN_ version, 
-        // to allow using "LED_6" directly in expressions as a synonym for PIN_LED_6.
-        static const QSet<QString> reservedKeywords = {
-            "HIGH", "LOW", "INPUT", "OUTPUT", "INPUT_PULLUP", "LED_BUILTIN",
-            "true", "false", "int", "float", "bool", "String", "if", "else", "while", "for"
-        };
-        if (!reservedKeywords.contains(macroName)) {
-            // Only define the direct synonym (e.g. #define LED_3 PIN_LED_3) if it's a basic I/O component.
-            // If it's a complex object (motor, dht, etc), we need that name for the object instance!
-            bool isComplexObject = (comp->componentType() == "motor" || comp->componentType() == "dht22" || comp->componentType() == "dht" || comp->componentType() == "hcsr04");
-            if (!isComplexObject) {
-                code += QString("#define %1 PIN_%1\n").arg(macroName);
-            }
-        }
 
         if (comp->componentType() == "dht22") {
             code += QString("#define PIN_%1_DATA %2%3\n").arg(macroName).arg(gpio).arg(comment);
