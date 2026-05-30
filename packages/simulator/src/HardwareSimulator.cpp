@@ -668,22 +668,38 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
     struct LevelState {
         bool active;
         bool lastIfTaken;
+        int loopStartPc;
+        QString loopVar;
+        int loopEnd;
+        int loopStep;
+        QString loopConditionOp;
     };
     QVector<LevelState> execStack;
-    execStack.push_back({true, false}); // Root level
+    execStack.push_back({true, false, -1, "", 0, 0, ""}); // Root level
 
-    for (const auto& block : blocks) {
+    int pc = 0;
+    while (pc < blocks.size()) {
         if (!m_isRunning) return;
+        const auto& block = blocks[pc];
 
         bool parentActive = execStack.last().active;
         bool shouldExecute = parentActive;
 
         if (block.type == LogicBlockType::CONDITION) {
             bool cond = false;
+            int loopStartPc = -1;
+            QString loopVar = "";
+            int loopEnd = 0;
+            int loopStep = 0;
+            QString loopConditionOp = "";
+
             if (parentActive) {
-                QString expr = block.conditionExpression.trimmed().toLower();
-                bool isElse = (expr == "senao" || expr == "else" || block.id.startsWith("else_") || block.id == "else");
-                bool isElseIf = (expr.startsWith("senao se") || expr.startsWith("else if") || block.id.startsWith("elseif") || block.id.startsWith("else if"));
+                QString expr = block.conditionExpression.trimmed();
+                QString lowExpr = expr.toLower();
+                bool isElse = (lowExpr == "senao" || lowExpr == "else" || block.id.startsWith("else_") || block.id == "else");
+                bool isElseIf = (lowExpr.startsWith("senao se") || lowExpr.startsWith("else if") || block.id.startsWith("elseif") || block.id.startsWith("else if"));
+                bool isFor = lowExpr.startsWith("int ") && expr.contains(";") && expr.count(";") == 2;
+                bool isWhile = lowExpr.startsWith("while") || block.id.startsWith("while_") || block.id == "while";
 
                 if (isElse) {
                     cond = !execStack.last().lastIfTaken;
@@ -697,8 +713,8 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                         emit serialMessage(QString("Simulador: Ignorando SENÃO SE pois um bloco anterior já foi executado"), "DEBUG");
                     } else {
                         QString subExpr = expr;
-                        if (subExpr.startsWith("senao se")) subExpr.remove(0, 8);
-                        else if (subExpr.startsWith("else if")) subExpr.remove(0, 7);
+                        if (subExpr.toLower().startsWith("senao se")) subExpr.remove(0, 8);
+                        else if (subExpr.toLower().startsWith("else if")) subExpr.remove(0, 7);
                         subExpr = subExpr.trimmed();
                         
                         cond = evaluateExpression(subExpr);
@@ -708,6 +724,70 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                         } else {
                             emit serialMessage(QString("Simulador: SENÃO SE (%1) falso").arg(subExpr), "DEBUG");
                         }
+                    }
+                } else if (isFor) {
+                    // This is a for loop! e.g., int i = 1; i < 4; i++
+                    execStack.last().lastIfTaken = false;
+                    QStringList parts = expr.split(";");
+                    if (parts.size() == 3) {
+                        QString initPart = parts[0].trimmed(); // "int i = 1" or "int i=1"
+                        QString condPart = parts[1].trimmed(); // "i < 4"
+                        QString incPart = parts[2].trimmed();  // "i++"
+
+                        if (initPart.startsWith("int ")) {
+                            initPart = initPart.mid(4).trimmed(); // "i = 1"
+                        }
+                        QStringList initTokens = initPart.split("=");
+                        if (initTokens.size() == 2) {
+                            loopVar = initTokens[0].trimmed();
+                            int startVal = initTokens[1].trimmed().toInt();
+                            
+                            // Initialize variable if not looping yet
+                            // Wait, if we are entering this block for the first time
+                            m_simVariables[loopVar] = startVal;
+                        }
+
+                        // condPart like "i < 4" or "i <= 4"
+                        if (condPart.contains("<=")) { loopConditionOp = "<="; loopEnd = condPart.split("<=").last().trimmed().toInt(); }
+                        else if (condPart.contains(">=")) { loopConditionOp = ">="; loopEnd = condPart.split(">=").last().trimmed().toInt(); }
+                        else if (condPart.contains("<")) { loopConditionOp = "<"; loopEnd = condPart.split("<").last().trimmed().toInt(); }
+                        else if (condPart.contains(">")) { loopConditionOp = ">"; loopEnd = condPart.split(">").last().trimmed().toInt(); }
+
+                        // incPart like "i++" or "i--"
+                        if (incPart.contains("++")) loopStep = 1;
+                        else if (incPart.contains("--")) loopStep = -1;
+                        
+                        loopStartPc = pc;
+                        
+                        // evaluate condition initially
+                        int curVal = m_simVariables[loopVar].toInt();
+                        if (loopConditionOp == "<") cond = curVal < loopEnd;
+                        else if (loopConditionOp == "<=") cond = curVal <= loopEnd;
+                        else if (loopConditionOp == ">") cond = curVal > loopEnd;
+                        else if (loopConditionOp == ">=") cond = curVal >= loopEnd;
+                        else cond = false;
+                    }
+                } else if (isWhile) {
+                    // This is a while loop!
+                    execStack.last().lastIfTaken = false;
+                    
+                    QString subExpr = expr;
+                    if (subExpr.toLower().startsWith("while")) {
+                        subExpr.remove(0, 5);
+                        if (subExpr.trimmed().startsWith("(")) {
+                            subExpr = subExpr.trimmed().mid(1);
+                            if (subExpr.endsWith(")")) subExpr.chop(1);
+                        }
+                    }
+                    subExpr = subExpr.trimmed();
+                    
+                    loopStartPc = pc;
+                    loopVar = "$WHILE$"; // Indicator that it's a while loop
+                    
+                    if (subExpr.isEmpty() || subExpr == "true" || subExpr == "1") {
+                        cond = true;
+                    } else {
+                        cond = evaluateExpression(subExpr);
                     }
                 } else {
                     // This is a new, independent 'IF' block
@@ -730,10 +810,40 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
             } else {
                 execStack.last().lastIfTaken = true;
             }
-            execStack.push_back({parentActive && cond, false});
+            execStack.push_back({parentActive && cond, false, loopStartPc, loopVar, loopEnd, loopStep, loopConditionOp});
         }
         else if (block.type == LogicBlockType::FIM) {
             if (execStack.size() > 1) {
+                LevelState lastState = execStack.last();
+                
+                // If this FIM closes a FOR loop
+                if (lastState.loopStartPc != -1 && lastState.active) {
+                    if (lastState.loopVar == "$WHILE$") {
+                        // While loop: simply jump back to re-evaluate the condition
+                        pc = lastState.loopStartPc;
+                        execStack.pop_back();
+                        continue;
+                    } else {
+                        // Increment the loop variable
+                        int curVal = m_simVariables[lastState.loopVar].toInt();
+                        curVal += lastState.loopStep;
+                        m_simVariables[lastState.loopVar] = curVal;
+                        
+                        // Evaluate condition again
+                        bool cond = false;
+                        if (lastState.loopConditionOp == "<") cond = curVal < lastState.loopEnd;
+                        else if (lastState.loopConditionOp == "<=") cond = curVal <= lastState.loopEnd;
+                        else if (lastState.loopConditionOp == ">") cond = curVal > lastState.loopEnd;
+                        else if (lastState.loopConditionOp == ">=") cond = curVal >= lastState.loopEnd;
+                        
+                        if (cond) {
+                            pc = lastState.loopStartPc; // Jump back to the CONDITION block!
+                            execStack.pop_back();
+                            continue; // Skip the pc++ below!
+                        }
+                    }
+                }
+                
                 execStack.pop_back();
             }
         }
@@ -1025,6 +1135,8 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 loop.exec();
             }
         }
+
+        pc++;
     }
 }
 
