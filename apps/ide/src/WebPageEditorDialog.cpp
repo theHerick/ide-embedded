@@ -51,12 +51,13 @@ public:
         QVBoxLayout* layout = new QVBoxLayout(this);
         
         QLabel* lbl = new QLabel("Selecione as variáveis para exibir no gráfico:");
+        lbl->setStyleSheet("color: #0F172A;");
         layout->addWidget(lbl);
         
         QListWidget* listWidget = new QListWidget(this);
         listWidget->setStyleSheet(
-            "QListWidget { border: 1px solid #CBD5E1; border-radius: 4px; padding: 4px; outline: none; }"
-            "QListWidget::item { padding: 4px; border-bottom: 1px solid #F1F5F9; }"
+            "QListWidget { border: 1px solid #CBD5E1; border-radius: 4px; padding: 4px; outline: none; background: #FFFFFF; color: #0F172A; }"
+            "QListWidget::item { padding: 4px; border-bottom: 1px solid #F1F5F9; color: #0F172A; }"
         );
         
         QStringList currentList = currentBound.split(",", Qt::SkipEmptyParts);
@@ -358,6 +359,9 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
         html += "input.elem { background: rgba(255,255,255,0.7); border: 1px solid #81d4fa; border-radius: 10px; padding: 8px 15px; ";
         html += "box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); outline: none; font-size: 14px; color: #01579b; }";
         html += "input.elem:focus { border-color: #0288d1; background: rgba(255,255,255,0.9); }";
+        html += "input[type='range'].elem { -webkit-appearance: none; background: #e0e0e0; height: 8px; border-radius: 4px; outline: none; }";
+        html += "input[type='range'].elem::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #0288d1; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }";
+        html += ".led { border-radius: 50%; border: 2px solid #b91c1c; box-shadow: inset 0 -2px 6px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2); }";
         html += ".text.elem { font-size: 16px; color: #01579b; font-weight: 600; text-shadow: 0 1px 1px rgba(255,255,255,0.8); }";
         html += "</style></head><body>";
         html += "<div class='container'>";
@@ -390,6 +394,17 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
             } else if (type == "Input") {
                 html += QString("<input type='text' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' value=''>\n")
                     .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30));
+            } else if (type == "Chart") {
+                QString var = el["boundVar"].toString();
+                html += QString("<div class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px; background:rgba(255,255,255,0.8); border-radius:10px; border:1px solid #4fc3f7; padding:10px; display:flex; align-items:center; justify-content:center; color:#0288d1; font-weight:bold;'>[Gráfico: %5]</div>\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(300)).arg(el["height"].toInt(200)).arg(var.isEmpty() ? text : var);
+            } else if (type == "Slider") {
+                html += QString("<input type='range' class='elem' min='0' max='255' value='0' style='left:%1px; top:%2px; width:%3px;'>\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(150));
+            } else if (type == "LED") {
+                int size = el.contains("width") ? qMin(el["width"].toInt(), el["height"].toInt()) : 40;
+                html += QString("<div class='elem led' style='left:%1px; top:%2px; width:%3px; height:%3px; background-color:#ef4444;'></div>\n")
+                    .arg(x).arg(y).arg(size);
             }
         }
         html += "</div></body></html>";
