@@ -12,7 +12,7 @@ WebElementItem::WebElementItem(const QJsonObject& data, QGraphicsItem* parent)
     
     m_id = data.contains("id") ? data["id"].toString() : QUuid::createUuid().toString();
     m_type = data.contains("type") ? data["type"].toString() : "Button";
-    m_boundVar = data.contains("bound_var") ? data["bound_var"].toString() : "";
+    m_boundVar = data.contains("boundVar") ? data["boundVar"].toString() : (data.contains("bound_var") ? data["bound_var"].toString() : "");
     m_text = data.contains("text") ? data["text"].toString() : m_type;
     
     m_formatSize = data.contains("formatSize") ? data["formatSize"].toInt() : 16;
@@ -67,7 +67,7 @@ QJsonObject WebElementItem::toJson() const {
     QJsonObject obj;
     obj["id"] = m_id;
     obj["type"] = m_type;
-    obj["bound_var"] = m_boundVar;
+    obj["boundVar"] = m_boundVar;
     obj["text"] = m_text;
     obj["x"] = pos().x();
     obj["y"] = pos().y();
