@@ -19,6 +19,7 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
     m_isRunning = true;
     m_motorSpeeds.clear();
     m_simVariables.clear();
+    m_executingLoop.clear();
     
     // Scan all event blocks for EEPROM keys to initialize them as variables
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
@@ -168,6 +169,7 @@ void HardwareSimulator::resetSimulation() {
     m_buttonStates.clear();
     m_motorSpeeds.clear();
     m_simVariables.clear();
+    m_executingLoop.clear();
     
     // Reset all component visual states to their default (off)
     for (auto* comp : m_scene->components()) {
