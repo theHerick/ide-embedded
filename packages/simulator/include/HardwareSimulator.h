@@ -56,6 +56,7 @@ private:
     QMap<QString, bool> m_ledStates;
     QMap<QString, bool> m_buttonStates;
     QMap<QString, double> m_motorSpeeds;
+    QMap<QString, bool> m_executingLoop;
 
     // Event Blocks copied for simulation
     QMap<QString, QVector<EventLogicBlock>> m_eventStorage;

@@ -335,7 +335,11 @@ void HardwareSimulator::checkElectricalIntegrity() {
 void HardwareSimulator::triggerLoopEvents() {
     if (!m_isRunning || !m_scene) return;
     for (auto* comp : m_scene->components()) {
-        triggerComponentEvent(comp->id(), "aoLoop");
+        if (!m_executingLoop.value(comp->id(), false)) {
+            m_executingLoop[comp->id()] = true;
+            triggerComponentEvent(comp->id(), "aoLoop");
+            m_executingLoop[comp->id()] = false;
+        }
     }
 }
 
@@ -1220,9 +1224,11 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 }
             }
  else if (param == "DELAY") {
-                // Assuming actionTarget has the delay ms since it doesn't fit the UI perfectly yet
-                int ms = static_cast<int>(evaluateNumericExpression(targetId));
-                if (ms == 0) ms = 500; // default
+                int ms = static_cast<int>(evaluateNumericExpression(block.actionParam));
+                if (ms <= 0 && !block.actionParam.isEmpty()) {
+                    ms = static_cast<int>(evaluateNumericExpression(targetId));
+                }
+                if (ms <= 0) ms = 500; // default
                 QEventLoop loop;
                 QTimer::singleShot(ms, &loop, &QEventLoop::quit);
                 loop.exec();
