@@ -44,6 +44,7 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
             
             updateSensorVariables();
             triggerLoopEvents();
+            triggerPeriodicEvents();
 
             int activeConsumers = 0;
             bool isChargerActive = false;
@@ -341,6 +342,49 @@ void HardwareSimulator::triggerLoopEvents() {
             m_executingLoop[comp->id()] = true;
             triggerComponentEvent(comp->id(), "aoLoop");
             m_executingLoop[comp->id()] = false;
+        }
+    }
+}
+
+void HardwareSimulator::triggerPeriodicEvents() {
+    if (!m_isRunning || !m_scene) return;
+    
+    static qint64 lastMedir = 0;
+    static qint64 lastDht = 0;
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    
+    if (now - lastMedir >= 100) {
+        lastMedir = now;
+        for (auto* comp : m_scene->components()) {
+            if (comp->componentType() == "hcsr04") {
+                QString eventKey = comp->id() + ":aoMedir";
+                if (!m_executingLoop.value(eventKey, false)) {
+                    m_executingLoop[eventKey] = true;
+                    triggerComponentEvent(comp->id(), "aoMedir");
+                    m_executingLoop[eventKey] = false;
+                }
+            }
+        }
+    }
+    
+    if (now - lastDht >= 2000) {
+        lastDht = now;
+        for (auto* comp : m_scene->components()) {
+            if (comp->componentType() == "dht22") {
+                QString eventKey = comp->id() + ":aoCalcularUmidade";
+                if (!m_executingLoop.value(eventKey, false)) {
+                    m_executingLoop[eventKey] = true;
+                    triggerComponentEvent(comp->id(), "aoCalcularUmidade");
+                    m_executingLoop[eventKey] = false;
+                }
+                
+                QString eventKeyTemp = comp->id() + ":aoCalcularTemperatura";
+                if (!m_executingLoop.value(eventKeyTemp, false)) {
+                    m_executingLoop[eventKeyTemp] = true;
+                    triggerComponentEvent(comp->id(), "aoCalcularTemperatura");
+                    m_executingLoop[eventKeyTemp] = false;
+                }
+            }
         }
     }
 }

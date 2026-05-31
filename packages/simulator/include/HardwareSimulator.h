@@ -31,6 +31,7 @@ public:
     bool isRunning() const { return m_isRunning; }
     void triggerComponentEvent(const QString& compId, const QString& eventName);
     void triggerLoopEvents();
+    void triggerPeriodicEvents();
 
     // EEPROM persistence
     QMap<QString, QVariant> getEepromData() const { return m_eeprom; }
