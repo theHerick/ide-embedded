@@ -1451,10 +1451,15 @@ QString CodeGenerator::generateArduinoCode(
                 code += QString("float umidade%1 = 0.0;\n").arg(suffix);
                 code += QString("float temperatura%1 = 0.0;\n").arg(suffix);
                 code += QString("DHT dht%1(PIN_%1_DATA, DHT22);\n").arg(name);
-                code += QString("void %1_eventAoCalcularUmidade() __attribute__((weak));\n").arg(name);
-                code += QString("void %1_eventAoCalcularUmidade() {}\n").arg(name);
-                code += QString("void %1_eventAoCalcularTemperatura() __attribute__((weak));\n").arg(name);
-                code += QString("void %1_eventAoCalcularTemperatura() {}\n\n").arg(name);
+                
+                bool hasUmidade = eventBlockStorage.contains(comp->id() + ":aoCalcularUmidade");
+                bool hasTemp = eventBlockStorage.contains(comp->id() + ":aoCalcularTemperatura");
+                
+                code += QString("void %1_eventAoCalcularUmidade();\n").arg(name);
+                if (!hasUmidade) code += QString("void %1_eventAoCalcularUmidade() {}\n").arg(name);
+                
+                code += QString("void %1_eventAoCalcularTemperatura();\n").arg(name);
+                if (!hasTemp) code += QString("void %1_eventAoCalcularTemperatura() {}\n\n").arg(name);
             }
         }
         code += "\n";
@@ -1475,8 +1480,11 @@ QString CodeGenerator::generateArduinoCode(
                 QString name = sanitized[comp];
                 QString suffix = getNumericSuffixFromSanitized(name);
                 code += QString("float distancia%1 = 0.0;\n").arg(suffix);
-                code += QString("void %1_eventAoMedir() __attribute__((weak));\n").arg(name);
-                code += QString("void %1_eventAoMedir() {}\n\n").arg(name);
+                
+                bool hasAoMedir = eventBlockStorage.contains(comp->id() + ":aoMedir");
+                
+                code += QString("void %1_eventAoMedir();\n").arg(name);
+                if (!hasAoMedir) code += QString("void %1_eventAoMedir() {}\n\n").arg(name);
             }
         }
         code += "\n";
