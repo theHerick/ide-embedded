@@ -1755,6 +1755,9 @@ void MainWindow::buildProject() {
     }
     m_isBuilding = true;
     m_buildAction->setEnabled(false);
+    
+    logMessage("Iniciando compilação de hardware (isso pode congelar a interface por alguns instantes)...", "INFO");
+    QCoreApplication::processEvents();
 
     auto buildGuard = qScopeGuard([this] {
         m_isBuilding = false;
