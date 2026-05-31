@@ -1530,10 +1530,25 @@ void MainWindow::toggleSimulation() {
 #endif
             
             m_nativeSimProcess->start(exePath);
-            logMessage("Simulação Nativa em execução (Alta Fidelidade)!", "SUCCESS");
+            logMessage("Simulação Nativa em execução!", "SUCCESS");
             m_scene->setSimulating(true);
             
-            // TODO: In the future, hook up the UI interactions to m_nativeSimProcess->write()
+            // Send button clicks directly to stdin
+            for (auto* comp : m_scene->components()) {
+                if (comp->componentType() == "button") {
+                    auto* btn = static_cast<ButtonItem*>(comp);
+                    connect(btn, &ButtonItem::stateChanged, this, [this, btn, pinToCompId](bool pressed) {
+                        int pinNum = -1;
+                        for (auto it = pinToCompId.begin(); it != pinToCompId.end(); ++it) {
+                            if (it.value() == btn->id()) { pinNum = it.key(); break; }
+                        }
+                        if (pinNum >= 0 && m_nativeSimProcess) {
+                            QString cmd = QString("SET:%1:%2\n").arg(pinNum).arg(pressed ? 1 : 0);
+                            m_nativeSimProcess->write(cmd.toUtf8());
+                        }
+                    });
+                }
+            }
             
         } else {
             logMessage("Simulacao Rápida (Interpretador) iniciada.", "SYSTEM");
@@ -3596,6 +3611,8 @@ void MainWindow::preparePlatformIOProject(bool forNativeSimulation) {
 #include <string>
 #include <thread>
 #include <chrono>
+#include <mutex>
+#include <map>
 
 #define HIGH 1
 #define LOW 0
@@ -3603,11 +3620,17 @@ void MainWindow::preparePlatformIOProject(bool forNativeSimulation) {
 #define OUTPUT 1
 #define INPUT_PULLUP 2
 
+static std::map<int, int> g_pinStates;
+static std::mutex g_pinMutex;
+
 static void pinMode(int pin, int mode) {}
 static void digitalWrite(int pin, int value) {
     std::cout << "PIN:" << pin << ":" << (value ? "HIGH" : "LOW") << std::endl;
 }
-static int digitalRead(int pin) { return 0; }
+static int digitalRead(int pin) {
+    std::lock_guard<std::mutex> lock(g_pinMutex);
+    return g_pinStates[pin];
+}
 static int analogRead(int pin) { return 0; }
 static void analogWrite(int pin, int value) {
     std::cout << "PWM:" << pin << ":" << value << std::endl;
@@ -3645,6 +3668,24 @@ public:
     int toInt() const { return std::stoi(*this); }
     float toFloat() const { return std::stof(*this); }
 };
+
+static void _simInputThread() {
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        if (line.rfind("SET:", 0) == 0) {
+            size_t firstColon = 3;
+            size_t secondColon = line.find(':', 4);
+            if (secondColon != std::string::npos) {
+                try {
+                    int pin = std::stoi(line.substr(4, secondColon - 4));
+                    int val = std::stoi(line.substr(secondColon + 1));
+                    std::lock_guard<std::mutex> lock(g_pinMutex);
+                    g_pinStates[pin] = val;
+                } catch(...) {}
+            }
+        }
+    }
+}
 )";
             mockFile.write(mockCode.toUtf8());
             mockFile.close();
@@ -3663,7 +3704,7 @@ public:
             }
 
             // Append main() entry point for native
-            code += "\n\nint main() {\n  setup();\n  while(true) {\n    loop();\n    delay(10);\n  }\n  return 0;\n}\n";
+            code += "\n\nint main() {\n  std::thread t(_simInputThread);\n  t.detach();\n  setup();\n  while(true) {\n    loop();\n    delay(10);\n  }\n  return 0;\n}\n";
 
             cppFile.write(code.toUtf8());
             cppFile.close();
