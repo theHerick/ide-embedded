@@ -20,3 +20,12 @@ Desktop.ini
 *.tmp
 *.log
 *.bak
+
+# Scratch / debug scripts
+scratch/
+
+# Cppcheck local configs
+cppcheck_cfg/
+
+# Test project files in root
+/teste.ideproject
