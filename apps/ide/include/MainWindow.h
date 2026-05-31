@@ -5,6 +5,7 @@
 #include <QListWidget>
 #include <QProgressBar>
 #include <QMap>
+#include <QProcess>
 #include "WorkspaceScene.h"
 #include "WorkspaceView.h"
 #include "BlockEditor.h"
@@ -89,6 +90,7 @@ private:
     QJsonObject m_webPageData; // Store Web Page dashboard settings
     bool m_lastBuildOk = false;
     bool m_isBuilding = false;
+    QProcess* m_nativeSimProcess = nullptr;
 
     // Resource monitors
     QProgressBar* m_ramProgressBar = nullptr;
@@ -105,9 +107,10 @@ private:
     void openEventEditor(ComponentItem* comp, const QString& eventName);
     void openWebEventEditor(const QString& compId, const QString& eventName);
     void synchronizeLoopBlocks();
+    void readNativeSimOutput();
     void openComponentCreator();
     void loadToolboxItems();
-    void preparePlatformIOProject();
+    void preparePlatformIOProject(bool forNativeSimulation = false);
     bool platformIOBuild();
     bool platformIOUpload();
     bool platformIOIsInstalled();

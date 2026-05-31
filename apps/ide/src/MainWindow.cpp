@@ -1414,8 +1414,12 @@ void MainWindow::toggleSimulation() {
     auto* playAction = qobject_cast<QAction*>(sender());
     if (!playAction) return;
 
-    if (m_simulator->isRunning()) {
+    if (m_simulator->isRunning() || (m_nativeSimProcess && m_nativeSimProcess->state() == QProcess::Running)) {
         m_simulator->stopSimulation();
+        if (m_nativeSimProcess) {
+            m_nativeSimProcess->kill();
+            m_nativeSimProcess->waitForFinished();
+        }
         m_scene->setSimulating(false);
         
         // Unlock UI
@@ -1445,6 +1449,7 @@ void MainWindow::toggleSimulation() {
             }
         }
     } else {
+        bool useNative = false;
         if (!m_lastBuildOk) {
             auto resp = QMessageBox::question(this, "Simulação Rápida", 
                 "O projeto não foi construído (Build).\nDeseja fazer uma simulação rápida (sem verificação de erros de roteamento)?",
@@ -1453,40 +1458,111 @@ void MainWindow::toggleSimulation() {
                 playAction->setChecked(false);
                 return;
             }
+        } else {
+            useNative = true;
         }
         
         statusBar()->showMessage("Iniciando Simulacao...");
-        logMessage("Simulacao interativa de hardware iniciada.", "SYSTEM");
-        logMessage("Dica: Clique nos botoes pulsadores e ajuste os potenciometros para ver os eventos disparando em tempo real!", "INFO");
         
         // Notify oscilloscope before starting
         m_oscilloscope->onSimulationStarted();
         // Switch to oscilloscope tab automatically when simulation starts
         if (m_bottomTabs) m_bottomTabs->setCurrentIndex(1);
-        
-        // Start running with the actual block engine storage
-        m_simulator->startSimulation(m_scene, m_blockEditor->getEventBlockStorage(), m_webPageData);
-        
-        // Hook visual button toggles to simulator triggers
-        for (auto* comp : m_scene->components()) {
-            if (comp->componentType() == "button") {
-                auto* btn = static_cast<ButtonItem*>(comp);
-                connect(btn, &ButtonItem::stateChanged, this, [this, btn](bool pressed) {
-                    if (pressed) {
-                        // Fire both legacy aoClicar and new aoPressionar
-                        m_simulator->triggerComponentEvent(btn->id(), "aoClicar");
-                        m_simulator->triggerComponentEvent(btn->id(), "aoPressionar");
-                    } else {
-                        m_simulator->triggerComponentEvent(btn->id(), "aoSoltar");
-                    }
-                });
-            } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
-                if (custom->category() == "digital_trigger") {
-                    connect(custom, &CustomComponentItem::stateChanged, this, [this, custom](bool pressed) {
+
+        if (useNative) {
+            logMessage("Simulação Nativa em C++: Compilando...", "SYSTEM");
+            preparePlatformIOProject(true);
+            
+            QDir buildDir(qApp->applicationDirPath());
+            QString pioPath = buildDir.filePath("pio_project");
+            
+            if (!m_nativeSimProcess) {
+                m_nativeSimProcess = new QProcess(this);
+                connect(m_nativeSimProcess, &QProcess::readyReadStandardOutput, this, &MainWindow::readNativeSimOutput);
+            }
+            
+            // Compila o executável nativo
+            QProcess compileProc;
+            QString pioCmd = getPlatformIOCommand();
+            if (pioCmd.isEmpty()) pioCmd = "platformio";
+            compileProc.setProgram(pioCmd);
+            compileProc.setArguments({"run", "-e", "native"});
+            compileProc.setWorkingDirectory(pioPath);
+            compileProc.start();
+            compileProc.waitForFinished();
+            
+            if (compileProc.exitCode() != 0) {
+                logMessage("Falha ao compilar simulação nativa! Verificando erros...", "ERROR");
+                logMessage(QString::fromUtf8(compileProc.readAllStandardError()), "ERROR");
+                playAction->setChecked(false);
+                return;
+            }
+            
+            // Build the Pin to Component map
+            m_scene->setProperty("nativePinMap", QVariant());
+            QMap<int, QString> pinToCompId;
+            QRegularExpression re("#define PIN_([A-Za-z0-9_]+)\\s+(\\d+)");
+            QRegularExpressionMatchIterator i = re.globalMatch(m_compiledCode);
+            QMap<QString, int> nameToPin;
+            while (i.hasNext()) {
+                QRegularExpressionMatch match = i.next();
+                nameToPin[match.captured(1)] = match.captured(2).toInt();
+            }
+            for (auto* comp : m_scene->components()) {
+                QString sanitized = comp->name().toLower().replace(" ", "_");
+                sanitized.remove(QRegularExpression("[^a-z0-9_]"));
+                if (nameToPin.contains(sanitized)) {
+                    pinToCompId[nameToPin[sanitized]] = comp->id();
+                }
+            }
+            
+            QVariantMap vmap;
+            for (auto it = pinToCompId.begin(); it != pinToCompId.end(); ++it) {
+                vmap[QString::number(it.key())] = it.value();
+            }
+            m_scene->setProperty("nativePinMap", vmap);
+            
+            QString exePath = pioPath + "/.pio/build/native/program.exe";
+#ifdef Q_OS_WIN
+            if (!QFile::exists(exePath)) exePath = pioPath + "/.pio/build/native/program.exe";
+#else
+            exePath = pioPath + "/.pio/build/native/program";
+#endif
+            
+            m_nativeSimProcess->start(exePath);
+            logMessage("Simulação Nativa em execução (Alta Fidelidade)!", "SUCCESS");
+            m_scene->setSimulating(true);
+            
+            // TODO: In the future, hook up the UI interactions to m_nativeSimProcess->write()
+            
+        } else {
+            logMessage("Simulacao Rápida (Interpretador) iniciada.", "SYSTEM");
+            logMessage("Dica: Clique nos botoes pulsadores e ajuste os potenciometros para ver os eventos disparando em tempo real!", "INFO");
+            
+            // Start running with the actual block engine storage
+            m_simulator->startSimulation(m_scene, m_blockEditor->getEventBlockStorage(), m_webPageData);
+            
+            // Hook visual button toggles to simulator triggers
+            for (auto* comp : m_scene->components()) {
+                if (comp->componentType() == "button") {
+                    auto* btn = static_cast<ButtonItem*>(comp);
+                    connect(btn, &ButtonItem::stateChanged, this, [this, btn](bool pressed) {
                         if (pressed) {
-                            m_simulator->triggerComponentEvent(custom->id(), "aoClicar");
+                            // Fire both legacy aoClicar and new aoPressionar
+                            m_simulator->triggerComponentEvent(btn->id(), "aoClicar");
+                            m_simulator->triggerComponentEvent(btn->id(), "aoPressionar");
+                        } else {
+                            m_simulator->triggerComponentEvent(btn->id(), "aoSoltar");
                         }
                     });
+                } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
+                    if (custom->category() == "digital_trigger") {
+                        connect(custom, &CustomComponentItem::stateChanged, this, [this, custom](bool pressed) {
+                            if (pressed) {
+                                m_simulator->triggerComponentEvent(custom->id(), "aoClicar");
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -2907,6 +2983,66 @@ void MainWindow::onComponentAdded(ComponentItem* comp) {
     }
 }
 
+void MainWindow::readNativeSimOutput() {
+    if (!m_nativeSimProcess) return;
+    QByteArray data = m_nativeSimProcess->readAllStandardOutput();
+    QString text = QString::fromUtf8(data);
+    QStringList lines = text.split('\n', Qt::SkipEmptyParts);
+    
+    QVariantMap pinMap = m_scene->property("nativePinMap").toMap();
+    
+    for (const QString& line : lines) {
+        if (line.startsWith("PIN:")) {
+            QStringList parts = line.split(':');
+            if (parts.size() >= 3) {
+                int pin = parts[1].toInt();
+                bool high = (parts[2].trimmed() == "HIGH");
+                
+                QString compId = pinMap.value(QString::number(pin)).toString();
+                if (!compId.isEmpty()) {
+                    ComponentItem* comp = nullptr;
+                    for (auto* c : m_scene->components()) {
+                        if (c->id() == compId) { comp = c; break; }
+                    }
+                    if (comp) {
+                        if (comp->componentType() == "led") {
+                            // Needs include LedItem.h but actually we can set property
+                            comp->setProperty("turnedOn", high);
+                            comp->update();
+                        } else if (comp->componentType() == "buzzer") {
+                            comp->setProperty("active", high);
+                            comp->update();
+                        }
+                    }
+                }
+                // Inform oscilloscope
+                m_oscilloscope->onPinStateChanged(compId, QString::number(pin), high);
+            }
+        } else if (line.startsWith("PWM:")) {
+            QStringList parts = line.split(':');
+            if (parts.size() >= 3) {
+                int pin = parts[1].toInt();
+                int val = parts[2].toInt();
+                QString compId = pinMap.value(QString::number(pin)).toString();
+                if (!compId.isEmpty()) {
+                    m_oscilloscope->onPinStateChanged(compId, QString::number(pin), val > 127);
+                }
+            }
+        } else if (line.startsWith("TONE:")) {
+            QStringList parts = line.split(':');
+            if (parts.size() >= 3) {
+                int pin = parts[1].toInt();
+                int freq = parts[2].toInt();
+                QString compId = pinMap.value(QString::number(pin)).toString();
+                // update buzzer frequency visually/sound? (skipping sound for now)
+            }
+        } else if (line.startsWith("SERIAL:")) {
+            m_serialMonitor->appendPlainText(line.mid(7).trimmed());
+            m_serialMonitor->verticalScrollBar()->setValue(m_serialMonitor->verticalScrollBar()->maximum());
+        }
+    }
+}
+
 void MainWindow::openComponentCreator() {
     logMessage("Assistente de modelagem de componentes iniciado.", "SYSTEM");
     ComponentCreatorDialog dialog(this);
@@ -3431,7 +3567,7 @@ void MainWindow::editMicrocontroller(ComponentItem* comp) {
     logMessage(QString("Microcontroller %1 config saved: %2").arg(comp->id()).arg(QString::fromUtf8(doc.toJson(QJsonDocument::Compact))), "SUCCESS");
 }
 
-void MainWindow::preparePlatformIOProject() {
+void MainWindow::preparePlatformIOProject(bool forNativeSimulation) {
     // Ensure generated code is up to date
     compileCode();
 
@@ -3441,7 +3577,105 @@ void MainWindow::preparePlatformIOProject() {
     QDir pioDir(pioPath);
     if (!pioDir.exists()) pioDir.mkpath(".");
 
-    // Default configuration values
+    if (forNativeSimulation) {
+        // Write platformio.ini for native
+        QFile iniFile(pioDir.filePath("platformio.ini"));
+        if (iniFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            QString ini = "[env:native]\nplatform = native\nbuild_flags = -std=c++17\n";
+            iniFile.write(ini.toUtf8());
+            iniFile.close();
+        }
+
+        // Write src/arduino_sim.h
+        QDir srcDir(pioDir.filePath("src"));
+        if (!srcDir.exists()) srcDir.mkpath(".");
+        QFile mockFile(srcDir.filePath("arduino_sim.h"));
+        if (mockFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            QString mockCode = R"(#pragma once
+#include <iostream>
+#include <string>
+#include <thread>
+#include <chrono>
+
+#define HIGH 1
+#define LOW 0
+#define INPUT 0
+#define OUTPUT 1
+#define INPUT_PULLUP 2
+
+static void pinMode(int pin, int mode) {}
+static void digitalWrite(int pin, int value) {
+    std::cout << "PIN:" << pin << ":" << (value ? "HIGH" : "LOW") << std::endl;
+}
+static int digitalRead(int pin) { return 0; }
+static int analogRead(int pin) { return 0; }
+static void analogWrite(int pin, int value) {
+    std::cout << "PWM:" << pin << ":" << value << std::endl;
+}
+static unsigned long millis() {
+    static auto start = std::chrono::steady_clock::now();
+    auto now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+}
+static void delay(int ms) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
+static void tone(int pin, unsigned int frequency, unsigned long duration = 0) {
+    std::cout << "TONE:" << pin << ":" << frequency << std::endl;
+}
+static void noTone(int pin) {
+    std::cout << "NOTONE:" << pin << std::endl;
+}
+
+struct SerialMock {
+    void begin(long baud) {}
+    void print(const std::string& s) { std::cout << "SERIAL:" << s; }
+    void print(int n) { std::cout << "SERIAL:" << n; }
+    void println(const std::string& s) { std::cout << "SERIAL:" << s << std::endl; }
+    void println(int n) { std::cout << "SERIAL:" << n << std::endl; }
+    void println() { std::cout << "SERIAL:" << std::endl; }
+};
+static SerialMock Serial;
+
+class String : public std::string {
+public:
+    String() : std::string() {}
+    String(const char* s) : std::string(s) {}
+    String(int n) : std::string(std::to_string(n)) {}
+    int toInt() const { return std::stoi(*this); }
+    float toFloat() const { return std::stof(*this); }
+};
+)";
+            mockFile.write(mockCode.toUtf8());
+            mockFile.close();
+        }
+
+        // Write src/main.cpp
+        QFile cppFile(srcDir.filePath("main.cpp"));
+        if (cppFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            QString code = m_compiledCode.isEmpty() ? "// Nenhum código gerado\nint main() { return 0; }" : m_compiledCode;
+            
+            // Replace <Arduino.h> with "arduino_sim.h"
+            if (code.contains("<Arduino.h>")) {
+                code.replace("<Arduino.h>", "\"arduino_sim.h\"");
+            } else {
+                code = "#include \"arduino_sim.h\"\n" + code;
+            }
+
+            // Append main() entry point for native
+            code += "\n\nint main() {\n  setup();\n  while(true) {\n    loop();\n    delay(10);\n  }\n  return 0;\n}\n";
+
+            cppFile.write(code.toUtf8());
+            cppFile.close();
+        }
+
+        QFile oldIno(srcDir.filePath("main.ino"));
+        if (oldIno.exists()) oldIno.remove();
+
+        return; // Early return for native
+    }
+
+    // Default configuration values for hardware compile
     QString board = "esp32dev";
     QString framework = "arduino";
     QString uploadPort = "Auto-Detect";
@@ -3515,6 +3749,8 @@ void MainWindow::preparePlatformIOProject() {
         if (framework == "arduino" && !code.contains("Arduino.h")) {
             code = "#include <Arduino.h>\n" + code;
         }
+        // Limpar "arduino_sim.h" caso tenha ficado na memória do m_compiledCode gerado nativo?
+        // m_compiledCode é gerado pelo CodeGenerator, que sempre gera padrão.
         cppFile.write(code.toUtf8());
         cppFile.close();
     }
