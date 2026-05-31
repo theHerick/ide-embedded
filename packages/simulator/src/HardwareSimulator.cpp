@@ -389,15 +389,28 @@ void HardwareSimulator::triggerPeriodicEvents() {
     }
 }
 
+static QString sanitizeIdentifier(const QString& name) {
+    QString res = name.normalized(QString::NormalizationForm_D).toUpper();
+    QString clean;
+    for (int i = 0; i < res.length(); ++i) {
+        QChar c = res.at(i);
+        if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') clean.append(c);
+        else if (c.isSpace() || c == '.' || c == '-') clean.append('_');
+    }
+    if (clean.isEmpty()) clean = "COMP";
+    if (!clean.isEmpty() && clean.at(0).isDigit()) clean.prepend('_');
+    return clean;
+}
+
 void HardwareSimulator::updateSensorVariables() {
     if (!m_scene) return;
     
     auto getSuffix = [](const QString& name) -> QString {
-        int sep = name.lastIndexOf('-');
-        if (sep == -1) sep = name.lastIndexOf('_');
-        if (sep != -1) {
+        QString sName = sanitizeIdentifier(name);
+        int lastUnderscore = sName.lastIndexOf('_');
+        if (lastUnderscore != -1) {
             bool ok = false;
-            int num = name.mid(sep + 1).toInt(&ok);
+            int num = sName.mid(lastUnderscore + 1).toInt(&ok);
             if (ok) return QString("_%1").arg(num);
         }
         return "";
@@ -424,19 +437,6 @@ void HardwareSimulator::triggerComponentEvent(const QString& compId, const QStri
     if (m_eventStorage.contains(key)) {
         executeBlockChain(m_eventStorage[key]);
     }
-}
-
-static QString sanitizeIdentifier(const QString& name) {
-    QString res = name.normalized(QString::NormalizationForm_D).toUpper();
-    QString clean;
-    for (int i = 0; i < res.length(); ++i) {
-        QChar c = res.at(i);
-        if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') clean.append(c);
-        else if (c.isSpace() || c == '.' || c == '-') clean.append('_');
-    }
-    if (clean.isEmpty()) clean = "COMP";
-    if (!clean.isEmpty() && clean.at(0).isDigit()) clean.prepend('_');
-    return clean;
 }
 
 ComponentItem* HardwareSimulator::findComponent(const QString& target) {
