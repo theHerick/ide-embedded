@@ -387,6 +387,34 @@ void HardwareSimulator::triggerPeriodicEvents() {
             }
         }
     }
+    
+    // Potenciômetros e Custom Sensors Analógicos/Digitais (100ms)
+    for (auto* comp : m_scene->components()) {
+        if (comp->componentType() == "potentiometer") {
+            QString eventKey = comp->id() + ":aoGirar";
+            if (!m_executingLoop.value(eventKey, false)) {
+                m_executingLoop[eventKey] = true;
+                triggerComponentEvent(comp->id(), "aoGirar");
+                m_executingLoop[eventKey] = false;
+            }
+        } else if (comp->componentType() == "bess") {
+            QString eventKey = comp->id() + ":aoGirar";
+            if (!m_executingLoop.value(eventKey, false)) {
+                m_executingLoop[eventKey] = true;
+                triggerComponentEvent(comp->id(), "aoGirar");
+                m_executingLoop[eventKey] = false;
+            }
+        } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
+            if (custom->category() == "analog_input" || custom->category() == "digital_sensor") {
+                QString eventKey = custom->id() + ":aoMudarValor";
+                if (!m_executingLoop.value(eventKey, false)) {
+                    m_executingLoop[eventKey] = true;
+                    triggerComponentEvent(custom->id(), "aoMudarValor");
+                    m_executingLoop[eventKey] = false;
+                }
+            }
+        }
+    }
 }
 
 static QString sanitizeIdentifier(const QString& name) {
@@ -1268,8 +1296,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                     m_motorSpeeds[comp->id()] = 0.0; // Parar rotação contínua
                     motor->setCurrentAngle(0); // Stop visually
                 }
-            }
- else if (param == "DELAY") {
+            } else if (param == "DELAY") {
                 int ms = static_cast<int>(evaluateNumericExpression(block.actionParam));
                 if (ms <= 0 && !block.actionParam.isEmpty()) {
                     ms = static_cast<int>(evaluateNumericExpression(targetId));
@@ -1278,6 +1305,23 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 QEventLoop loop;
                 QTimer::singleShot(ms, &loop, &QEventLoop::quit);
                 loop.exec();
+            } else if (param == "WIFI_AP") {
+                emit serialMessage("Simulador: Ponto de Acesso Wi-Fi Iniciado", "INFO");
+            } else if (param == "WIFI_CONNECT") {
+                emit serialMessage("Simulador: Wi-Fi Conectado com sucesso", "INFO");
+            } else if (param == "FORMAT_WEB_COLOR") {
+                m_simVariables["_webFormat_" + targetId + "_color"] = block.actionParam;
+            } else if (param == "FORMAT_WEB_SIZE") {
+                m_simVariables["_webFormat_" + targetId + "_size"] = QString::number((int)evaluateNumericExpression(block.actionParam)) + "px";
+            } else if (param == "FORMAT_WEB_BOLD") {
+                m_simVariables["_webFormat_" + targetId + "_weight"] = (block.actionParam == "true") ? "bold" : "normal";
+            } else if (param == "CALL_FUNCTION") {
+                QString funcKey = targetId + ":" + block.actionParam;
+                if (m_eventStorage.contains(funcKey)) {
+                    executeBlockChain(m_eventStorage[funcKey]);
+                }
+            } else if (param == "RETURN") {
+                return; // Aborta e retorna da stack atual
             }
         }
 
