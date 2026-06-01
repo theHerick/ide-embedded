@@ -1897,68 +1897,172 @@ QRectF BessItem::boundingRect() const {
 void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
     painter->setRenderHint(QPainter::Antialiasing);
 
+    // Selected state glow
     if (option->state & QStyle::State_Selected) {
         painter->setPen(QPen(QColor(99, 102, 241, 150), 3, Qt::SolidLine));
         painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(-28, -53, 56, 106, 4, 4);
+        painter->drawRoundedRect(-28, -53, 56, 106, 6, 6);
     }
 
-    // Battery Body (Blue 18650 pack style)
-    painter->setPen(QPen(QColor(30, 64, 175), 2));
-    painter->setBrush(QColor(37, 99, 235));
+    // --- BATTERY METAL CAPS ---
+    QLinearGradient capGrad(-10, 0, 10, 0);
+    capGrad.setColorAt(0.0, QColor(148, 163, 184));
+    capGrad.setColorAt(0.3, QColor(241, 245, 249));
+    capGrad.setColorAt(0.7, QColor(203, 213, 225));
+    capGrad.setColorAt(1.0, QColor(71, 85, 105));
+
+    // Positive Cap (Top)
+    painter->setPen(QPen(QColor(71, 85, 105), 1));
+    painter->setBrush(capGrad);
+    painter->drawRoundedRect(-8, -50, 16, 6, 1, 1);
+
+    // Negative Cap (Bottom)
+    painter->drawRoundedRect(-12, 44, 24, 6, 1, 1);
+
+    // --- BATTERY CYLINDRICAL BODY ---
+    QLinearGradient bodyGrad(-25, 0, 25, 0);
+    bodyGrad.setColorAt(0.0, QColor(17, 24, 39));
+    bodyGrad.setColorAt(0.15, QColor(29, 78, 216));
+    bodyGrad.setColorAt(0.45, QColor(59, 130, 246));
+    bodyGrad.setColorAt(0.65, QColor(147, 197, 253));
+    bodyGrad.setColorAt(0.85, QColor(37, 99, 235));
+    bodyGrad.setColorAt(1.0, QColor(30, 58, 138));
+
+    painter->setPen(QPen(QColor(15, 32, 67), 1.5));
+    painter->setBrush(bodyGrad);
     painter->drawRoundedRect(-25, -45, 50, 90, 4, 4);
-    
-    // Battery Cap (Positive)
-    painter->setBrush(QColor(226, 232, 240));
-    painter->drawRect(-10, -50, 20, 5);
 
-    // Battery Cap (Negative)
-    painter->drawRect(-10, 45, 20, 5);
-
-    // Charge Bar Background
+    // Body reflection overlay
+    QLinearGradient glossGrad(0, -45, 0, 45);
+    glossGrad.setColorAt(0.0, QColor(255, 255, 255, 60));
+    glossGrad.setColorAt(0.3, QColor(255, 255, 255, 0));
+    glossGrad.setColorAt(1.0, QColor(0, 0, 0, 40));
     painter->setPen(Qt::NoPen);
-    painter->setBrush(QColor(15, 23, 42, 100));
-    painter->drawRect(-15, -35, 30, 70);
+    painter->setBrush(glossGrad);
+    painter->drawRoundedRect(-25, -45, 50, 90, 4, 4);
 
-    // Charge Bar Foreground
-    double fillHeight = (m_chargeLevel / 100.0) * 70.0;
-    QColor chargeColor = m_chargeLevel > 20 ? QColor(34, 197, 94) : QColor(239, 68, 68);
-    painter->setBrush(chargeColor);
-    painter->drawRect(-15, 35 - fillHeight, 30, fillHeight);
+    // --- LCD DISPLAY SCREEN ---
+    QLinearGradient lcdGrad(0, -32, 0, 32);
+    lcdGrad.setColorAt(0.0, QColor(15, 23, 42));
+    lcdGrad.setColorAt(1.0, QColor(2, 6, 23));
+    painter->setBrush(lcdGrad);
+    painter->setPen(QPen(QColor(51, 65, 85), 1.2));
+    painter->drawRoundedRect(-18, -32, 36, 64, 4, 4);
 
-    // Percentage text
-    painter->setPen(Qt::white);
+    // Segment active levels
+    int activeSegments = 0;
+    if (m_chargeLevel > 80.0) activeSegments = 5;
+    else if (m_chargeLevel > 60.0) activeSegments = 4;
+    else if (m_chargeLevel > 40.0) activeSegments = 3;
+    else if (m_chargeLevel > 20.0) activeSegments = 2;
+    else if (m_chargeLevel > 0.0) activeSegments = 1;
+
+    QColor segColor;
+    if (m_chargeLevel <= 20.0) {
+        segColor = QColor(239, 68, 68);
+    } else if (m_chargeLevel <= 50.0) {
+        segColor = QColor(245, 158, 11);
+    } else {
+        segColor = QColor(34, 197, 94);
+    }
+
+    // Battery icon outline
+    painter->setPen(QPen(QColor(71, 85, 105), 1));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(-10, -24, 20, 32, 2, 2);
+    painter->drawRect(-4, -27, 8, 3);
+
+    double segY[] = { 1.0, -4.5, -10.0, -15.5, -21.0 };
+    for (int i = 0; i < 5; i++) {
+        if (i < activeSegments) {
+            // Neon Glow
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(segColor.red(), segColor.green(), segColor.blue(), 50));
+            painter->drawRoundedRect(-9, segY[i] - 1, 18, 6, 1, 1);
+
+            // Active Segment Core
+            painter->setBrush(segColor);
+            painter->drawRoundedRect(-8, segY[i], 16, 4, 1, 1);
+        } else {
+            // Inactive Segment
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(30, 41, 59, 120));
+            painter->drawRoundedRect(-8, segY[i], 16, 4, 1, 1);
+        }
+    }
+
+    // Digital percentage
+    painter->setPen(QColor(241, 245, 249));
     QFont f = painter->font();
-    f.setPointSize(7);
+    f.setPointSize(6);
     f.setBold(true);
+    f.setFamily("Segoe UI");
     painter->setFont(f);
-    painter->drawText(QRectF(-25, -10, 50, 20), Qt::AlignCenter, QString("%1%").arg((int)m_chargeLevel));
-    // Wire leads - draw BEFORE pins so they appear behind pin dots
-    // Red wire (VCC) from right body edge to 10px-aligned pin at x=60
-    painter->setPen(QPen(QColor(220, 38, 38), 4, Qt::SolidLine, Qt::RoundCap));
+    painter->drawText(QRectF(-18, 14, 36, 12), Qt::AlignCenter, QString("%1%").arg(static_cast<int>(m_chargeLevel)));
+
+    // --- SILK SCREEN DECORATIONS ON WRAP ---
+    painter->setPen(QColor(255, 255, 255, 180));
+    QFont fBody = painter->font();
+    fBody.setPointSize(4.5);
+    fBody.setBold(true);
+    fBody.setFamily("Segoe UI");
+    painter->setFont(fBody);
+    painter->drawText(QRectF(-25, -42, 50, 8), Qt::AlignCenter, "BESS POWER");
+
+    painter->setPen(QColor(255, 255, 255, 130));
+    painter->drawText(QRectF(-25, 34, 50, 8), Qt::AlignCenter, "18650 3.7V");
+
+    // --- WIRE LEADS AND PHYSICAL PINS ---
+    // 1. Red Wire (VCC) to Pin (60, -20)
+    painter->setPen(QPen(QColor(127, 29, 29), 5, Qt::SolidLine, Qt::RoundCap));
     painter->drawLine(QPointF(25, -20), QPointF(60, -20));
-    // Small connector tip (red)
-    painter->setBrush(QColor(220, 38, 38));
-    painter->setPen(Qt::NoPen);
-    painter->drawEllipse(QPointF(60, -20), 4, 4);
+    painter->setPen(QPen(QColor(239, 68, 68), 3, Qt::SolidLine, Qt::RoundCap));
+    painter->drawLine(QPointF(25, -20), QPointF(60, -20));
 
-    // Black wire (GND) from right body edge to 10px-aligned pin at x=60
-    painter->setPen(QPen(QColor(20, 20, 20), 4, Qt::SolidLine, Qt::RoundCap));
+    // 2. Black Wire (GND) to Pin (60, 20)
+    painter->setPen(QPen(QColor(15, 23, 42), 5, Qt::SolidLine, Qt::RoundCap));
     painter->drawLine(QPointF(25, 20), QPointF(60, 20));
-    // Small connector tip (black)
-    painter->setBrush(QColor(20, 20, 20));
-    painter->setPen(Qt::NoPen);
-    painter->drawEllipse(QPointF(60, 20), 4, 4);
+    painter->setPen(QPen(QColor(71, 85, 105), 3, Qt::SolidLine, Qt::RoundCap));
+    painter->drawLine(QPointF(25, 20), QPointF(60, 20));
 
-    // Labels on wires
-    painter->setPen(QColor(220, 38, 38));
+    // 3. Orange Wire (SENSE) to Pin (-30, 0)
+    painter->setPen(QPen(QColor(146, 64, 14), 5, Qt::SolidLine, Qt::RoundCap));
+    painter->drawLine(QPointF(-25, 0), QPointF(-30, 0));
+    painter->setPen(QPen(QColor(245, 158, 11), 3, Qt::SolidLine, Qt::RoundCap));
+    painter->drawLine(QPointF(-25, 0), QPointF(-30, 0));
+
+    // Render connection header pins
+    QPointF pinPos[] = { QPointF(60, -20), QPointF(60, 20), QPointF(-30, 0) };
+    for (const auto& pt : pinPos) {
+        // Outer copper pad (Gold)
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(218, 165, 32));
+        painter->drawEllipse(pt, 4.5, 4.5);
+        
+        // Inner hole / Silver header pin
+        painter->setPen(QPen(QColor(50, 50, 50), 0.5));
+        painter->setBrush(QColor(230, 230, 230));
+        painter->drawEllipse(pt, 2.5, 2.5);
+        
+        // Reflection
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(255, 255, 255, 150));
+        painter->drawEllipse(QPointF(pt.x() - 0.5, pt.y() - 0.5), 1.0, 1.0);
+    }
+
+    // --- LABELS ON WIRE LEADS ---
+    painter->setPen(QColor(239, 68, 68));
     QFont fWire = painter->font();
-    fWire.setPointSize(5);
+    fWire.setPointSize(6);
     fWire.setBold(true);
     painter->setFont(fWire);
-    painter->drawText(QRectF(28, -30, 24, 10), Qt::AlignCenter, "+");
-    painter->setPen(QColor(20, 20, 20));
-    painter->drawText(QRectF(28, 20, 24, 10), Qt::AlignCenter, "-");
+    painter->drawText(QRectF(30, -32, 24, 10), Qt::AlignCenter, "+");
+
+    painter->setPen(QColor(148, 163, 184));
+    painter->drawText(QRectF(30, 22, 24, 10), Qt::AlignCenter, "-");
+
+    painter->setPen(QColor(245, 158, 11));
+    painter->drawText(QRectF(-42, -12, 12, 10), Qt::AlignCenter, "S");
 }
 
 // =======================================================

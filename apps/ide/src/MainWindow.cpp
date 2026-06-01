@@ -5101,10 +5101,22 @@ void MainWindow::editBessProperties(BessItem* bess) {
     QDialog dialog(this);
     dialog.setWindowTitle(QString("Configuracao da Bateria - %1").arg(bess->name()));
     dialog.setMinimumWidth(380);
+    dialog.setStyleSheet(
+        "QDialog { background-color: #F8FAFC; color: #0F172A; border: 1px solid #CBD5E1; border-radius: 8px; }"
+        "QLabel { color: #1E293B; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; font-weight: 600; }"
+        "QSpinBox, QDoubleSpinBox { background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; padding: 6px 8px; font-size: 13px; }"
+        "QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid #3B82F6; }"
+        "QPushButton { background: #E2E8F0; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 600; color: #475569; font-size: 13px; }"
+        "QPushButton:hover { background: #CBD5E1; }"
+        "QPushButton:pressed { background: #94A3B8; }"
+        "QPushButton#saveBtn { background: #2563EB; color: white; }"
+        "QPushButton#saveBtn:hover { background: #1D4ED8; }"
+        "QPushButton#saveBtn:pressed { background: #1E40AF; }"
+    );
 
     auto* mainLayout = new QVBoxLayout(&dialog);
-    mainLayout->setContentsMargins(12, 12, 12, 12);
-    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(16, 16, 16, 16);
+    mainLayout->setSpacing(12);
 
     // Capacidade mAh
     auto* capLayout = new QHBoxLayout();
@@ -5156,11 +5168,15 @@ void MainWindow::editBessProperties(BessItem* bess) {
     int savedCells = bess->property("cellCount").toInt();
     cellSpin->setValue(savedCells > 0 ? savedCells : 1);
     cellLayout->addWidget(cellSpin, 1);
+    mainLayout->addLayout(cellLayout);
+
     // Botoes
     auto* btnLayout = new QHBoxLayout();
+    btnLayout->setContentsMargins(0, 8, 0, 0);
     auto* cancelBtn = new QPushButton("Cancelar", &dialog);
     connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
     auto* saveBtn = new QPushButton("Salvar", &dialog);
+    saveBtn->setObjectName("saveBtn");
     connect(saveBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
     btnLayout->addStretch();
     btnLayout->addWidget(cancelBtn);
