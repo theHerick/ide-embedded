@@ -361,7 +361,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     
     m_view = new QGraphicsView(m_scene);
     m_view->setRenderHint(QPainter::Antialiasing);
-    m_view->setBackgroundBrush(Qt::transparent);
+    m_view->setBackgroundBrush(Qt::white);
     
     mainLayout->addWidget(m_view);
     
