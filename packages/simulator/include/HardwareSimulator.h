@@ -37,6 +37,7 @@ public:
     QMap<QString, QVariant> getEepromData() const { return m_eeprom; }
     void setEepromData(const QMap<QString, QVariant>& data) { m_eeprom = data; }
     void clearEeprom() { m_eeprom.clear(); }
+    double getComponentSimValue(const QString& nameOrId);
 
 signals:
     void activeComponentChanged(const QString& compId, bool isActive);

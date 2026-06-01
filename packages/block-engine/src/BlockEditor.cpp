@@ -578,16 +578,53 @@ void BlockEditor::refreshPalette() {
     }
 }
 
+static bool isValidIdentifier(const QString& name) {
+    if (name.isEmpty()) return false;
+    QChar first = name.at(0);
+    if (!first.isLetter() && first != '_') return false;
+    for (int i = 1; i < name.length(); ++i) {
+        QChar c = name.at(i);
+        if (!c.isLetterOrNumber() && c != '_') return false;
+    }
+    static const QSet<QString> reserved = {
+        "if", "else", "while", "for", "switch", "case", "default", "break", "continue", "return",
+        "int", "float", "double", "char", "bool", "void", "String", "true", "false", "HIGH", "LOW",
+        "INPUT", "OUTPUT", "analogRead", "analogWrite", "digitalRead", "digitalWrite", "delay",
+        "Serial", "print", "println", "EEPROM", "commit", "put", "get", "restoredVal", "Valor"
+    };
+    if (reserved.contains(name)) return false;
+    if (name.startsWith("PIN_")) return false;
+    return true;
+}
+
 void BlockEditor::rebuildScopeVariables() {
     m_currentScopeVariables = m_hardwareScopeVariables;
 
+    QSet<QString> existingNames;
+    for (const auto& var : m_currentScopeVariables) {
+        existingNames.insert(var.name);
+    }
+
     for (const auto& block : m_activeBlocks) {
+        QString tgt;
+        VarType varType = VarType::INT;
+        
         if (block.type == LogicBlockType::CREATE_VAR) {
-            QString name = block.createVarName.trimmed().remove(" ");
-            if (!name.isEmpty()) {
+            tgt = block.createVarName.trimmed().remove(" ");
+            varType = block.createVarType;
+        } else if (block.type == LogicBlockType::MATH) {
+            tgt = block.mathTarget.trimmed().remove(" ");
+        } else if (block.type == LogicBlockType::ASSIGNMENT) {
+            tgt = block.assignTarget.trimmed().remove(" ");
+        }
+
+        if (!tgt.isEmpty() && ::isValidIdentifier(tgt)) {
+            if (!existingNames.contains(tgt)) {
+                existingNames.insert(tgt);
+                
                 VariableDef def;
-                def.name = name;
-                def.type = block.createVarType;
+                def.name = tgt;
+                def.type = varType;
                 def.scope = VarScope::LOCAL_EVENT;
                 switch (def.type) {
                     case VarType::INT: def.initialValue = "0"; break;
@@ -1174,6 +1211,7 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         auto saveParams = [this, index, targetEdit, expEdit]() {
             m_activeBlocks[index].assignTarget = targetEdit->text();
             m_activeBlocks[index].assignExpression = expEdit->text();
+            rebuildScopeVariables();
             emit blocksChanged();
         };
 
@@ -1465,6 +1503,7 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
             QString op = opCombo->currentText() == "Fórmula Avançada" ? " " : opCombo->currentText();
             m_activeBlocks[index].mathOperator = op;
             m_activeBlocks[index].mathOperand2 = op2Edit->text();
+            rebuildScopeVariables();
             emit blocksChanged();
         };
 

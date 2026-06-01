@@ -4,6 +4,25 @@
 #include <QSet>
 #include <QRegularExpression>
 
+static bool isValidIdentifier(const QString& name) {
+    if (name.isEmpty()) return false;
+    QChar first = name.at(0);
+    if (!first.isLetter() && first != '_') return false;
+    for (int i = 1; i < name.length(); ++i) {
+        QChar c = name.at(i);
+        if (!c.isLetterOrNumber() && c != '_') return false;
+    }
+    static const QSet<QString> reserved = {
+        "if", "else", "while", "for", "switch", "case", "default", "break", "continue", "return",
+        "int", "float", "double", "char", "bool", "void", "String", "true", "false", "HIGH", "LOW",
+        "INPUT", "OUTPUT", "analogRead", "analogWrite", "digitalRead", "digitalWrite", "delay",
+        "Serial", "print", "println", "EEPROM", "commit", "put", "get", "restoredVal", "Valor"
+    };
+    if (reserved.contains(name)) return false;
+    if (name.startsWith("PIN_")) return false;
+    return true;
+}
+
 static QString compileMathFormula(QString formula) {
     // Replace pi
     formula.replace("pi", "3.14159265358979323846", Qt::CaseInsensitive);
@@ -278,6 +297,7 @@ static QString compileBlocks(
     for (auto* c : components) {
         QString sName = localSanitized[c];
         knownVars.insert(sName);
+        knownVars.insert("PIN_" + sName);
 
         QString suffix = getNumericSuffixFromSanitized(sName);
         if (c->componentType() == "dht22" || c->componentType() == "dht") {
@@ -291,6 +311,34 @@ static QString compileBlocks(
     for (const auto& key : g_eepromKeys) {
         knownVars.insert(key);
     }
+
+    QString decls;
+    QSet<QString> autoDeclaredVars;
+    for (const auto& b : blocks) {
+        QString tgt;
+        if (b.type == LogicBlockType::MATH) {
+            tgt = b.mathTarget.trimmed().remove(" ");
+        } else if (b.type == LogicBlockType::ASSIGNMENT) {
+            tgt = b.assignTarget.trimmed().remove(" ");
+        }
+        if (!tgt.isEmpty() && ::isValidIdentifier(tgt)) {
+            QString finalTgt = replaceAllComponentNames(tgt, localSanitized, true);
+            if (owner) {
+                finalTgt = replaceCustomComponentPlaceholders(finalTgt, owner);
+            }
+            for (auto* comp : components) {
+                if (comp == owner) continue;
+                if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
+                    finalTgt = replaceCustomComponentPlaceholders(finalTgt, custom);
+                }
+            }
+            if (!knownVars.contains(finalTgt) && !autoDeclaredVars.contains(finalTgt)) {
+                autoDeclaredVars.insert(finalTgt);
+                decls += QString("%1int %2 = 0;\n").arg(QString(baseIndentSpaces, ' ')).arg(finalTgt);
+            }
+        }
+    }
+    res += decls;
 
     for (const auto& block : blocks) {
         QString indent = QString(baseIndentSpaces + nestLevel * 4, ' ');

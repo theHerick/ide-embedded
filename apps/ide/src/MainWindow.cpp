@@ -1352,6 +1352,12 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
             m_selectedComponent = comp;
             openEventEditor(comp, "aoLigar");
         });
+    } else if (comp->componentType() == "resistor") {
+        QAction* actEdit = menu.addAction("Editar Resistência...");
+        connect(actEdit, &QAction::triggered, this, [this, comp]() {
+            auto* res = static_cast<ResistorItem*>(comp);
+            this->editResistorValue(res);
+        });
     } else if (comp->componentType() == "potentiometer") {
         QAction* actGiro = menu.addAction("Evento: Ao Girar (aoGirar)");
         connect(actGiro, &QAction::triggered, this, [this, comp]() {

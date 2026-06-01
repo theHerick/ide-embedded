@@ -1,6 +1,7 @@
 #include "HardwareSimulator.h"
 #include "CustomComponent.h"
 #include <QDebug>
+#include <cmath>
 #include <QEventLoop>
 #include <QRegularExpression>
 #include <chrono>
@@ -825,42 +826,285 @@ bool HardwareSimulator::evaluateExpression(const QString& expr) {
     return false;
 }
 
+class ExpressionParser {
+public:
+    ExpressionParser(const QString& expr, const QMap<QString, QVariant>& vars, HardwareSimulator* sim)
+        : m_expr(expr), m_vars(vars), m_sim(sim), m_pos(0) {}
+
+    double parse() {
+        if (m_expr.trimmed().isEmpty()) return 0.0;
+        return parseExpression();
+    }
+
+private:
+    QString m_expr;
+    const QMap<QString, QVariant>& m_vars;
+    HardwareSimulator* m_sim;
+    int m_pos;
+
+    QChar peek() const {
+        if (m_pos < m_expr.length()) return m_expr.at(m_pos);
+        return '\0';
+    }
+
+    void consume() {
+        m_pos++;
+    }
+
+    void skipWhitespace() {
+        while (m_pos < m_expr.length() && m_expr.at(m_pos).isSpace()) {
+            m_pos++;
+        }
+    }
+
+    double parseExpression() {
+        skipWhitespace();
+        double val = parseTerm();
+        skipWhitespace();
+        while (peek() == '+' || peek() == '-') {
+            QChar op = peek();
+            consume();
+            double nextVal = parseTerm();
+            if (op == '+') val += nextVal;
+            else val -= nextVal;
+            skipWhitespace();
+        }
+        return val;
+    }
+
+    double parseTerm() {
+        skipWhitespace();
+        double val = parseFactor();
+        skipWhitespace();
+        while (peek() == '*' || peek() == '/') {
+            QChar op = peek();
+            consume();
+            double nextVal = parseFactor();
+            if (op == '*') {
+                val *= nextVal;
+            } else {
+                val = (nextVal != 0.0) ? (val / nextVal) : 0.0;
+            }
+            skipWhitespace();
+        }
+        return val;
+    }
+
+    double parseFactor() {
+        skipWhitespace();
+        double val = parsePrimary();
+        skipWhitespace();
+        if (peek() == '^') {
+            consume();
+            double exponent = parseFactor();
+            val = std::pow(val, exponent);
+        }
+        return val;
+    }
+
+    double parsePrimary() {
+        skipWhitespace();
+        QChar c = peek();
+
+        if (c == '-') {
+            consume();
+            return -parsePrimary();
+        }
+        if (c == '+') {
+            consume();
+            return parsePrimary();
+        }
+
+        if (c == '(') {
+            consume();
+            double val = parseExpression();
+            skipWhitespace();
+            if (peek() == ')') consume();
+            return val;
+        }
+
+        if (c.isDigit() || c == '.') {
+            QString numStr;
+            while ((peek().isDigit() || peek() == '.') && peek() != '\0') {
+                numStr.append(peek());
+                consume();
+            }
+            bool ok = false;
+            double val = numStr.toDouble(&ok);
+            return ok ? val : 0.0;
+        }
+
+        if (c.isLetter() || c == '_' || c == QChar(0x03C0)) {
+            QString id;
+            while ((peek().isLetterOrNumber() || peek() == '_' || peek() == QChar(0x03C0)) && peek() != '\0') {
+                id.append(peek());
+                consume();
+            }
+
+            skipWhitespace();
+            if (peek() == '(') {
+                consume();
+                QVector<QString> args;
+                int parenCount = 1;
+                QString arg;
+                while (m_pos < m_expr.length()) {
+                    QChar nextC = m_expr.at(m_pos);
+                    if (nextC == '(') {
+                        parenCount++;
+                        arg.append(nextC);
+                        consume();
+                    } else if (nextC == ')') {
+                        parenCount--;
+                        if (parenCount == 0) {
+                            consume();
+                            break;
+                        }
+                        arg.append(nextC);
+                        consume();
+                    } else if (nextC == ',' && parenCount == 1) {
+                        args.append(arg.trimmed());
+                        arg.clear();
+                        consume();
+                    } else {
+                        arg.append(nextC);
+                        consume();
+                    }
+                }
+                if (!arg.trimmed().isEmpty() || !args.isEmpty()) {
+                    args.append(arg.trimmed());
+                }
+
+                QString lowerId = id.toLower();
+                if (lowerId == "fraction") {
+                    if (args.size() == 2) {
+                        double top = ExpressionParser(args[0], m_vars, m_sim).parse();
+                        double bottom = ExpressionParser(args[1], m_vars, m_sim).parse();
+                        return (bottom != 0.0) ? (top / bottom) : 0.0;
+                    }
+                    return 0.0;
+                }
+                if (lowerId == "integral") {
+                    if (args.size() == 3) {
+                        double lower = ExpressionParser(args[0], m_vars, m_sim).parse();
+                        double upper = ExpressionParser(args[1], m_vars, m_sim).parse();
+                        QString expr = args[2];
+                        
+                        double sum = 0.0;
+                        double steps = 1000.0;
+                        double step = (upper - lower) / steps;
+                        
+                        QMap<QString, QVariant> tempVars = m_vars;
+                        for (int i = 0; i < 1000; ++i) {
+                            double X = lower + i * step;
+                            tempVars["X"] = X;
+                            tempVars["x"] = X;
+                            sum += ExpressionParser(expr, tempVars, m_sim).parse() * step;
+                        }
+                        return sum;
+                    }
+                    return 0.0;
+                }
+                if (lowerId == "pow") {
+                    if (args.size() == 2) {
+                        double base = ExpressionParser(args[0], m_vars, m_sim).parse();
+                        double exp = ExpressionParser(args[1], m_vars, m_sim).parse();
+                        return std::pow(base, exp);
+                    }
+                    return 0.0;
+                }
+                if (lowerId == "sqrt") {
+                    if (args.size() == 1) {
+                        double val = ExpressionParser(args[0], m_vars, m_sim).parse();
+                        return std::sqrt(val);
+                    }
+                    return 0.0;
+                }
+                if (lowerId == "sin") {
+                    if (args.size() == 1) {
+                        double val = ExpressionParser(args[0], m_vars, m_sim).parse();
+                        return std::sin(val);
+                    }
+                    return 0.0;
+                }
+                if (lowerId == "cos") {
+                    if (args.size() == 1) {
+                        double val = ExpressionParser(args[0], m_vars, m_sim).parse();
+                        return std::cos(val);
+                    }
+                    return 0.0;
+                }
+                if (lowerId == "tan") {
+                    if (args.size() == 1) {
+                        double val = ExpressionParser(args[0], m_vars, m_sim).parse();
+                        return std::tan(val);
+                    }
+                    return 0.0;
+                }
+                if (lowerId == "abs") {
+                    if (args.size() == 1) {
+                        double val = ExpressionParser(args[0], m_vars, m_sim).parse();
+                        return std::abs(val);
+                    }
+                    return 0.0;
+                }
+                return 0.0;
+            }
+
+            if (id.toLower() == "pi" || id == QChar(0x03C0)) {
+                return 3.14159265358979323846;
+            }
+
+            if (m_vars.contains(id)) {
+                return m_vars[id].toDouble();
+            }
+
+            return m_sim->getComponentSimValue(id);
+        }
+
+        consume();
+        return 0.0;
+    }
+};
+
+double HardwareSimulator::getComponentSimValue(const QString& nameOrId) {
+    if (!m_scene) return 0.0;
+    QString lower = nameOrId.trimmed().toLower();
+    
+    QList<ComponentItem*> sortedComps = m_scene->components();
+    std::sort(sortedComps.begin(), sortedComps.end(), [](ComponentItem* a, ComponentItem* b) {
+        return a->name().length() > b->name().length();
+    });
+
+    for (auto* comp : sortedComps) {
+        QString compName = comp->name().trimmed().toLower();
+        QString compId = comp->id().trimmed().toLower();
+        QString compSanitized = sanitizeIdentifier(comp->name()).trimmed().toLower();
+        
+        if (lower == compName || lower == compId || lower == compSanitized || lower == "pin_" + compSanitized) {
+            if (comp->componentType() == "potentiometer") {
+                auto* pot = static_cast<PotentiometerItem*>(comp);
+                return pot->value();
+            }
+            if (comp->componentType() == "bess") {
+                auto* bess = static_cast<BessItem*>(comp);
+                return bess->chargeLevel();
+            }
+            if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
+                if (custom->category() == "analog_input") {
+                    return custom->value();
+                }
+            }
+            return (comp->property("state").toString().toUpper() == "HIGH" || 
+                    comp->property("active").toBool() || 
+                    comp->property("value").toDouble() > 0) ? 1.0 : 0.0;
+        }
+    }
+    return 0.0;
+}
+
 double HardwareSimulator::evaluateNumericExpression(const QString& expr) {
-    QString s = expr.trimmed();
-    if (s.isEmpty()) return 0;
-    
-    // First, resolve pure variables
-    if (!s.contains("+") && !s.contains("-") && !s.contains("*") && !s.contains("/")) {
-        if (m_simVariables.contains(s)) return m_simVariables[s].toDouble();
-        bool ok = false;
-        double v = s.toDouble(&ok);
-        if (ok) return v;
-        return 0;
-    }
-    
-    // Naive evaluation using reverse precedence
-    int plus = s.lastIndexOf('+');
-    if (plus > 0) return evaluateNumericExpression(s.mid(0, plus)) + evaluateNumericExpression(s.mid(plus + 1));
-    
-    int minus = s.lastIndexOf('-');
-    // Ensure we don't split on a negative sign for the first number (e.g. "-10")
-    if (minus > 0 && s.at(minus - 1) != '*' && s.at(minus - 1) != '/' && s.at(minus - 1) != '+' && s.at(minus - 1) != '-') {
-        return evaluateNumericExpression(s.mid(0, minus)) - evaluateNumericExpression(s.mid(minus + 1));
-    }
-    
-    int mult = s.lastIndexOf('*');
-    if (mult > 0) return evaluateNumericExpression(s.mid(0, mult)) * evaluateNumericExpression(s.mid(mult + 1));
-    
-    int div = s.lastIndexOf('/');
-    if (div > 0) {
-        double denom = evaluateNumericExpression(s.mid(div + 1));
-        return (denom != 0) ? evaluateNumericExpression(s.mid(0, div)) / denom : 0;
-    }
-    
-    // Fallback if parsing fails (e.g. leading negative sign that didn't get caught)
-    bool ok = false;
-    double v = s.toDouble(&ok);
-    return ok ? v : 0;
+    ExpressionParser parser(expr, m_simVariables, this);
+    return parser.parse();
 }
 
 void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks) {
@@ -1138,6 +1382,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
             else if (op == "-") res = op1 - op2;
             else if (op == "*") res = op1 * op2;
             else if (op == "/") res = (op2 != 0) ? op1 / op2 : 0;
+            else if (op.isEmpty() || op == " ") res = op1;
             m_simVariables[block.mathTarget.trimmed()] = res;
         }
         else if (shouldExecute && block.type == LogicBlockType::SERIAL_PRINT) {
