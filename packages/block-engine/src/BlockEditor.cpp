@@ -721,13 +721,13 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
         def.initialValue = "\"\"";
         def.description = "Variável interna do elemento Web Text";
         m_hardwareScopeVariables.append(def);
-    } else if (compId.startsWith("webinput_")) {
+    } else if (compId.startsWith("webinput_") || compId.startsWith("webslider_")) {
         VariableDef def;
         def.name = "Valor";
         def.type = VarType::STRING;
         def.scope = VarScope::LOCAL_EVENT;
         def.initialValue = "\"\"";
-        def.description = "Valor digitado no campo de texto";
+        def.description = compId.startsWith("webslider_") ? "Valor atual do slider (0-255)" : "Valor digitado no campo de texto";
         m_hardwareScopeVariables.append(def);
     }
 

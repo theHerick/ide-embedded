@@ -614,7 +614,7 @@ void HardwareSimulator::onReadyRead() {
             m_simVariables[varName] = val;
             triggerComponentEvent(varName, "aoAlterar");
             if (val == "0") {
-                triggerComponentEvent(varName, "aoDesligar");
+                triggerComponentEvent(varName, "aoZerar");
             }
         }
         
