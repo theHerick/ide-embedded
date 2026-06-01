@@ -1880,8 +1880,6 @@ BessItem::BessItem(const QString& id, const QString& name, QGraphicsItem* parent
     m_pins.append({"VCC",   QPointF(60,  20), false, "", "", QColor(239, 68, 68)});
     // GND pin (black wire) exits from right side, top
     m_pins.append({"GND",   QPointF(60, -20), false, "", "", QColor(30, 30, 30)});
-    // SENSE pin stays on left side — 10px aligned
-    m_pins.append({"SENSE", QPointF(-30,  0), false, "", "", QColor(234, 179, 8)});
 }
 
 void BessItem::setChargeLevel(double level) {
@@ -2025,14 +2023,8 @@ void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     painter->setPen(QPen(QColor(71, 85, 105), 3, Qt::SolidLine, Qt::RoundCap));
     painter->drawLine(QPointF(25, -20), QPointF(60, -20));
 
-    // 3. Orange Wire (SENSE) to Pin (-30, 0)
-    painter->setPen(QPen(QColor(146, 64, 14), 5, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(-25, 0), QPointF(-30, 0));
-    painter->setPen(QPen(QColor(245, 158, 11), 3, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(-25, 0), QPointF(-30, 0));
-
     // Render connection header pins
-    QPointF pinPos[] = { QPointF(60, -20), QPointF(60, 20), QPointF(-30, 0) };
+    QPointF pinPos[] = { QPointF(60, -20), QPointF(60, 20) };
     for (const auto& pt : pinPos) {
         // Outer copper pad (Gold)
         painter->setPen(Qt::NoPen);
@@ -2060,9 +2052,6 @@ void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 
     painter->setPen(QColor(148, 163, 184));
     painter->drawText(QRectF(30, -32, 24, 10), Qt::AlignCenter, "-");
-
-    painter->setPen(QColor(245, 158, 11));
-    painter->drawText(QRectF(-42, -12, 12, 10), Qt::AlignCenter, "S");
 }
 
 // =======================================================
