@@ -1876,10 +1876,10 @@ void MotorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 // =======================================================
 BessItem::BessItem(const QString& id, const QString& name, QGraphicsItem* parent)
     : ComponentItem(id, name, "bess", parent), m_chargeLevel(100.0) {
-    // VCC pin (red wire) exits from right side, top — 10px aligned
-    m_pins.append({"VCC",   QPointF(60, -20), false, "", "", QColor(239, 68, 68)});
-    // GND pin (black wire) exits from right side, bottom
-    m_pins.append({"GND",   QPointF(60,  20), false, "", "", QColor(30, 30, 30)});
+    // VCC pin (red wire) exits from right side, bottom — 10px aligned
+    m_pins.append({"VCC",   QPointF(60,  20), false, "", "", QColor(239, 68, 68)});
+    // GND pin (black wire) exits from right side, top
+    m_pins.append({"GND",   QPointF(60, -20), false, "", "", QColor(30, 30, 30)});
     // SENSE pin stays on left side — 10px aligned
     m_pins.append({"SENSE", QPointF(-30,  0), false, "", "", QColor(234, 179, 8)});
 }
@@ -1911,13 +1911,13 @@ void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     capGrad.setColorAt(0.7, QColor(203, 213, 225));
     capGrad.setColorAt(1.0, QColor(71, 85, 105));
 
-    // Positive Cap (Top)
+    // Positive Cap (Bottom)
     painter->setPen(QPen(QColor(71, 85, 105), 1));
     painter->setBrush(capGrad);
-    painter->drawRoundedRect(-8, -50, 16, 6, 1, 1);
+    painter->drawRoundedRect(-8, 44, 16, 6, 1, 1);
 
-    // Negative Cap (Bottom)
-    painter->drawRoundedRect(-12, 44, 24, 6, 1, 1);
+    // Negative Cap (Top)
+    painter->drawRoundedRect(-12, -50, 24, 6, 1, 1);
 
     // --- BATTERY CYLINDRICAL BODY ---
     QLinearGradient bodyGrad(-25, 0, 25, 0);
@@ -1970,7 +1970,7 @@ void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     painter->setPen(QPen(QColor(71, 85, 105), 1));
     painter->setBrush(Qt::NoBrush);
     painter->drawRoundedRect(-10, -24, 20, 32, 2, 2);
-    painter->drawRect(-4, -27, 8, 3);
+    painter->drawRect(-4, 8, 8, 3);
 
     double segY[] = { 1.0, -4.5, -10.0, -15.5, -21.0 };
     for (int i = 0; i < 5; i++) {
@@ -2013,17 +2013,17 @@ void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     painter->drawText(QRectF(-25, 34, 50, 8), Qt::AlignCenter, "18650 3.7V");
 
     // --- WIRE LEADS AND PHYSICAL PINS ---
-    // 1. Red Wire (VCC) to Pin (60, -20)
+    // 1. Red Wire (VCC) to Pin (60, 20)
     painter->setPen(QPen(QColor(127, 29, 29), 5, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(25, -20), QPointF(60, -20));
+    painter->drawLine(QPointF(25, 20), QPointF(60, 20));
     painter->setPen(QPen(QColor(239, 68, 68), 3, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(25, -20), QPointF(60, -20));
+    painter->drawLine(QPointF(25, 20), QPointF(60, 20));
 
-    // 2. Black Wire (GND) to Pin (60, 20)
+    // 2. Black Wire (GND) to Pin (60, -20)
     painter->setPen(QPen(QColor(15, 23, 42), 5, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(25, 20), QPointF(60, 20));
+    painter->drawLine(QPointF(25, -20), QPointF(60, -20));
     painter->setPen(QPen(QColor(71, 85, 105), 3, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(25, 20), QPointF(60, 20));
+    painter->drawLine(QPointF(25, -20), QPointF(60, -20));
 
     // 3. Orange Wire (SENSE) to Pin (-30, 0)
     painter->setPen(QPen(QColor(146, 64, 14), 5, Qt::SolidLine, Qt::RoundCap));
@@ -2056,10 +2056,10 @@ void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     fWire.setPointSize(6);
     fWire.setBold(true);
     painter->setFont(fWire);
-    painter->drawText(QRectF(30, -32, 24, 10), Qt::AlignCenter, "+");
+    painter->drawText(QRectF(30, 22, 24, 10), Qt::AlignCenter, "+");
 
     painter->setPen(QColor(148, 163, 184));
-    painter->drawText(QRectF(30, 22, 24, 10), Qt::AlignCenter, "-");
+    painter->drawText(QRectF(30, -32, 24, 10), Qt::AlignCenter, "-");
 
     painter->setPen(QColor(245, 158, 11));
     painter->drawText(QRectF(-42, -12, 12, 10), Qt::AlignCenter, "S");
