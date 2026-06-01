@@ -100,28 +100,67 @@ protected:
     void drawBackground(QPainter *painter, const QRectF &rect) override {
         QGraphicsScene::drawBackground(painter, rect);
         
-        // Draw Grid
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+
+        // 1. Fill external background with a beautiful cyan linear gradient (simulating the web dashboard body)
+        QLinearGradient bgGrad(rect.topLeft(), rect.bottomRight());
+        bgGrad.setColorAt(0.0, QColor("#e0f7fa"));
+        bgGrad.setColorAt(1.0, QColor("#b2ebf2"));
+        painter->fillRect(rect, bgGrad);
+
+        // 2. Draw active container boundary (sceneRect) with rounded glass effect and dropshadow
+        QRectF sRect = sceneRect();
+
+        // Subtle drop shadow around the canvas
+        for (int i = 1; i <= 8; ++i) {
+            painter->setPen(QPen(QColor(0, 0, 0, 15 - i * 1.5), 1));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawRoundedRect(sRect.adjusted(-i, -i, i, i), 20 + i, 20 + i);
+        }
+
+        // Fill the canvas area (glassmorphism: rgba(255, 255, 255, 0.4) as in the simulated dashboard container)
+        QColor containerBg(255, 255, 255, 102); // 102 / 255 = 40%
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(containerBg);
+        painter->drawRoundedRect(sRect, 20, 20);
+
+        // Clip grid lines exclusively inside the container area
+        painter->save();
+        QPainterPath clipPath;
+        clipPath.addRoundedRect(sRect, 20, 20);
+        painter->setClipPath(clipPath);
+
+        // Soft white grid lines
         int gridSize = 20;
-        qreal left = int(rect.left()) - (int(rect.left()) % gridSize);
-        qreal top = int(rect.top()) - (int(rect.top()) % gridSize);
+        qreal left = int(sRect.left()) - (int(sRect.left()) % gridSize);
+        qreal top = int(sRect.top()) - (int(sRect.top()) % gridSize);
         
         QVarLengthArray<QLineF, 100> lines;
-        for (qreal x = left; x < rect.right(); x += gridSize)
-            lines.append(QLineF(x, rect.top(), x, rect.bottom()));
-        for (qreal y = top; y < rect.bottom(); y += gridSize)
-            lines.append(QLineF(rect.left(), y, rect.right(), y));
-            
-        painter->setPen(QPen(QColor(235, 235, 235), 1, Qt::SolidLine));
-        painter->drawLines(lines.data(), lines.size());
+        for (qreal x = left; x < sRect.right(); x += gridSize)
+            lines.append(QLineF(x, sRect.top(), x, sRect.bottom()));
+        for (qreal y = top; y < sRect.bottom(); y += gridSize)
+            lines.append(QLineF(sRect.left(), y, sRect.right(), y));
 
-        // Draw a dashed border to represent the screen boundary
-        QPen pen(Qt::darkGray, 2, Qt::DashLine);
-        painter->setPen(pen);
-        painter->drawRect(sceneRect());
+        painter->setPen(QPen(QColor(255, 255, 255, 80), 1, Qt::SolidLine));
+        painter->drawLines(lines.data(), lines.size());
         
-        // Label it
-        painter->setPen(Qt::gray);
-        painter->drawText(sceneRect().topLeft() + QPointF(5, -5), QString("Área Visível (%1x%2)").arg(sceneRect().width()).arg(sceneRect().height()));
+        painter->restore();
+
+        // 3. Draw container border (1px translucent white: rgba(255, 255, 255, 0.8))
+        painter->setPen(QPen(QColor(255, 255, 255, 204), 1.5));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(sRect, 20, 20);
+
+        // 4. Draw limits label above the container
+        painter->setPen(QColor("#01579b")); // Dark blue text
+        QFont font = painter->font();
+        font.setBold(true);
+        font.setPixelSize(12);
+        painter->setFont(font);
+        painter->drawText(sRect.topLeft() + QPointF(10, -8), QString("ÁREA VISÍVEL (%1x%2)").arg(sRect.width()).arg(sRect.height()));
+
+        painter->restore();
     }
 
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override {
@@ -322,7 +361,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     
     m_view = new QGraphicsView(m_scene);
     m_view->setRenderHint(QPainter::Antialiasing);
-    m_view->setBackgroundBrush(Qt::white);
+    m_view->setBackgroundBrush(Qt::transparent);
     
     mainLayout->addWidget(m_view);
     
