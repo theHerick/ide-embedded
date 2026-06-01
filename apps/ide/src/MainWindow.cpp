@@ -1039,7 +1039,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
 
         if (c->componentType() == "led") avLeds.append(c->name());
         else if (c->componentType() == "potentiometer") avPots.append(c->name());
-        else if (c->componentType() == "bess") avPots.append(c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name());
+        else if (c->componentType() == "bess") avPots.append(c->name() == "Bateria LiPo" || c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name());
         else if (c->componentType() == "buzzer") avBuzzers.append(c->name());
         else if (c->componentType() == "motor") avMotors.append(c->name());
         else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
@@ -1067,7 +1067,7 @@ void MainWindow::openWebEventEditor(const QString& compId, const QString& eventN
         else if (c->componentType() == "hcsr04") avHcsrs.append(c->name());
         else if (c->componentType() == "led") avLeds.append(c->name());
         else if (c->componentType() == "potentiometer") avPots.append(c->name());
-        else if (c->componentType() == "bess") avPots.append(c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name());
+        else if (c->componentType() == "bess") avPots.append(c->name() == "Bateria LiPo" || c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name());
         else if (c->componentType() == "buzzer") avBuzzers.append(c->name());
         else if (c->componentType() == "motor") avMotors.append(c->name());
         else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
@@ -3093,7 +3093,7 @@ void MainWindow::loadToolboxItems() {
     potItem->setData(Qt::UserRole, "potentiometer");
     auto* buzItem = new QListWidgetItem("Buzzer 5V", m_toolboxList);
     buzItem->setData(Qt::UserRole, "buzzer");
-    auto* bessItem = new QListWidgetItem("Pack Lítio (BESS)", m_toolboxList);
+    auto* bessItem = new QListWidgetItem("Pack LiPo (BESS)", m_toolboxList);
     bessItem->setData(Qt::UserRole, "bess");
     auto* bessChargerItem = new QListWidgetItem("Módulo Carregador", m_toolboxList);
     bessChargerItem->setData(Qt::UserRole, "bess_charger");
