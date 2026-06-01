@@ -2509,8 +2509,8 @@ void MainWindow::exportLaserPNG() {
                             .arg(previewImage.width()).arg(previewImage.height()));
     };
 
-    connect(cbTracks, &QCheckBox::checkStateChanged, this, [updatePreview]() { updatePreview(); });
-    connect(cbDrills, &QCheckBox::checkStateChanged, this, [updatePreview]() { updatePreview(); });
+    connect(cbTracks, &QCheckBox::toggled, this, [updatePreview]() { updatePreview(); });
+    connect(cbDrills, &QCheckBox::toggled, this, [updatePreview]() { updatePreview(); });
 
     connect(btnMeasure, &QPushButton::toggled, this, [imgLabel, btnMeasure](bool checked){
         imgLabel->setMeasuring(checked);
