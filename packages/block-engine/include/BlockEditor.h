@@ -81,7 +81,8 @@ public:
 
     void loadEventLogic(const QString& compId, const QString& eventName, 
                         const QStringList& avLeds, const QStringList& avPots, const QStringList& avBuzzers, const QStringList& avMotors,
-                        const QStringList& avDhts = QStringList(), const QStringList& avHcsrs = QStringList());
+                        const QStringList& avDhts = QStringList(), const QStringList& avHcsrs = QStringList(),
+                        const QStringList& avSliders = QStringList());
     
     void setAvailableHooks(const QStringList& hooks);
 

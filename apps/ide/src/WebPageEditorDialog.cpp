@@ -218,8 +218,8 @@ protected:
                     menu.addAction("Editar Evento: Ao Alterar Valor", dialog, [this, webItem](){
                         dialog->requestEditEvent(webItem->id(), "aoAlterar");
                     });
-                    menu.addAction("Editar Evento: Ao Zerar Valor", dialog, [this, webItem](){
-                        dialog->requestEditEvent(webItem->id(), "aoZerar");
+                    menu.addAction("Editar Evento: Ao Desligar (aoDesligar)", dialog, [this, webItem](){
+                        dialog->requestEditEvent(webItem->id(), "aoDesligar");
                     });
                 }
                 

@@ -2022,10 +2022,14 @@ QString CodeGenerator::generateArduinoCode(
                 }
                 if (type == "Slider") {
                     QString eventKeyOff = QString("%1:aoZerar").arg(id);
+                    if (!eventBlockStorage.contains(eventKeyOff) || eventBlockStorage[eventKeyOff].isEmpty()) {
+                        eventKeyOff = QString("%1:aoDesligar").arg(id);
+                    }
                     if (eventBlockStorage.contains(eventKeyOff) && !eventBlockStorage[eventKeyOff].isEmpty()) {
                         QString eventBody = compileBlocks(eventBlockStorage[eventKeyOff], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
                         if (!eventBody.trimmed().isEmpty()) {
                             code += QString("void %1_eventAoZerar() {\n").arg(id);
+                            code += "    String Valor = \"0\";\n";
                             code += eventBody;
                             code += "}\n\n";
                         }
@@ -2313,6 +2317,9 @@ QString CodeGenerator::generateArduinoCode(
                 }
                 if (type == "Slider") {
                     QString eventKeyOff = QString("%1:aoZerar").arg(id);
+                    if (!eventBlockStorage.contains(eventKeyOff) || eventBlockStorage[eventKeyOff].isEmpty()) {
+                        eventKeyOff = QString("%1:aoDesligar").arg(id);
+                    }
                     if (eventBlockStorage.contains(eventKeyOff) && !eventBlockStorage[eventKeyOff].isEmpty()) {
                         code += QString("    if (varName == \"%1\" && val == \"0\") { %1_eventAoZerar(); }\n").arg(id);
                     }

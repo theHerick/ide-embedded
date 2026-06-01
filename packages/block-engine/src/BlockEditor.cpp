@@ -618,10 +618,16 @@ static QString getNumericSuffix(const QString& name) {
 
 void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName, 
                                  const QStringList& avLeds, const QStringList& avPots, const QStringList& avBuzzers, const QStringList& avMotors,
-                                 const QStringList& avDhts, const QStringList& avHcsrs) {
+                                 const QStringList& avDhts, const QStringList& avHcsrs,
+                                 const QStringList& avSliders) {
     if (!m_currentCompId.isEmpty() && !m_currentEventName.isEmpty()) {
         QString key = QString("%1:%2").arg(m_currentCompId).arg(m_currentEventName);
         m_eventBlockStorage[key] = m_activeBlocks;
+        if (m_currentEventName == "aoZerar") {
+            m_eventBlockStorage[QString("%1:aoDesligar").arg(m_currentCompId)] = m_activeBlocks;
+        } else if (m_currentEventName == "aoDesligar") {
+            m_eventBlockStorage[QString("%1:aoZerar").arg(m_currentCompId)] = m_activeBlocks;
+        }
     }
 
     setEnabled(true);
@@ -711,9 +717,20 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
         def.description = QString("Motor / Atuador de Rotação (%1)").arg(mot);
         m_hardwareScopeVariables.append(def);
     }
+
+    // Add global Web Sliders
+    for (const auto& slider : avSliders) {
+        VariableDef def;
+        def.name = sanitizeIdentifier(slider);
+        def.type = VarType::STRING;
+        def.scope = VarScope::COMP_GLOBAL;
+        def.initialValue = "\"0\"";
+        def.description = QString("Elemento Web Slider (%1)").arg(slider);
+        m_hardwareScopeVariables.append(def);
+    }
     
     // Inject special variables for Web Page Dashboard events
-    if (compId.startsWith("webtext_")) {
+    if (compId.contains("text", Qt::CaseInsensitive)) {
         VariableDef def;
         def.name = "Texto";
         def.type = VarType::STRING;
@@ -721,18 +738,28 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
         def.initialValue = "\"\"";
         def.description = "Variável interna do elemento Web Text";
         m_hardwareScopeVariables.append(def);
-    } else if (compId.startsWith("webinput_") || compId.startsWith("webslider_")) {
+    } else if (compId.contains("input", Qt::CaseInsensitive) || compId.contains("slider", Qt::CaseInsensitive)) {
         VariableDef def;
         def.name = "Valor";
         def.type = VarType::STRING;
         def.scope = VarScope::LOCAL_EVENT;
         def.initialValue = "\"\"";
-        def.description = compId.startsWith("webslider_") ? "Valor atual do slider (0-255)" : "Valor digitado no campo de texto";
+        def.description = compId.contains("slider", Qt::CaseInsensitive) ? "Valor atual do slider (0-255)" : "Valor digitado no campo de texto";
         m_hardwareScopeVariables.append(def);
     }
 
     QString key = QString("%1:%2").arg(compId).arg(eventName);
-    if (m_eventBlockStorage.contains(key)) {
+    if (eventName == "aoZerar" || eventName == "aoDesligar") {
+        QString keyZerar = QString("%1:aoZerar").arg(compId);
+        QString keyDesligar = QString("%1:aoDesligar").arg(compId);
+        if (m_eventBlockStorage.contains(keyZerar)) {
+            m_activeBlocks = m_eventBlockStorage[keyZerar];
+        } else if (m_eventBlockStorage.contains(keyDesligar)) {
+            m_activeBlocks = m_eventBlockStorage[keyDesligar];
+        } else {
+            m_activeBlocks.clear();
+        }
+    } else if (m_eventBlockStorage.contains(key)) {
         m_activeBlocks = m_eventBlockStorage[key];
     } else {
         m_activeBlocks.clear();
@@ -2072,6 +2099,15 @@ void BlockEditor::clearAllBlocks() {
 }
 
 QVector<EventLogicBlock> BlockEditor::getEventBlocks(const QString& compId, const QString& eventName) const {
+    if (eventName == "aoZerar" || eventName == "aoDesligar") {
+        QString keyZerar = QString("%1:aoZerar").arg(compId);
+        QString keyDesligar = QString("%1:aoDesligar").arg(compId);
+        if (m_eventBlockStorage.contains(keyZerar)) {
+            return m_eventBlockStorage.value(keyZerar);
+        } else if (m_eventBlockStorage.contains(keyDesligar)) {
+            return m_eventBlockStorage.value(keyDesligar);
+        }
+    }
     QString key = QString("%1:%2").arg(compId).arg(eventName);
     return m_eventBlockStorage.value(key);
 }
@@ -2079,7 +2115,13 @@ QVector<EventLogicBlock> BlockEditor::getEventBlocks(const QString& compId, cons
 void BlockEditor::setEventBlocks(const QString& compId, const QString& eventName, const QVector<EventLogicBlock>& blocks) {
     QString key = QString("%1:%2").arg(compId).arg(eventName);
     m_eventBlockStorage[key] = blocks;
-    if (m_currentCompId == compId && m_currentEventName == eventName) {
+    if (eventName == "aoZerar") {
+        m_eventBlockStorage[QString("%1:aoDesligar").arg(compId)] = blocks;
+    } else if (eventName == "aoDesligar") {
+        m_eventBlockStorage[QString("%1:aoZerar").arg(compId)] = blocks;
+    }
+    if (m_currentCompId == compId && (m_currentEventName == eventName || 
+        ((m_currentEventName == "aoZerar" || m_currentEventName == "aoDesligar") && (eventName == "aoZerar" || eventName == "aoDesligar")))) {
         m_activeBlocks = blocks;
         rebuildScopeVariables();
         refreshListDisplay();

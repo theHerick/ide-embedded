@@ -590,6 +590,17 @@ void HardwareSimulator::onReadyRead() {
                     json[id + "_color"] = m_simVariables.value("_webFormat_" + id + "_color", el["formatColor"].toString()).toString();
                     json[id + "_size"] = m_simVariables.value("_webFormat_" + id + "_size", QString::number(el.contains("formatSize") ? el["formatSize"].toInt() : 16) + "px").toString();
                     json[id + "_weight"] = m_simVariables.value("_webFormat_" + id + "_weight", el.contains("formatBold") && !el["formatBold"].toBool() ? "normal" : "bold").toString();
+                } else if (type == "Slider") {
+                    QString boundVar = el["boundVar"].toString();
+                    QString varName = boundVar.isEmpty() ? id : boundVar;
+                    QString val = m_simVariables.value(varName, "0").toString();
+                    json[id] = val;
+                } else if (type == "LED") {
+                    QString boundVar = el["boundVar"].toString();
+                    QString varName = boundVar.isEmpty() ? id : boundVar;
+                    QString val = m_simVariables.value(varName, "0").toString();
+                    json[id] = val;
+                    json[id + "_color"] = el.contains("formatColor") ? el["formatColor"].toString() : "#ef4444";
                 }
             }
         }
@@ -615,6 +626,7 @@ void HardwareSimulator::onReadyRead() {
             triggerComponentEvent(varName, "aoAlterar");
             if (val == "0") {
                 triggerComponentEvent(varName, "aoZerar");
+                triggerComponentEvent(varName, "aoDesligar");
             }
         }
         
@@ -638,6 +650,9 @@ void HardwareSimulator::onReadyRead() {
         html += "input.elem { background: rgba(255,255,255,0.7); border: 1px solid #81d4fa; border-radius: 10px; padding: 8px 15px; ";
         html += "box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); outline: none; font-size: 14px; color: #01579b; }";
         html += "input.elem:focus { border-color: #0288d1; background: rgba(255,255,255,0.9); }";
+        html += "input[type='range'].elem { -webkit-appearance: none; background: #e0e0e0; height: 8px; border-radius: 4px; padding: 0; outline: none; }";
+        html += "input[type='range'].elem::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #0288d1; cursor: pointer; transition: background 0.15s ease-in-out; }";
+        html += "input[type='range'].elem::-webkit-slider-thumb:hover { background: #01579b; }";
         html += ".text.elem { font-size: 16px; color: #01579b; font-weight: 600; text-shadow: 0 1px 1px rgba(255,255,255,0.8); }";
         html += "</style></head><body>";
         html += "<div class='container'>";
@@ -665,6 +680,19 @@ void HardwareSimulator::onReadyRead() {
             } else if (type == "Input") {
                 html += QString("<input type='text' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' id='%5' value='' onchange='sendVar(\"%5\", this.value)'>\n")
                     .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30)).arg(id);
+            } else if (type == "Slider") {
+                int sliderVal = m_simVariables.value(id, "0").toInt();
+                html += QString("<input type='range' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' id='%5' min='0' max='255' value='%6' oninput='sendVar(\"%5\", this.value)'>\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30)).arg(id).arg(sliderVal);
+            } else if (type == "LED") {
+                QString val = m_simVariables.value(id, "0").toString();
+                QString ledColor = el.contains("formatColor") ? el["formatColor"].toString() : "#ef4444";
+                bool isOn = (val != "0" && val.toLower() != "low" && val.toLower() != "false");
+                QString color = isOn ? ledColor : "#cbd5e1";
+                QString border = isOn ? "rgba(0,0,0,0.2)" : "#94a3b8";
+                QString shadow = isOn ? QString("0 0 15px %1").arg(ledColor) : "none";
+                html += QString("<div class='elem led' style='left:%1px; top:%2px; width:%3px; height:%4px; border-radius:50%; background:%5; border: 2px solid %6; box-shadow: %7; transition: all 0.3s ease;' id='%8'></div>\n")
+                    .arg(x).arg(y).arg(el["width"].toInt(40)).arg(el["height"].toInt(40)).arg(color).arg(border).arg(shadow).arg(id);
             }
         }
         
@@ -682,6 +710,17 @@ void HardwareSimulator::onReadyRead() {
                 html += QString("if(d.%1_color !== undefined) document.getElementById('%1').style.color = d.%1_color; \n").arg(id);
                 html += QString("if(d.%1_size !== undefined) document.getElementById('%1').style.fontSize = d.%1_size; \n").arg(id);
                 html += QString("if(d.%1_weight !== undefined) document.getElementById('%1').style.fontWeight = d.%1_weight; \n").arg(id);
+            } else if (type == "Slider") {
+                html += QString("if(d.%1 !== undefined) { const slider = document.getElementById('%1'); if (document.activeElement !== slider) slider.value = d.%1; }\n").arg(id);
+            } else if (type == "LED") {
+                html += QString("if(d.%1 !== undefined) {\n").arg(id);
+                html += QString("  const led = document.getElementById('%1');\n").arg(id);
+                html += QString("  const isOn = (d.%1 !== '0' && d.%1.toLowerCase() !== 'low' && d.%1.toLowerCase() !== 'false');\n").arg(id);
+                html += QString("  const ledColor = d.%1_color || '#ef4444';\n").arg(id);
+                html += QString("  led.style.background = isOn ? ledColor : '#cbd5e1';\n").arg(id);
+                html += QString("  led.style.border = isOn ? '2px solid rgba(0,0,0,0.2)' : '2px solid #94a3b8';\n").arg(id);
+                html += QString("  led.style.boxShadow = isOn ? '0 0 15px ' + ledColor : 'none';\n");
+                html += QString("}\n");
             }
         }
         html += "}); }, 1000);\n";

@@ -1049,8 +1049,18 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
         }
     }
 
+    // Extract web sliders to register as global variables
+    QStringList avSliders;
+    QJsonArray webElems = m_webPageData.value("elements").toArray();
+    for (const QJsonValue& val : webElems) {
+        QJsonObject obj = val.toObject();
+        if (obj.value("type").toString() == "Slider") {
+            avSliders.append(obj.value("id").toString());
+        }
+    }
+
     // Only open the event editor when explicitly requested (context menu / double-click)
-    m_blockEditor->loadEventLogic(comp->id(), eventName, avLeds, avPots, avBuzzers, avMotors, avDhts, avHcsrs);
+    m_blockEditor->loadEventLogic(comp->id(), eventName, avLeds, avPots, avBuzzers, avMotors, avDhts, avHcsrs, avSliders);
     synchronizeLoopBlocks();
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
@@ -1077,7 +1087,17 @@ void MainWindow::openWebEventEditor(const QString& compId, const QString& eventN
         }
     }
 
-    m_blockEditor->loadEventLogic(compId, eventName, avLeds, avPots, avBuzzers, avMotors, avDhts, avHcsrs);
+    // Extract web sliders to register as global variables
+    QStringList avSliders;
+    QJsonArray webElems = m_webPageData.value("elements").toArray();
+    for (const QJsonValue& val : webElems) {
+        QJsonObject obj = val.toObject();
+        if (obj.value("type").toString() == "Slider") {
+            avSliders.append(obj.value("id").toString());
+        }
+    }
+
+    m_blockEditor->loadEventLogic(compId, eventName, avLeds, avPots, avBuzzers, avMotors, avDhts, avHcsrs, avSliders);
     synchronizeLoopBlocks();
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
