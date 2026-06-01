@@ -1897,130 +1897,68 @@ void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 
     // Selected state glow
     if (option->state & QStyle::State_Selected) {
-        painter->setPen(QPen(QColor(99, 102, 241, 150), 3, Qt::SolidLine));
+        painter->setPen(QPen(QColor(99, 102, 241, 150), 2.5, Qt::SolidLine));
         painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(-28, -53, 56, 106, 6, 6);
+        painter->drawRoundedRect(-28, -53, 56, 106, 5, 5);
     }
 
-    // --- BATTERY METAL CAPS ---
+    // --- BATTERY METAL CAPS (Flat Vector Style) ---
     QLinearGradient capGrad(-10, 0, 10, 0);
-    capGrad.setColorAt(0.0, QColor(148, 163, 184));
-    capGrad.setColorAt(0.3, QColor(241, 245, 249));
-    capGrad.setColorAt(0.7, QColor(203, 213, 225));
-    capGrad.setColorAt(1.0, QColor(71, 85, 105));
+    capGrad.setColorAt(0.0, QColor(203, 213, 225));
+    capGrad.setColorAt(1.0, QColor(148, 163, 184));
 
     // Positive Cap (Bottom)
-    painter->setPen(QPen(QColor(71, 85, 105), 1));
+    painter->setPen(QPen(QColor(100, 116, 139), 1));
     painter->setBrush(capGrad);
     painter->drawRoundedRect(-8, 44, 16, 6, 1, 1);
 
     // Negative Cap (Top)
     painter->drawRoundedRect(-12, -50, 24, 6, 1, 1);
 
-    // --- BATTERY CYLINDRICAL BODY ---
-    QLinearGradient bodyGrad(-25, 0, 25, 0);
-    bodyGrad.setColorAt(0.0, QColor(17, 24, 39));
-    bodyGrad.setColorAt(0.15, QColor(29, 78, 216));
-    bodyGrad.setColorAt(0.45, QColor(59, 130, 246));
-    bodyGrad.setColorAt(0.65, QColor(147, 197, 253));
-    bodyGrad.setColorAt(0.85, QColor(37, 99, 235));
-    bodyGrad.setColorAt(1.0, QColor(30, 58, 138));
+    // --- BATTERY BODY (Flat Vector Style) ---
+    painter->setPen(QPen(QColor(29, 78, 216), 2));
+    painter->setBrush(QColor(37, 99, 235));
+    painter->drawRoundedRect(-25, -45, 50, 90, 5, 5);
 
-    painter->setPen(QPen(QColor(15, 32, 67), 1.5));
-    painter->setBrush(bodyGrad);
-    painter->drawRoundedRect(-25, -45, 50, 90, 4, 4);
+    // --- SILK SCREEN DECORATIONS ON WRAP ---
+    painter->setPen(QColor(191, 219, 254));
+    QFont fL = painter->font();
+    fL.setPointSize(6);
+    fL.setBold(true);
+    fL.setFamily("Segoe UI");
+    painter->setFont(fL);
+    painter->drawText(QRectF(-25, -40, 50, 12), Qt::AlignCenter, "BESS");
 
-    // Body reflection overlay
-    QLinearGradient glossGrad(0, -45, 0, 45);
-    glossGrad.setColorAt(0.0, QColor(255, 255, 255, 60));
-    glossGrad.setColorAt(0.3, QColor(255, 255, 255, 0));
-    glossGrad.setColorAt(1.0, QColor(0, 0, 0, 40));
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(glossGrad);
-    painter->drawRoundedRect(-25, -45, 50, 90, 4, 4);
-
-    // --- LCD DISPLAY SCREEN ---
-    QLinearGradient lcdGrad(0, -32, 0, 32);
-    lcdGrad.setColorAt(0.0, QColor(15, 23, 42));
-    lcdGrad.setColorAt(1.0, QColor(2, 6, 23));
-    painter->setBrush(lcdGrad);
-    painter->setPen(QPen(QColor(51, 65, 85), 1.2));
-    painter->drawRoundedRect(-18, -32, 36, 64, 4, 4);
-
-    // Segment active levels
-    int activeSegments = 0;
-    if (m_chargeLevel > 80.0) activeSegments = 5;
-    else if (m_chargeLevel > 60.0) activeSegments = 4;
-    else if (m_chargeLevel > 40.0) activeSegments = 3;
-    else if (m_chargeLevel > 20.0) activeSegments = 2;
-    else if (m_chargeLevel > 0.0) activeSegments = 1;
-
-    QColor segColor;
-    if (m_chargeLevel <= 20.0) {
-        segColor = QColor(239, 68, 68);
-    } else if (m_chargeLevel <= 50.0) {
-        segColor = QColor(245, 158, 11);
-    } else {
-        segColor = QColor(34, 197, 94);
-    }
-
-    // Battery icon outline
-    painter->setPen(QPen(QColor(71, 85, 105), 1));
+    // --- FLAT CHARGE VISUALIZER ---
+    // Clean battery outline
+    painter->setPen(QPen(QColor(255, 255, 255, 200), 1.5));
     painter->setBrush(Qt::NoBrush);
-    painter->drawRoundedRect(-10, -24, 20, 32, 2, 2);
-    painter->drawRect(-4, 8, 8, 3);
+    painter->drawRoundedRect(-12, -26, 24, 42, 3, 3);
+    painter->drawRect(-5, -29, 10, 3); // top cap of outline
 
-    double segY[] = { 1.0, -4.5, -10.0, -15.5, -21.0 };
-    for (int i = 0; i < 5; i++) {
-        if (i < activeSegments) {
-            // Neon Glow
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(QColor(segColor.red(), segColor.green(), segColor.blue(), 50));
-            painter->drawRoundedRect(-9, segY[i] - 1, 18, 6, 1, 1);
-
-            // Active Segment Core
-            painter->setBrush(segColor);
-            painter->drawRoundedRect(-8, segY[i], 16, 4, 1, 1);
-        } else {
-            // Inactive Segment
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(QColor(30, 41, 59, 120));
-            painter->drawRoundedRect(-8, segY[i], 16, 4, 1, 1);
-        }
-    }
+    // Flat fill based on level
+    painter->setPen(Qt::NoPen);
+    double fillH = (m_chargeLevel / 100.0) * 38.0;
+    QColor chargeColor = m_chargeLevel > 20 ? QColor(34, 197, 94) : QColor(239, 68, 68);
+    painter->setBrush(chargeColor);
+    painter->drawRoundedRect(-10, 14 - fillH, 20, fillH, 1, 1);
 
     // Digital percentage
-    painter->setPen(QColor(241, 245, 249));
+    painter->setPen(Qt::white);
     QFont f = painter->font();
-    f.setPointSize(6);
+    f.setPointSize(7.5);
     f.setBold(true);
     f.setFamily("Segoe UI");
     painter->setFont(f);
-    painter->drawText(QRectF(-18, 14, 36, 12), Qt::AlignCenter, QString("%1%").arg(static_cast<int>(m_chargeLevel)));
-
-    // --- SILK SCREEN DECORATIONS ON WRAP ---
-    painter->setPen(QColor(255, 255, 255, 180));
-    QFont fBody = painter->font();
-    fBody.setPointSize(4.5);
-    fBody.setBold(true);
-    fBody.setFamily("Segoe UI");
-    painter->setFont(fBody);
-    painter->drawText(QRectF(-25, -42, 50, 8), Qt::AlignCenter, "BESS POWER");
-
-    painter->setPen(QColor(255, 255, 255, 130));
-    painter->drawText(QRectF(-25, 34, 50, 8), Qt::AlignCenter, "18650 3.7V");
+    painter->drawText(QRectF(-25, 20, 50, 15), Qt::AlignCenter, QString("%1%").arg(static_cast<int>(m_chargeLevel)));
 
     // --- WIRE LEADS AND PHYSICAL PINS ---
     // 1. Red Wire (VCC) to Pin (60, 20)
-    painter->setPen(QPen(QColor(127, 29, 29), 5, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(25, 20), QPointF(60, 20));
-    painter->setPen(QPen(QColor(239, 68, 68), 3, Qt::SolidLine, Qt::RoundCap));
+    painter->setPen(QPen(QColor(239, 68, 68), 2, Qt::SolidLine, Qt::RoundCap));
     painter->drawLine(QPointF(25, 20), QPointF(60, 20));
 
     // 2. Black Wire (GND) to Pin (60, -20)
-    painter->setPen(QPen(QColor(15, 23, 42), 5, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(25, -20), QPointF(60, -20));
-    painter->setPen(QPen(QColor(71, 85, 105), 3, Qt::SolidLine, Qt::RoundCap));
+    painter->setPen(QPen(QColor(55, 65, 81), 2, Qt::SolidLine, Qt::RoundCap));
     painter->drawLine(QPointF(25, -20), QPointF(60, -20));
 
     // Render connection header pins
@@ -2045,12 +1983,12 @@ void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     // --- LABELS ON WIRE LEADS ---
     painter->setPen(QColor(239, 68, 68));
     QFont fWire = painter->font();
-    fWire.setPointSize(6);
+    fWire.setPointSize(6.5);
     fWire.setBold(true);
     painter->setFont(fWire);
     painter->drawText(QRectF(30, 22, 24, 10), Qt::AlignCenter, "+");
 
-    painter->setPen(QColor(148, 163, 184));
+    painter->setPen(QColor(156, 163, 175));
     painter->drawText(QRectF(30, -32, 24, 10), Qt::AlignCenter, "-");
 }
 
