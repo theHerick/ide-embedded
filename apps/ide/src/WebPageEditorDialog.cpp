@@ -242,7 +242,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     : QDialog(parent), m_data(data), m_availableVars(availableVars)
 {
     setWindowTitle("Construtor Web Page / Dashboard ESP");
-    resize(800, 600);
+    resize(1340, 880);
     
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
