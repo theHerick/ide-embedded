@@ -720,6 +720,7 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
 
     // Add global Web Sliders
     for (const auto& slider : avSliders) {
+        if (slider.compare(compId, Qt::CaseInsensitive) == 0) continue; // Skip to avoid duplicate in current slider scope
         VariableDef def;
         def.name = sanitizeIdentifier(slider);
         def.type = VarType::STRING;
@@ -732,7 +733,7 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
     // Inject special variables for Web Page Dashboard events
     if (compId.contains("text", Qt::CaseInsensitive)) {
         VariableDef def;
-        def.name = "Texto";
+        def.name = compId;
         def.type = VarType::STRING;
         def.scope = VarScope::LOCAL_EVENT;
         def.initialValue = "\"\"";
@@ -740,7 +741,7 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
         m_hardwareScopeVariables.append(def);
     } else if (compId.contains("input", Qt::CaseInsensitive) || compId.contains("slider", Qt::CaseInsensitive)) {
         VariableDef def;
-        def.name = "Valor";
+        def.name = compId;
         def.type = VarType::STRING;
         def.scope = VarScope::LOCAL_EVENT;
         def.initialValue = "\"\"";

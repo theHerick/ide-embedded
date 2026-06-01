@@ -2004,9 +2004,9 @@ QString CodeGenerator::generateArduinoCode(
                     QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
                     if (!eventBody.trimmed().isEmpty()) {
                         code += QString("void %1_eventAoAtualizar() {\n").arg(id);
-                        code += QString("    String Texto = val_%1;\n").arg(id);
+                        code += QString("    String %1 = val_%1;\n").arg(id);
                         code += eventBody;
-                        code += QString("    val_%1 = Texto;\n").arg(id);
+                        code += QString("    val_%1 = %1;\n").arg(id);
                         code += "}\n\n";
                     }
                 }
@@ -2015,7 +2015,7 @@ QString CodeGenerator::generateArduinoCode(
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
                     QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
                     if (!eventBody.trimmed().isEmpty()) {
-                        code += QString("void %1_eventAoAlterar(String Valor) {\n").arg(id);
+                        code += QString("void %1_eventAoAlterar(String %1) {\n").arg(id);
                         code += eventBody;
                         code += "}\n\n";
                     }
@@ -2029,7 +2029,7 @@ QString CodeGenerator::generateArduinoCode(
                         QString eventBody = compileBlocks(eventBlockStorage[eventKeyOff], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
                         if (!eventBody.trimmed().isEmpty()) {
                             code += QString("void %1_eventAoZerar() {\n").arg(id);
-                            code += "    String Valor = \"0\";\n";
+                            code += QString("    String %1 = \"0\";\n").arg(id);
                             code += eventBody;
                             code += "}\n\n";
                         }
