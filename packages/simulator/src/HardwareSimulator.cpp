@@ -612,6 +612,10 @@ void HardwareSimulator::onReadyRead() {
             QString varName = query.queryItemValue("var");
             QString val = query.queryItemValue("val");
             m_simVariables[varName] = val;
+            triggerComponentEvent(varName, "aoAlterar");
+            if (val == "0") {
+                triggerComponentEvent(varName, "aoDesligar");
+            }
         }
         
         QString response = "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n";
@@ -865,6 +869,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 bool isElseIf = (lowExpr.startsWith("senao se") || lowExpr.startsWith("else if") || block.id.startsWith("elseif") || block.id.startsWith("else if"));
                 bool isFor = lowExpr.startsWith("int ") && expr.contains(";") && expr.count(";") == 2;
                 bool isWhile = lowExpr.startsWith("while") || block.id.startsWith("while_") || block.id == "while";
+                bool isQuando = block.id.startsWith("quando");
 
                 if (isElse) {
                     cond = !execStack.last().lastIfTaken;
@@ -953,6 +958,27 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                         cond = true;
                     } else {
                         cond = evaluateExpression(subExpr);
+                    }
+                } else if (isQuando) {
+                    execStack.last().lastIfTaken = false;
+                    
+                    QString slideId = "webslider_1";
+                    int percentage = 100;
+                    int colonIdx = expr.indexOf(':');
+                    if (colonIdx != -1) {
+                        slideId = expr.left(colonIdx).trimmed();
+                        percentage = expr.mid(colonIdx + 1).trimmed().toInt();
+                    }
+                    
+                    int sliderVal = m_simVariables.value(slideId, "0").toInt();
+                    int targetVal = percentage * 255 / 100;
+                    cond = (sliderVal == targetVal);
+                    
+                    if (cond) {
+                        emit serialMessage(QString("Simulador: QUANDO SLIDER (%1 == %2%) verdadeiro").arg(slideId).arg(percentage), "DEBUG");
+                        execStack.last().lastIfTaken = true;
+                    } else {
+                        emit serialMessage(QString("Simulador: QUANDO SLIDER (%1 == %2%) falso (atual: %3)").arg(slideId).arg(percentage).arg(sliderVal), "DEBUG");
                     }
                 } else {
                     // This is a new, independent 'IF' block

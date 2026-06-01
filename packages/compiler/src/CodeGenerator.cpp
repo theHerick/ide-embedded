@@ -346,6 +346,16 @@ static QString compileBlocks(
                 res += QString("%1else if (%2) {\n").arg(indent).arg(condExpr);
             } else if (block.id.startsWith("for")) {
                 res += QString("%1for (%2) {\n").arg(indent).arg(condExpr);
+            } else if (block.id.startsWith("quando")) {
+                QString slideId = "webslider_1";
+                int percentage = 100;
+                int colonIdx = condExpr.indexOf(':');
+                if (colonIdx != -1) {
+                    slideId = condExpr.left(colonIdx).trimmed();
+                    percentage = condExpr.mid(colonIdx + 1).trimmed().toInt();
+                }
+                int targetVal = percentage * 255 / 100;
+                res += QString("%1if (Valor.toInt() == %2) {\n").arg(indent).arg(targetVal);
             } else {
                 res += QString("%1if (%2) {\n").arg(indent).arg(condExpr);
             }
@@ -2000,7 +2010,7 @@ QString CodeGenerator::generateArduinoCode(
                         code += "}\n\n";
                     }
                 }
-            } else if (type == "Input") {
+            } else if (type == "Input" || type == "Slider") {
                 QString eventKey = QString("%1:aoAlterar").arg(id);
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
                     QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
@@ -2008,6 +2018,17 @@ QString CodeGenerator::generateArduinoCode(
                         code += QString("void %1_eventAoAlterar(String Valor) {\n").arg(id);
                         code += eventBody;
                         code += "}\n\n";
+                    }
+                }
+                if (type == "Slider") {
+                    QString eventKeyOff = QString("%1:aoDesligar").arg(id);
+                    if (eventBlockStorage.contains(eventKeyOff) && !eventBlockStorage[eventKeyOff].isEmpty()) {
+                        QString eventBody = compileBlocks(eventBlockStorage[eventKeyOff], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                        if (!eventBody.trimmed().isEmpty()) {
+                            code += QString("void %1_eventAoDesligar() {\n").arg(id);
+                            code += eventBody;
+                            code += "}\n\n";
+                        }
                     }
                 }
             }
@@ -2280,14 +2301,21 @@ QString CodeGenerator::generateArduinoCode(
         code += "    String varName = server.arg(\"var\");\n";
         code += "    String val = server.arg(\"val\");\n";
         
-        // Call Web Input events
+        // Call Web Input / Slider events
         for (int i = 0; i < elements.size(); ++i) {
             QJsonObject el = elements[i].toObject();
             if (el["type"].toString() == "Input" || el["type"].toString() == "Slider") {
                 QString id = el["id"].toString();
+                QString type = el["type"].toString();
                 QString eventKey = QString("%1:aoAlterar").arg(id);
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
                     code += QString("    if (varName == \"%1\") { %1_eventAoAlterar(val); }\n").arg(id);
+                }
+                if (type == "Slider") {
+                    QString eventKeyOff = QString("%1:aoDesligar").arg(id);
+                    if (eventBlockStorage.contains(eventKeyOff) && !eventBlockStorage[eventKeyOff].isEmpty()) {
+                        code += QString("    if (varName == \"%1\" && val == \"0\") { %1_eventAoDesligar(); }\n").arg(id);
+                    }
                 }
             }
         }

@@ -810,13 +810,15 @@ void BlockEditor::addBlock(const QString& type) {
         b.actionCommand = "RESTORE";
         b.actionTarget = "";
         m_activeBlocks.append(b);
-    } else if (type == "if" || type == "elseif" || type == "else" || type == "while" || type == "for") {
+    } else if (type == "if" || type == "elseif" || type == "else" || type == "while" || type == "for" || type == "quando") {
 
         b.type = LogicBlockType::CONDITION;
         if (type == "else") {
             b.conditionExpression = "senao";
         } else if (type == "for") {
             b.conditionExpression = "int i = 0; i < 10; i++";
+        } else if (type == "quando") {
+            b.conditionExpression = "webslider_1:100";
         } else {
             b.conditionExpression = "true";
         }
@@ -996,6 +998,8 @@ void BlockEditor::refreshListDisplay() {
                     condColor = QColor("#D97706"); // loop dark amber
                 } else if (block.id.startsWith("elseif")) {
                     condColor = QColor("#F97316"); // elseif orange
+                } else if (block.id.startsWith("quando")) {
+                    condColor = QColor("#8B5CF6"); // sleek violet/purple for when block
                 }
                 nestStack.append(condColor);
             }
@@ -1056,6 +1060,9 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         } else if (block.id.startsWith("elseif")) {
             actionName = "SENÃO SE";
             blockColor = QColor("#F97316"); // Elseif different orange shade
+        } else if (block.id.startsWith("quando")) {
+            actionName = "QUANDO SLIDER";
+            blockColor = QColor("#8B5CF6"); // sleek violet/purple for when block
         } else if (block.conditionExpression == "senao" || block.conditionExpression == "else") {
             actionName = "SENÃO";
         }
@@ -1146,17 +1153,59 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         connect(expEdit, &QLineEdit::textChanged, this, saveParams);
 
     } else if (block.type == LogicBlockType::CONDITION) {
-        auto* expEdit = new VariableSlotEdit(w);
-        expEdit->installEventFilter(this);
-        expEdit->setPlaceholderText("Expressão Condicional (ex: var > 10)");
-        expEdit->setText(block.conditionExpression);
+        if (block.id.startsWith("quando")) {
+            QString slideId = "webslider_1";
+            QString percentage = "100";
+            QString expr = block.conditionExpression;
+            int colonIdx = expr.indexOf(':');
+            if (colonIdx != -1) {
+                slideId = expr.left(colonIdx);
+                percentage = expr.mid(colonIdx + 1);
+            }
 
-        lay->addWidget(expEdit);
+            auto* slideEdit = new VariableSlotEdit(w);
+            slideEdit->installEventFilter(this);
+            slideEdit->setPlaceholderText("webslider_1");
+            slideEdit->setText(slideId);
+            slideEdit->setFixedWidth(100);
 
-        connect(expEdit, &QLineEdit::textChanged, this, [this, index, expEdit]() {
-            m_activeBlocks[index].conditionExpression = expEdit->text();
-            emit blocksChanged();
-        });
+            auto* lblEstiver = new QLabel("estiver em", w);
+            lblEstiver->setStyleSheet("color: white; font-weight: bold; font-size: 11px;");
+
+            auto* pctEdit = new VariableSlotEdit(w);
+            pctEdit->installEventFilter(this);
+            pctEdit->setPlaceholderText("100");
+            pctEdit->setText(percentage);
+            pctEdit->setFixedWidth(50);
+
+            auto* lblPct = new QLabel("%", w);
+            lblPct->setStyleSheet("color: white; font-weight: bold; font-size: 11px;");
+
+            lay->addWidget(slideEdit);
+            lay->addWidget(lblEstiver);
+            lay->addWidget(pctEdit);
+            lay->addWidget(lblPct);
+
+            auto updateExpr = [this, index, slideEdit, pctEdit]() {
+                m_activeBlocks[index].conditionExpression = QString("%1:%2").arg(slideEdit->text().trimmed()).arg(pctEdit->text().trimmed());
+                emit blocksChanged();
+            };
+
+            connect(slideEdit, &QLineEdit::textChanged, this, updateExpr);
+            connect(pctEdit, &QLineEdit::textChanged, this, updateExpr);
+        } else {
+            auto* expEdit = new VariableSlotEdit(w);
+            expEdit->installEventFilter(this);
+            expEdit->setPlaceholderText("Expressão Condicional (ex: var > 10)");
+            expEdit->setText(block.conditionExpression);
+
+            lay->addWidget(expEdit);
+
+            connect(expEdit, &QLineEdit::textChanged, this, [this, index, expEdit]() {
+                m_activeBlocks[index].conditionExpression = expEdit->text();
+                emit blocksChanged();
+            });
+        }
 
     } else if (block.type == LogicBlockType::ACTION) {
         auto* targetEdit = new VariableSlotEdit(w);
@@ -1795,6 +1844,7 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             logicOptions << "Criar Variável (Declara nova variável)"
                          << "Atribuir (Define valor de variável)"
                          << "Se (if - Bloco Condicional SE)"
+                         << "Quando Slider Estiver (quando <slide> estiver <porcentagem>)"
                          << "Senão Se (elseif - Condicional Alternativa)"
                          << "Senão (else - Bloco Padrão)"
                          << "Enquanto (while - Repete enquanto verdadeiro)"
@@ -1950,6 +2000,8 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             addBlock("formatWebBold");
         } else if (text.contains("formatar")) {
             addBlock("formatWebColor"); // Default fallback for generic 'formatar'
+        } else if (text.contains("quando") || text.contains("estiver")) {
+            addBlock("quando");
         } else if (text.contains("condi") || text.contains("se ") || text == "se" || text.split(" ").contains("if")) {
             addConditionBlock();
         } else if (text.contains("repetir para") || text.contains("para ") || text == "para" || text.contains("for")) {

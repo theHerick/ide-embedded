@@ -214,6 +214,13 @@ protected:
                     menu.addAction("Editar Evento: Ao Alterar Valor", dialog, [this, webItem](){
                         dialog->requestEditEvent(webItem->id(), "aoAlterar");
                     });
+                } else if (type == "Slider") {
+                    menu.addAction("Editar Evento: Ao Alterar Valor", dialog, [this, webItem](){
+                        dialog->requestEditEvent(webItem->id(), "aoAlterar");
+                    });
+                    menu.addAction("Editar Evento: Ao Desligar", dialog, [this, webItem](){
+                        dialog->requestEditEvent(webItem->id(), "aoDesligar");
+                    });
                 }
                 
                 menu.addSeparator();
@@ -651,7 +658,7 @@ void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint&
     searchEdit->installEventFilter(this);
 
     QStringList componentsList;
-    componentsList << "Texto" << "Botão" << "Gráfico" << "Slider" << "LED Virtual" << "Input Texto";
+    componentsList << "Texto" << "Botão" << "Slider" << "LED Virtual" << "Input Texto";
 
     QCompleter* completer = new QCompleter(componentsList, searchEdit);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
