@@ -1994,65 +1994,122 @@ void BessChargerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
     if (option->state & QStyle::State_Selected) {
         painter->setPen(QPen(QColor(99, 102, 241, 150), 3, Qt::SolidLine));
         painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(-38, -33, 76, 66, 4, 4);
+        painter->drawRoundedRect(-48, -38, 96, 78, 5, 5);
     }
 
-    // PCB Body
-    painter->setPen(QPen(QColor(6, 78, 59), 2));
-    painter->setBrush(QColor(16, 185, 129));
-    painter->drawRoundedRect(-35, -30, 70, 60, 4, 4);
-    
-    // TP4056 Chip
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(QColor(30, 41, 59));
-    painter->drawRect(-10, -15, 20, 15);
-    
-    // Protection Chip (DW01A)
-    painter->drawRect(-5, 5, 10, 10);
-    
-    // USB Port mock
-    painter->setBrush(QColor(203, 213, 225));
-    painter->drawRect(-40, -10, 5, 20);
+    // Premium Blue PCB Body (TP4056 Type-C style)
+    painter->setPen(QPen(QColor(15, 60, 110), 1.5));
+    painter->setBrush(QColor(25, 90, 170));
+    painter->drawRoundedRect(-45, -35, 90, 70, 4, 4);
 
-    // Text labels for TP4056 pins
+    // PCB Traces Mock (for premium look)
+    painter->setPen(QPen(QColor(40, 110, 190), 1));
+    painter->drawLine(-30, -20, -10, -10);
+    painter->drawLine(-30, 20, -10, 10);
+    painter->drawLine(30, -10, 10, -5);
+    painter->drawLine(30, 10, 10, 5);
+
+    // TP4056 Main IC
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(30, 35, 45)); // Matte black
+    painter->drawRoundedRect(-8, -12, 16, 12, 1, 1);
+    
+    // IC pins (silver)
+    painter->setBrush(QColor(180, 185, 190));
+    for (int i = 0; i < 4; i++) {
+        painter->drawRect(-5 + i*3.5, -14, 1.5, 2); // Top pins
+        painter->drawRect(-5 + i*3.5, 0, 1.5, 2);   // Bottom pins
+    }
+    
+    // Protection ICs (DW01A & 8205A)
+    painter->setBrush(QColor(30, 35, 45));
+    painter->drawRoundedRect(-15, 10, 12, 8, 1, 1); // 8205A
+    painter->drawRoundedRect(5, 12, 8, 5, 1, 1);    // DW01A
+    
+    // Type-C USB Port mock
+    painter->setBrush(QColor(210, 215, 220)); // Silver metal
+    painter->setPen(QPen(QColor(130, 140, 150), 1));
+    painter->drawRoundedRect(-48, -8, 12, 16, 3, 3); // Extends out slightly on the left
+    // Inner port black piece
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(20, 20, 20));
+    painter->drawRoundedRect(-48, -4, 4, 8, 1, 1);
+
+    // Draw connection holes & metallic male header pins at exactly the m_pins coordinates!
+    QPointF pinPos[] = {
+        QPointF(-40, -20), QPointF(-40, 20),
+        QPointF(40, -10), QPointF(40, 10),
+        QPointF(40, -30), QPointF(40, 30)
+    };
+    for (const auto& pt : pinPos) {
+        // Outer copper pad (Gold/Silver)
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(218, 165, 32)); // Golden pad
+        painter->drawEllipse(pt, 4.5, 4.5);
+        
+        // Inner hole / Male header pin inserted
+        painter->setPen(QPen(QColor(50, 50, 50), 0.5));
+        painter->setBrush(QColor(230, 230, 230)); // Silver header pin
+        painter->drawEllipse(pt, 2.5, 2.5);
+        
+        // Pin highlight/reflection for 3D effect
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(255, 255, 255, 150));
+        painter->drawEllipse(QPointF(pt.x() - 0.5, pt.y() - 0.5), 1.0, 1.0);
+    }
+
+    // Text labels for pins
     painter->setPen(Qt::white);
     QFont f2 = painter->font();
     f2.setPointSize(5);
+    f2.setBold(true);
     painter->setFont(f2);
-    painter->drawText(QRectF(-32, -25, 15, 10), Qt::AlignLeft | Qt::AlignVCenter, "IN+");
-    painter->drawText(QRectF(-32, 15, 15, 10), Qt::AlignLeft | Qt::AlignVCenter, "IN-");
     
-    painter->drawText(QRectF(16, -15, 15, 10), Qt::AlignRight | Qt::AlignVCenter, "B+");
-    painter->drawText(QRectF(16, 5, 15, 10), Qt::AlignRight | Qt::AlignVCenter, "B-");
-    painter->drawText(QRectF(16, -25, 15, 10), Qt::AlignRight | Qt::AlignVCenter, "OUT+");
-    painter->drawText(QRectF(16, 15, 15, 10), Qt::AlignRight | Qt::AlignVCenter, "OUT-");
+    // Left side labels (IN+, IN-)
+    painter->drawText(QRectF(-33, -25, 20, 10), Qt::AlignLeft | Qt::AlignVCenter, "IN+");
+    painter->drawText(QRectF(-33, 15, 20, 10), Qt::AlignLeft | Qt::AlignVCenter, "IN-");
+    
+    // Right side labels (B+, B-, OUT+, OUT-)
+    painter->drawText(QRectF(15, -15, 18, 10), Qt::AlignRight | Qt::AlignVCenter, "B+");
+    painter->drawText(QRectF(15, 5, 18, 10), Qt::AlignRight | Qt::AlignVCenter, "B-");
+    painter->drawText(QRectF(15, -35, 18, 10), Qt::AlignRight | Qt::AlignVCenter, "OUT+");
+    painter->drawText(QRectF(15, 25, 18, 10), Qt::AlignRight | Qt::AlignVCenter, "OUT-");
 
     // LEDs
     if (m_isPluggedIn) {
         // Red LED (Charging)
-        painter->setBrush(QColor(239, 68, 68));
-        painter->drawEllipse(QPointF(5, -20), 3, 3);
-        // Glow
         painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(239, 68, 68, 100));
-        painter->drawEllipse(QPointF(5, -20), 6, 6);
+        painter->setBrush(QColor(239, 68, 68));
+        painter->drawEllipse(QPointF(-10, -22), 2.5, 2.5);
+        // Glow
+        painter->setBrush(QColor(239, 68, 68, 120));
+        painter->drawEllipse(QPointF(-10, -22), 5, 5);
+        
+        // Blue LED off
+        painter->setBrush(QColor(30, 40, 80));
+        painter->drawEllipse(QPointF(0, -22), 2.0, 2.0);
     } else {
-        // Off LED
-        painter->setBrush(QColor(100, 20, 20));
-        painter->drawEllipse(QPointF(5, -20), 3, 3);
+        // Red LED off
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(80, 20, 20));
+        painter->drawEllipse(QPointF(-10, -22), 2.0, 2.0);
+
+        // Blue LED (Standby/Full)
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(59, 130, 246));
+        painter->drawEllipse(QPointF(0, -22), 2.5, 2.5);
+        // Glow
+        painter->setBrush(QColor(59, 130, 246, 120));
+        painter->drawEllipse(QPointF(0, -22), 5, 5);
     }
 
-    painter->setPen(QPen(QColor(0,0,0,100), 1));
-    painter->setBrush(QColor(20, 100, 20)); // Blue/Green standby LED
-    painter->drawEllipse(QPointF(15, -20), 3, 3);
-
-    // Title
-    painter->setPen(QColor(6, 78, 59));
-    QFont f = painter->font();
-    f.setPointSize(5);
-    f.setBold(true);
-    painter->setFont(f);
-    painter->drawText(QRectF(-30, 20, 60, 10), Qt::AlignCenter, "TP4056");
+    // Title / Silk Screen Name
+    painter->setPen(QColor(200, 210, 220));
+    QFont f3 = painter->font();
+    f3.setPointSize(6);
+    f3.setBold(true);
+    painter->setFont(f3);
+    painter->drawText(QRectF(-30, 22, 60, 10), Qt::AlignCenter, "TP4056");
 }
 
 void BessChargerItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
