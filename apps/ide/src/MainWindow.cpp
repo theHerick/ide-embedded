@@ -1208,20 +1208,6 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
             }
         }
     } else if (comp->componentType() == "esp32" || comp->componentType() == "board" || comp->componentType() == "generic") {
-        QString boardName = "Microcontrolador";
-        QVariant cfgVar = comp->property("microcontrollerConfig");
-        if (cfgVar.isValid() && cfgVar.canConvert<QString>()) {
-            QJsonDocument doc = QJsonDocument::fromJson(cfgVar.toString().toUtf8());
-            if (doc.isObject()) {
-                boardName = doc.object().value("board").toString().toUpper();
-            }
-        }
-
-        QAction* actModel = menu.addAction(QString("Ver Modelagem no %1").arg(boardName));
-        connect(actModel, &QAction::triggered, this, [this, comp]() {
-            showComponentModeling(comp);
-        });
-
         QAction* actStart = menu.addAction("Evento: Ao Iniciar (aoIniciar)");
         connect(actStart, &QAction::triggered, this, [this, comp]() {
             m_scene->clearSelection();
@@ -2614,6 +2600,7 @@ void MainWindow::editCapacitorProperties(CapacitorItem* capacitor) {
         "QDoubleSpinBox:focus { border-color: #93C5FD; }"
         "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QComboBox:focus { border-color: #93C5FD; }"
+        "QComboBox QAbstractItemView { background-color: #FFFFFF; color: #0F172A; selection-background-color: #DBEAFE; selection-color: #0F172A; border: 1px solid #E6EEF3; }"
         "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QPushButton:hover { background: #1E40AF; }"
         "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
@@ -2762,6 +2749,7 @@ void MainWindow::editLEDProperties(LEDItem* led) {
         "QLabel { color: #0F172A; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }"
         "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QComboBox:focus { border-color: #93C5FD; }"
+        "QComboBox QAbstractItemView { background-color: #FFFFFF; color: #0F172A; selection-background-color: #DBEAFE; selection-color: #0F172A; border: 1px solid #E6EEF3; }"
         "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QPushButton:hover { background: #1E40AF; }"
         "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
@@ -2863,6 +2851,7 @@ void MainWindow::editResistorValue(ResistorItem* resistor) {
         "QDoubleSpinBox:focus { border-color: #93C5FD; }"
         "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QComboBox:focus { border-color: #93C5FD; }"
+        "QComboBox QAbstractItemView { background-color: #FFFFFF; color: #0F172A; selection-background-color: #DBEAFE; selection-color: #0F172A; border: 1px solid #E6EEF3; }"
         "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QPushButton:hover { background: #1E40AF; }"
         "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
