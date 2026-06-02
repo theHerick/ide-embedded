@@ -2120,8 +2120,16 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
         searchEdit->deleteLater();
     };
 
-    connect(searchEdit, &QLineEdit::returnPressed, this, [searchEdit, handleSelection]() {
-        handleSelection(searchEdit->text());
+    connect(searchEdit, &QLineEdit::returnPressed, this, [searchEdit, completer, handleSelection]() {
+        QString text = searchEdit->text().trimmed();
+        if (completer && completer->completionCount() > 0) {
+            QString bestMatch = completer->currentCompletion();
+            if (!bestMatch.isEmpty()) {
+                handleSelection(bestMatch);
+                return;
+            }
+        }
+        handleSelection(text);
     });
 
     connect(completer, QOverload<const QString&>::of(&QCompleter::activated), this, handleSelection);
