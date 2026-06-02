@@ -247,6 +247,10 @@ static QJsonObject serializeComponentItem(ComponentItem* comp) {
         state["pressed"] = button->isPressed();
     } else if (auto* resistor = dynamic_cast<ResistorItem*>(comp)) {
         state["resistance"] = resistor->resistance();
+    } else if (auto* capacitor = dynamic_cast<CapacitorItem*>(comp)) {
+        state["capacitance"] = capacitor->capacitance();
+        state["isSMD"] = capacitor->isSMD();
+        state["smdSize"] = capacitor->smdSize();
     } else if (auto* pot = dynamic_cast<PotentiometerItem*>(comp)) {
         state["value"] = pot->value();
     } else if (auto* buzzer = dynamic_cast<BuzzerItem*>(comp)) {
@@ -301,6 +305,10 @@ static void applyComponentState(ComponentItem* comp, const QJsonObject& state) {
         Q_UNUSED(button);
     } else if (auto* resistor = dynamic_cast<ResistorItem*>(comp)) {
         if (state.contains("resistance")) resistor->setResistance(state["resistance"].toDouble(resistor->resistance()));
+    } else if (auto* capacitor = dynamic_cast<CapacitorItem*>(comp)) {
+        if (state.contains("capacitance")) capacitor->setCapacitance(state["capacitance"].toDouble(capacitor->capacitance()));
+        if (state.contains("isSMD")) capacitor->setSMD(state["isSMD"].toBool(capacitor->isSMD()));
+        if (state.contains("smdSize")) capacitor->setSmdSize(state["smdSize"].toString());
     } else if (auto* pot = dynamic_cast<PotentiometerItem*>(comp)) {
         if (state.contains("value")) pot->setValue(state["value"].toDouble(pot->value()));
     } else if (auto* buzzer = dynamic_cast<BuzzerItem*>(comp)) {
@@ -386,6 +394,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         if (comp->componentType() == "resistor") {
             auto* res = static_cast<ResistorItem*>(comp);
             this->editResistorValue(res);
+        } else if (comp->componentType() == "capacitor") {
+            auto* cap = static_cast<CapacitorItem*>(comp);
+            this->editCapacitorProperties(cap);
         } else if (comp->componentType() == "potentiometer") {
             auto* pot = static_cast<PotentiometerItem*>(comp);
             this->editPotentiometerValue(pot);
@@ -1357,6 +1368,12 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
         connect(actEdit, &QAction::triggered, this, [this, comp]() {
             auto* res = static_cast<ResistorItem*>(comp);
             this->editResistorValue(res);
+        });
+    } else if (comp->componentType() == "capacitor") {
+        QAction* actEdit = menu.addAction("Editar Capacitor...");
+        connect(actEdit, &QAction::triggered, this, [this, comp]() {
+            auto* cap = static_cast<CapacitorItem*>(comp);
+            this->editCapacitorProperties(cap);
         });
     } else if (comp->componentType() == "potentiometer") {
         QAction* actGiro = menu.addAction("Evento: Ao Girar (aoGirar)");
@@ -2574,6 +2591,156 @@ void MainWindow::exportLaserPNG() {
     } else {
         logMessage("Falha ao salvar o PNG do layout laser.", "ERROR");
         QMessageBox::critical(this, "Erro", "Falha ao salvar a imagem.");
+    }
+}
+
+
+void MainWindow::editCapacitorProperties(CapacitorItem* capacitor) {
+    if (!capacitor) return;
+
+    QDialog dialog(this);
+    dialog.setWindowTitle("Configurar Capacitor");
+    dialog.setMinimumWidth(340);
+    dialog.setStyleSheet(
+        "QDialog { background: #FFFFFF; border: 1px solid #E6EEF3; }"
+        "QLabel { color: #0F172A; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }"
+        "QDoubleSpinBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-weight: bold; selection-background-color: #DBEAFE; }"
+        "QDoubleSpinBox:focus { border-color: #93C5FD; }"
+        "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
+        "QComboBox:focus { border-color: #93C5FD; }"
+        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
+        "QPushButton:hover { background: #1E40AF; }"
+        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
+        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
+    );
+
+    auto* layout = new QVBoxLayout(&dialog);
+    layout->setSpacing(14);
+    layout->setContentsMargins(20, 20, 20, 20);
+
+    // Capacitance inputs
+    auto* capLabel = new QLabel("Capacitância (µF):", &dialog);
+    layout->addWidget(capLabel);
+
+    auto* spinBox = new QDoubleSpinBox(&dialog);
+    spinBox->setRange(0.001, 100000.0);
+    spinBox->setDecimals(3);
+    spinBox->setSingleStep(1.0);
+    spinBox->setValue(capacitor->capacitance());
+    layout->addWidget(spinBox);
+
+    // Quick shortcuts
+    auto* quickLabel = new QLabel("Atalhos Rápidos:", &dialog);
+    layout->addWidget(quickLabel);
+
+    auto* quickBtnLayout = new QHBoxLayout();
+    quickBtnLayout->setSpacing(6);
+
+    auto* btn10n = new QPushButton("10 nF", &dialog);
+    btn10n->setObjectName("cancelBtn");
+    connect(btn10n, &QPushButton::clicked, [spinBox]() { spinBox->setValue(0.010); });
+
+    auto* btn100n = new QPushButton("100 nF", &dialog);
+    btn100n->setObjectName("cancelBtn");
+    connect(btn100n, &QPushButton::clicked, [spinBox]() { spinBox->setValue(0.100); });
+
+    auto* btn10u = new QPushButton("10 µF", &dialog);
+    btn10u->setObjectName("cancelBtn");
+    connect(btn10u, &QPushButton::clicked, [spinBox]() { spinBox->setValue(10.0); });
+
+    auto* btn100u = new QPushButton("100 µF", &dialog);
+    btn100u->setObjectName("cancelBtn");
+    connect(btn100u, &QPushButton::clicked, [spinBox]() { spinBox->setValue(100.0); });
+
+    quickBtnLayout->addWidget(btn10n);
+    quickBtnLayout->addWidget(btn100n);
+    quickBtnLayout->addWidget(btn10u);
+    quickBtnLayout->addWidget(btn100u);
+    layout->addLayout(quickBtnLayout);
+
+    // Packaging Type
+    auto* pkgLabel = new QLabel("Encapsulamento:", &dialog);
+    layout->addWidget(pkgLabel);
+
+    auto* pkgCombo = new QComboBox(&dialog);
+    pkgCombo->addItem("Clássico (Disco Cerâmico Laranja)", false);
+    pkgCombo->addItem("SMD (Montagem em Superfície Retangular)", true);
+    
+    // Set current index based on component status
+    pkgCombo->setCurrentIndex(capacitor->isSMD() ? 1 : 0);
+    layout->addWidget(pkgCombo);
+
+    // SMD size selector (only enabled when SMD is selected)
+    auto* sizeLabel = new QLabel("Tamanho SMD:", &dialog);
+    layout->addWidget(sizeLabel);
+
+    auto* sizeCombo = new QComboBox(&dialog);
+    sizeCombo->addItems({"0805", "1206", "1210", "1812", "2220"});
+    
+    int currentSizeIdx = sizeCombo->findText(capacitor->smdSize());
+    if (currentSizeIdx != -1) {
+        sizeCombo->setCurrentIndex(currentSizeIdx);
+    } else {
+        sizeCombo->setCurrentIndex(1); // Default to 1206
+    }
+    
+    layout->addWidget(sizeCombo);
+
+    // Manage enabling/disabling SMD size combo based on encapsulation choice
+    auto updateSmdVisibility = [sizeLabel, sizeCombo](bool isSMD) {
+        sizeLabel->setEnabled(isSMD);
+        sizeCombo->setEnabled(isSMD);
+    };
+
+    connect(pkgCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [pkgCombo, updateSmdVisibility](int index) {
+        bool isSMD = pkgCombo->itemData(index).toBool();
+        updateSmdVisibility(isSMD);
+    });
+
+    // Initialize state
+    updateSmdVisibility(capacitor->isSMD());
+
+    // Automatically check SMD if capacitance changes to >= 10 uF as premium assist,
+    // but allow the user to manually change it later
+    connect(spinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [pkgCombo](double val) {
+        if (val >= 10.0) {
+            pkgCombo->setCurrentIndex(1); // Auto SMD
+        } else {
+            pkgCombo->setCurrentIndex(0); // Auto Classic
+        }
+    });
+
+    // Accept / Cancel actions
+    auto* buttonLayout = new QHBoxLayout();
+    buttonLayout->setSpacing(10);
+
+    auto* cancelBtn = new QPushButton("Cancelar", &dialog);
+    cancelBtn->setObjectName("cancelBtn");
+    connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+    auto* saveBtn = new QPushButton("Salvar", &dialog);
+    connect(saveBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+
+    buttonLayout->addWidget(cancelBtn);
+    buttonLayout->addWidget(saveBtn);
+    layout->addLayout(buttonLayout);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        double newCapVal = spinBox->value();
+        bool newIsSMD = pkgCombo->currentData().toBool();
+        QString newSmdSize = sizeCombo->currentText();
+
+        capacitor->setCapacitance(newCapVal);
+        capacitor->setSMD(newIsSMD);
+        if (newIsSMD) {
+            capacitor->setSmdSize(newSmdSize);
+        }
+
+        compileCode();
+        statusBar()->showMessage(QString("Capacitor %1 configurado para %2 µF (%3)")
+            .arg(capacitor->id())
+            .arg(newCapVal)
+            .arg(newIsSMD ? "SMD " + newSmdSize : "Disco Cerâmico"), 3000);
     }
 }
 

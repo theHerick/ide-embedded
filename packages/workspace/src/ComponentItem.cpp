@@ -1474,38 +1474,93 @@ void ResistorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 // ─────────────────────────────────────────────────────────────────────────────
 // CAPACITOR ITEM IMPLEMENTATION
 // ─────────────────────────────────────────────────────────────────────────────
+static QString formatCapValue(double uF) {
+    if (uF >= 1000.0) {
+        return QString("%1 mF").arg(uF / 1000.0);
+    }
+    if (uF >= 1.0) {
+        return QString("%1 uF").arg(uF);
+    }
+    if (uF >= 0.001) {
+        return QString("%1 nF").arg(uF * 1000.0);
+    }
+    return QString("%1 pF").arg(uF * 1000000.0);
+}
+
 CapacitorItem::CapacitorItem(const QString& id, const QString& name, QGraphicsItem* parent)
-    : ComponentItem(id, name, "capacitor", parent) {
+    : ComponentItem(id, name, "capacitor", parent), m_capacitance(0.1), m_isSMD(false), m_smdSize("0805") {
     m_pins.append({"1", QPointF(-10, 20), false, "", "", QColor(239, 68, 68)});
     m_pins.append({"2", QPointF(10, 20), false, "", "", QColor(75, 85, 99)});
+    
+    setProperty("isSMD", false);
+    setProperty("smdSize", "0805");
+    
+    m_name = QString("Capacitor %1").arg(formatCapValue(m_capacitance));
+}
+
+void CapacitorItem::setCapacitance(double value) {
+    m_capacitance = qMax(0.000001, value); // min 1 pF
+    m_name = QString("Capacitor %1").arg(formatCapValue(m_capacitance));
+    
+    // Auto design switch: if capacitance is >= 10 uF, turn it into a black square (SMD)!
+    if (m_capacitance >= 10.0) {
+        m_isSMD = true;
+        m_smdSize = "1206";
+        setProperty("isSMD", true);
+        setProperty("smdSize", "1206");
+        updateLayoutForSMD("1206");
+    } else {
+        m_isSMD = false;
+        setProperty("isSMD", false);
+        prepareGeometryChange();
+        m_pins[0].localPos = QPointF(-10, 20);
+        m_pins[1].localPos = QPointF(10, 20);
+        update();
+    }
+}
+
+void CapacitorItem::setSMD(bool enabled) {
+    m_isSMD = enabled;
+    setProperty("isSMD", enabled);
+    if (enabled) {
+        updateLayoutForSMD(m_smdSize);
+    } else {
+        prepareGeometryChange();
+        m_pins[0].localPos = QPointF(-10, 20);
+        m_pins[1].localPos = QPointF(10, 20);
+        update();
+    }
+}
+
+void CapacitorItem::setSmdSize(const QString& size) {
+    m_smdSize = size;
+    setProperty("smdSize", size);
+    if (m_isSMD) {
+        updateLayoutForSMD(size);
+    }
 }
 
 QRectF CapacitorItem::boundingRect() const {
-
-    if (property("isSMD").toBool()) {
-        QString size = property("smdSize").toString();
+    if (m_isSMD) {
         double w = 32.0, h = 16.0;
-        if (size == "0402") { w = 10; h = 5; }
-        else if (size == "0603") { w = 16; h = 8; }
-        else if (size == "0805") { w = 20; h = 12.5; }
-        else if (size == "1206") { w = 32; h = 16; }
+        if (m_smdSize == "0402") { w = 10; h = 5; }
+        else if (m_smdSize == "0603") { w = 16; h = 8; }
+        else if (m_smdSize == "0805") { w = 20; h = 12.5; }
+        else if (m_smdSize == "1206") { w = 32; h = 16; }
         return QRectF(-w/2.0 - 5, -h/2.0 - 5, w + 10, h + 10);
     }
     return QRectF(-25, -25, 50, 45);
-
 }
 
 void CapacitorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
-
     painter->setRenderHint(QPainter::Antialiasing);
 
-    if (property("isSMD").toBool()) {
-        QString size = property("smdSize").toString();
+    if (m_isSMD) {
         double w = 32.0, h = 16.0;
-        if (size == "0402") { w = 10; h = 5; }
-        else if (size == "0603") { w = 16; h = 8; }
-        else if (size == "0805") { w = 20; h = 12.5; }
-        else if (size == "1206") { w = 32; h = 16; }
+        if (m_smdSize == "0402") { w = 10; h = 5; }
+        else if (m_smdSize == "0603") { w = 16; h = 8; }
+        else if (m_smdSize == "0805") { w = 20; h = 12.5; }
+        else if (m_smdSize == "1206") { w = 32; h = 16; }
 
         if (option->state & QStyle::State_Selected) {
             painter->setPen(QPen(QColor(99, 102, 241, 150), 2.5, Qt::SolidLine));
@@ -1513,9 +1568,9 @@ void CapacitorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
             painter->drawRoundedRect(-w/2.0 - 2, -h/2.0 - 2, w + 4, h + 4, 2, 2);
         }
 
-        // SMD Body
+        // SMD Body: Deep Black / Charcoal (#1E293B)
         painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(186, 140, 99));
+        painter->setBrush(QColor(30, 41, 59));
         painter->drawRect(-w/2.0, -h/2.0, w, h);
 
         // Silver Terminals
@@ -1523,6 +1578,11 @@ void CapacitorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
         double termW = w * 0.2;
         painter->drawRect(-w/2.0, -h/2.0, termW, h);
         painter->drawRect(w/2.0 - termW, -h/2.0, termW, h);
+        
+        if (w >= 20) {
+            painter->setPen(QPen(QColor(255, 255, 255, 100), 1.5));
+            painter->drawLine(-w/2.0 + termW + 2, -h/2.0 + 2, -w/2.0 + termW + 2, h/2.0 - 2);
+        }
     } else {
         if (option->state & QStyle::State_Selected) {
             painter->setPen(QPen(QColor(99, 102, 241, 150), 2.5, Qt::SolidLine));
@@ -1553,7 +1613,6 @@ void CapacitorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
         val.replace("F", "");
         painter->drawText(QRectF(-10, -12, 20, 12), Qt::AlignCenter, val);
     }
-
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

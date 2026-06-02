@@ -153,6 +153,20 @@ public:
     CapacitorItem(const QString& id, const QString& name, QGraphicsItem* parent = nullptr);
     QRectF boundingRect() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+    double capacitance() const { return m_capacitance; }
+    void setCapacitance(double value);
+
+    bool isSMD() const { return m_isSMD; }
+    void setSMD(bool enabled);
+
+    QString smdSize() const { return m_smdSize; }
+    void setSmdSize(const QString& size);
+
+private:
+    double m_capacitance; // in uF
+    bool m_isSMD;
+    QString m_smdSize;
 };
 
 // Potentiometer Item

@@ -278,8 +278,16 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
         searchEdit->deleteLater();
     };
 
-    connect(searchEdit, &QLineEdit::returnPressed, this, [searchEdit, handleAddition]() {
-        handleAddition(searchEdit->text());
+    connect(searchEdit, &QLineEdit::returnPressed, this, [searchEdit, completer, handleAddition]() {
+        QString text = searchEdit->text().trimmed();
+        if (completer && completer->completionCount() > 0) {
+            QString bestMatch = completer->currentCompletion();
+            if (!bestMatch.isEmpty()) {
+                handleAddition(bestMatch);
+                return;
+            }
+        }
+        handleAddition(text);
     });
 
     connect(completer, QOverload<const QString&>::of(&QCompleter::activated), this, [handleAddition](const QString& textVal) {
