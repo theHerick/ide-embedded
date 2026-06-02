@@ -174,6 +174,7 @@ static QString logicBlockTypeToString(LogicBlockType type) {
         case LogicBlockType::FIM: return "FIM";
         case LogicBlockType::SERIAL_PRINT: return "SERIAL_PRINT";
         case LogicBlockType::EEPROM_OP: return "EEPROM_OP";
+        case LogicBlockType::EVENT_CREATE: return "EVENT_CREATE";
     }
     return "ACTION";
 }
@@ -187,6 +188,7 @@ static LogicBlockType logicBlockTypeFromString(const QString& type) {
     if (upper == "CREATE_VAR") return LogicBlockType::CREATE_VAR;
     if (upper == "SERIAL_PRINT") return LogicBlockType::SERIAL_PRINT;
     if (upper == "EEPROM_OP") return LogicBlockType::EEPROM_OP;
+    if (upper == "EVENT_CREATE") return LogicBlockType::EVENT_CREATE;
     return LogicBlockType::FIM;
 }
 
@@ -255,6 +257,20 @@ static QJsonObject serializeComponentItem(ComponentItem* comp) {
         state["value"] = pot->value();
     } else if (auto* buzzer = dynamic_cast<BuzzerItem*>(comp)) {
         state["active"] = buzzer->isActive();
+        state["isPassive"] = buzzer->isPassive();
+        state["frequency"] = buzzer->frequency();
+    } else if (auto* motor = dynamic_cast<MotorItem*>(comp)) {
+        state["motorType"] = motor->motorType();
+        state["currentAngle"] = motor->currentAngle();
+    } else if (auto* bess = dynamic_cast<BessItem*>(comp)) {
+        state["chargeLevel"] = bess->chargeLevel();
+    } else if (auto* chg = dynamic_cast<BessChargerItem*>(comp)) {
+        state["isPluggedIn"] = chg->isPluggedIn();
+    } else if (auto* dht = dynamic_cast<DHT22Item*>(comp)) {
+        state["humidity"] = dht->humidity();
+        state["temperature"] = dht->temperature();
+    } else if (auto* hc = dynamic_cast<HCSR04Item*>(comp)) {
+        state["distance"] = hc->distance();
     } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
         state["category"] = custom->category();
         state["on"] = custom->isOn();
@@ -313,6 +329,20 @@ static void applyComponentState(ComponentItem* comp, const QJsonObject& state) {
         if (state.contains("value")) pot->setValue(state["value"].toDouble(pot->value()));
     } else if (auto* buzzer = dynamic_cast<BuzzerItem*>(comp)) {
         buzzer->setActive(state["active"].toBool(buzzer->isActive()));
+        if (state.contains("isPassive")) buzzer->setPassive(state["isPassive"].toBool());
+        if (state.contains("frequency")) buzzer->setFrequency(state["frequency"].toInt());
+    } else if (auto* motor = dynamic_cast<MotorItem*>(comp)) {
+        if (state.contains("motorType")) motor->setMotorType(state["motorType"].toString());
+        if (state.contains("currentAngle")) motor->setCurrentAngle(state["currentAngle"].toDouble());
+    } else if (auto* bess = dynamic_cast<BessItem*>(comp)) {
+        if (state.contains("chargeLevel")) bess->setChargeLevel(state["chargeLevel"].toDouble());
+    } else if (auto* chg = dynamic_cast<BessChargerItem*>(comp)) {
+        if (state.contains("isPluggedIn")) chg->setPluggedIn(state["isPluggedIn"].toBool());
+    } else if (auto* dht = dynamic_cast<DHT22Item*>(comp)) {
+        if (state.contains("humidity")) dht->setHumidity(state["humidity"].toDouble());
+        if (state.contains("temperature")) dht->setTemperature(state["temperature"].toDouble());
+    } else if (auto* hc = dynamic_cast<HCSR04Item*>(comp)) {
+        if (state.contains("distance")) hc->setDistance(state["distance"].toDouble());
     } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
         custom->setOn(state["on"].toBool(custom->isOn()));
         custom->setPressed(state["pressed"].toBool(custom->isPressed()));
@@ -403,6 +433,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         } else if (comp->componentType() == "motor") {
             auto* motor = static_cast<MotorItem*>(comp);
             this->editMotorProperties(motor);
+        } else if (comp->componentType() == "bess") {
+            auto* bess = static_cast<BessItem*>(comp);
+            this->editBessProperties(bess);
         } else if (comp->componentType() == "esp32") {
             this->openEventEditor(comp, "aoIniciar");
         } else if (comp->componentType() == "led") {
@@ -458,6 +491,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     logMessage("IDE Embedded inicializada com sucesso.", "SYSTEM");
     statusBar()->showMessage("IDE Embedded pronta");
+}
+
+MainWindow::~MainWindow() {
+    g_mainWindowLogTarget = nullptr;
+    qInstallMessageHandler(nullptr);
 }
 
 void MainWindow::buildLayout() {
@@ -1432,6 +1470,12 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
             comp->setSelected(true);
             m_selectedComponent = comp;
             openEventEditor(comp, "aoMedir");
+        });
+    } else if (comp->componentType() == "bess_charger") {
+        QAction* actToggle = menu.addAction(static_cast<BessChargerItem*>(comp)->isPluggedIn() ? "Desconectar Energia" : "Conectar Energia");
+        connect(actToggle, &QAction::triggered, this, [comp]() {
+            auto* chg = static_cast<BessChargerItem*>(comp);
+            chg->setPluggedIn(!chg->isPluggedIn());
         });
     }
 
@@ -2958,9 +3002,17 @@ void MainWindow::editResistorValue(ResistorItem* resistor) {
     if (dialog.exec() == QDialog::Accepted) {
         double newValue = spinBox->value();
         resistor->setResistance(newValue);
+        
+        bool newIsSMD = pkgCombo->currentData().toBool();
+        QString newSmdSize = sizeCombo->currentText();
+        resistor->setProperty("isSMD", newIsSMD);
+        resistor->setProperty("smdSize", newSmdSize);
+        resistor->updateLayoutForSMD(newSmdSize);
+        resistor->update();
+        
         // Force workspace compile update in real-time
         compileCode();
-        statusBar()->showMessage(QString("Resistência de %1 atualizada para %2 Ω").arg(resistor->id()).arg(newValue), 3000);
+        statusBar()->showMessage(QString("Resistência de %1 atualizada para %2 Ω (%3)").arg(resistor->id()).arg(newValue).arg(newIsSMD ? "SMD " + newSmdSize : "Clássico"), 3000);
     }
 }
 

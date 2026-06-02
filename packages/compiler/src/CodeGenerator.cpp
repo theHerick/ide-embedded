@@ -312,33 +312,9 @@ static QString compileBlocks(
         knownVars.insert(key);
     }
 
-    QString decls;
-    QSet<QString> autoDeclaredVars;
-    for (const auto& b : blocks) {
-        QString tgt;
-        if (b.type == LogicBlockType::MATH) {
-            tgt = b.mathTarget.trimmed().remove(" ");
-        } else if (b.type == LogicBlockType::ASSIGNMENT) {
-            tgt = b.assignTarget.trimmed().remove(" ");
-        }
-        if (!tgt.isEmpty() && ::isValidIdentifier(tgt)) {
-            QString finalTgt = replaceAllComponentNames(tgt, localSanitized, true);
-            if (owner) {
-                finalTgt = replaceCustomComponentPlaceholders(finalTgt, owner);
-            }
-            for (auto* comp : components) {
-                if (comp == owner) continue;
-                if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
-                    finalTgt = replaceCustomComponentPlaceholders(finalTgt, custom);
-                }
-            }
-            if (!knownVars.contains(finalTgt) && !autoDeclaredVars.contains(finalTgt)) {
-                autoDeclaredVars.insert(finalTgt);
-                decls += QString("%1int %2 = 0;\n").arg(QString(baseIndentSpaces, ' ')).arg(finalTgt);
-            }
-        }
-    }
-    res += decls;
+    // Variables are now declared globally by emitStateVariables.
+    // We do not declare local variables inside the event to persist their state.
+    res += "";
 
     for (const auto& block : blocks) {
         QString indent = QString(baseIndentSpaces + nestLevel * 4, ' ');
@@ -438,19 +414,12 @@ static QString compileBlocks(
         else if (block.type == LogicBlockType::CREATE_VAR) {
             QString name = block.createVarName.trimmed().remove(" ");
             if (!name.isEmpty()) {
-                QString cppType = "int";
                 QString initVal = "0";
-                if (block.createVarType == VarType::FLOAT) {
-                    cppType = "float";
-                    initVal = "0.0";
-                } else if (block.createVarType == VarType::BOOL) {
-                    cppType = "bool";
-                    initVal = "false";
-                } else if (block.createVarType == VarType::STRING) {
-                    cppType = "String";
-                    initVal = "\"\"";
-                }
-                res += QString("%1%2 %3 = %4;\n").arg(indent).arg(cppType).arg(name).arg(initVal);
+                if (block.createVarType == VarType::FLOAT) initVal = "0.0";
+                else if (block.createVarType == VarType::BOOL) initVal = "false";
+                else if (block.createVarType == VarType::STRING) initVal = "\"\"";
+                // Variables are global now. CREATE_VAR just initializes them in this scope if hit.
+                res += QString("%1%2 = %3;\n").arg(indent).arg(name).arg(initVal);
             }
         }
         else if (block.type == LogicBlockType::MATH) {
@@ -953,36 +922,57 @@ static QString emitStateVariables(
         componentNames.insert("PIN_" + sanitized[c]);
     }
 
+    // Pre-population of g_eepromKeyTypes is now done in emitStateVariables
+
     auto scanBlocks = [&](const QVector<EventLogicBlock>& blocks) {
         for (const auto& b : blocks) {
-            // Check if this variable is used in a numeric context
-            bool isNumericContext = (b.type == LogicBlockType::MATH || 
-                                    b.type == LogicBlockType::EEPROM_OP ||
-                                    (b.type == LogicBlockType::ACTION && (b.actionCommand.contains("ROTATE") || b.actionCommand.contains("MOTOR") || b.actionCommand.contains("BATTERY"))));
+            QString name = "";
+            QString inferredType = "";
 
-            QString targets[] = {b.assignTarget, b.mathTarget, b.createVarName};
-            for (const QString& rawTgt : targets) {
-                QString name = sanitizeIdentifier(rawTgt);
-                if (name.startsWith("PIN_")) name = name.mid(4);
-                
-                if (!name.isEmpty() && !componentNames.contains(name) && 
-                    !componentNames.contains("PIN_" + name)) {
-                    
-                    static const QSet<QString> keywords = {"HIGH", "LOW", "INPUT", "OUTPUT", "TRUE", "FALSE", "VALOR"};
-                    if (!keywords.contains(name.toUpper())) {
-                        if (isNumericContext) {
-                            // If used in motor or math, must be int
-                            if (autoDeclared.contains(name) && autoDeclared[name] == "bool") {
-                                // Upgrade to int if previously declared as bool
-                                autoDeclared[name] = "int";
-                            } else if (!autoDeclared.contains(name)) {
-                                autoDeclared[name] = "int";
-                            }
-                        } else {
-                            // Default to bool if not seen before
-                            if (!autoDeclared.contains(name)) {
-                                autoDeclared[name] = "bool";
-                            }
+            if (b.type == LogicBlockType::CREATE_VAR) {
+                name = sanitizeIdentifier(b.createVarName.trimmed().remove(" "));
+                if (b.createVarType == VarType::FLOAT) inferredType = "float";
+                else if (b.createVarType == VarType::BOOL) inferredType = "bool";
+                else if (b.createVarType == VarType::STRING) inferredType = "String";
+                else inferredType = "int";
+            } else if (b.type == LogicBlockType::MATH) {
+                name = sanitizeIdentifier(b.mathTarget.trimmed().remove(" "));
+                if (b.mathOperator == "/" || b.mathOperand1.contains(".") || b.mathOperand2.contains(".")) {
+                    inferredType = "float";
+                } else {
+                    inferredType = "int";
+                }
+            } else if (b.type == LogicBlockType::ASSIGNMENT) {
+                name = sanitizeIdentifier(b.assignTarget.trimmed().remove(" "));
+                QString expr = b.assignExpression.trimmed();
+                if ((expr.startsWith("\"") && expr.endsWith("\"")) || (expr.startsWith("'") && expr.endsWith("'"))) {
+                    inferredType = "String";
+                } else if (expr.toLower() == "true" || expr.toLower() == "false") {
+                    inferredType = "bool";
+                } else if (expr.contains(QRegularExpression("^[0-9]+\\.[0-9]+$"))) {
+                    inferredType = "float";
+                } else {
+                    inferredType = "int";
+                }
+            } else if (b.type == LogicBlockType::ACTION && (b.actionCommand.contains("ROTATE") || b.actionCommand.contains("MOTOR") || b.actionCommand.contains("BATTERY"))) {
+                 name = sanitizeIdentifier(b.actionParam.trimmed().remove(" "));
+                 if (b.actionCommand.contains("BATTERY")) {
+                     inferredType = "float"; 
+                 } else {
+                     inferredType = "int";
+                 }
+            }
+
+            if (!name.isEmpty() && !name.startsWith("PIN_") && !componentNames.contains(name) && !componentNames.contains("PIN_" + name)) {
+                static const QSet<QString> keywords = {"HIGH", "LOW", "INPUT", "OUTPUT", "TRUE", "FALSE", "VALOR"};
+                if (!keywords.contains(name.toUpper())) {
+                    QString forcedType = g_eepromKeyTypes.value(name, "");
+                    if (!forcedType.isEmpty()) {
+                        autoDeclared[name] = forcedType;
+                    } else if (autoDeclared.value(name, "") != "String" && autoDeclared.value(name, "") != "float") {
+                        // Promove para um tipo mais rico se necessário, senão mantém
+                        if (inferredType != "") {
+                            autoDeclared[name] = inferredType;
                         }
                     }
                 }
@@ -2063,7 +2053,7 @@ QString CodeGenerator::generateArduinoCode(
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
                     QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
                     if (!eventBody.trimmed().isEmpty()) {
-                        code += QString("void %1_eventAoAlterar(String %1) {\n").arg(id);
+                        code += QString("void %1_eventAoAlterar(%2 %1) {\n").arg(id).arg(type == "Slider" ? "int" : "String");
                         code += eventBody;
                         code += "}\n\n";
                     }
@@ -2127,7 +2117,24 @@ QString CodeGenerator::generateArduinoCode(
         code += "  html += \"input[type='range'].elem { -webkit-appearance: none; background: #e0e0e0; height: 8px; border-radius: 4px; outline: none; }\";\n";
         code += "  html += \"input[type='range'].elem::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #0288d1; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }\";\n";
         code += "  html += \".led { border-radius: 50%; border: 2px solid #b91c1c; box-shadow: inset 0 -2px 6px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2); }\";\n";
+        if (webPageData.value("auth_enabled").toBool()) {
+            code += "  html += \".login-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }\";\n";
+            code += "  html += \".login-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; width: 300px; }\";\n";
+            code += "  html += \".login-box h2 { margin-top: 0; color: #01579b; font-family: sans-serif; }\";\n";
+            code += "  html += \".login-box input { width: 90%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; }\";\n";
+            code += "  html += \".login-box button { width: 100%; padding: 10px; background: #0288d1; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }\";\n";
+            code += "  html += \".login-box button:hover { background: #01579b; }\";\n";
+        }
         code += "  html += \"</style></head><body>\";\n";
+        if (webPageData.value("auth_enabled").toBool()) {
+            code += "  html += \"<div class='login-overlay' id='loginOverlay'>\";\n";
+            code += "  html += \"<div class='login-box'><h2>Autenticação</h2>\";\n";
+            code += "  html += \"<input type='text' id='loginUser' placeholder='Usuário' value='' onkeydown='if(event.key===\\\"Enter\\\") tryLogin()'>\";\n";
+            code += "  html += \"<input type='password' id='loginPass' placeholder='Senha' value='' onkeydown='if(event.key===\\\"Enter\\\") tryLogin()'>\";\n";
+            code += "  html += \"<button onclick='tryLogin()'>Entrar no Dashboard</button>\";\n";
+            code += "  html += \"<p id='loginError' style='color:red; display:none; margin-top:10px; font-size:14px;'>Usuário ou senha incorretos</p>\";\n";
+            code += "  html += \"</div></div>\";\n";
+        }
         code += "  html += \"<div class='container'>\";\n";
         
         QJsonArray elements = webPageData["elements"].toArray();
@@ -2168,8 +2175,22 @@ QString CodeGenerator::generateArduinoCode(
         
         code += "  html += \"</div>\";\n";
         code += "  html += \"<script>\";\n";
-        code += "  html += \"function sendEvent(btn) { fetch('/event?btn=' + btn, {method: 'POST'}); }\";\n";
-        code += "  html += \"function sendVar(varName, val) { fetch('/event?var=' + varName + '&val=' + val, {method: 'POST'}); }\";\n";
+        if (webPageData.value("auth_enabled").toBool()) {
+            code += "  html += \"let authHeader = '';\";\n";
+            code += "  html += \"function tryLogin() {\";\n";
+            code += "  html += \"  let u = document.getElementById('loginUser').value;\";\n";
+            code += "  html += \"  let p = document.getElementById('loginPass').value;\";\n";
+            code += "  html += \"  authHeader = 'Basic ' + btoa(u + ':' + p);\";\n";
+            code += "  html += \"  fetch('/data', { headers: {'Authorization': authHeader} }).then(r => {\";\n";
+            code += "  html += \"    if (r.ok) { document.getElementById('loginOverlay').style.display = 'none'; document.getElementById('loginError').style.display='none'; } else { document.getElementById('loginError').style.display='block'; }\";\n";
+            code += "  html += \"  });\";\n";
+            code += "  html += \"}\";\n";
+            code += "  html += \"function sendEvent(btn) { fetch('/event?btn=' + btn, {method: 'POST', headers: {'Authorization': authHeader}}); }\";\n";
+            code += "  html += \"function sendVar(varName, val) { fetch('/event?var=' + varName + '&val=' + val, {method: 'POST', headers: {'Authorization': authHeader}}); }\";\n";
+        } else {
+            code += "  html += \"function sendEvent(btn) { fetch('/event?btn=' + btn, {method: 'POST'}); }\";\n";
+            code += "  html += \"function sendVar(varName, val) { fetch('/event?var=' + varName + '&val=' + val, {method: 'POST'}); }\";\n";
+        }
         
         // Initialize charts
         code += "  html += \"const charts = {};\";\n";
@@ -2265,11 +2286,11 @@ QString CodeGenerator::generateArduinoCode(
         if (webPageData.value("auth_enabled").toBool()) {
             QString user = webPageData.value("auth_user").toString();
             QString pass = webPageData.value("auth_pass").toString();
-            authStr = QString("  if (!server.authenticate(\"%1\", \"%2\")) { return server.requestAuthentication(); }\n").arg(user).arg(pass);
+            authStr = QString("  if (!server.authenticate(\"%1\", \"%2\")) { server.send(401, \"text/plain\", \"Unauthorized\"); return; }\n").arg(user).arg(pass);
         }
 
         code += "void handleRoot() {\n";
-        code += authStr;
+        // Do NOT put authStr here! We want the HTML login panel to be served without basic auth prompt.
         code += "  server.send(200, \"text/html\", getHtmlPage());\n";
         code += "}\n\n";
         
@@ -2361,7 +2382,7 @@ QString CodeGenerator::generateArduinoCode(
                 QString type = el["type"].toString();
                 QString eventKey = QString("%1:aoAlterar").arg(id);
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                    code += QString("    if (varName == \"%1\") { %1_eventAoAlterar(val); }\n").arg(id);
+                    code += QString("    if (varName == \"%1\") { %1_eventAoAlterar(%2); }\n").arg(id).arg(type == "Slider" ? "val.toInt()" : "val");
                 }
                 if (type == "Slider") {
                     QString eventKeyOff = QString("%1:aoZerar").arg(id);

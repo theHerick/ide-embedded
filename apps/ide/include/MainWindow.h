@@ -27,7 +27,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget* parent = nullptr);
-    ~MainWindow() = default;
+    ~MainWindow();
 
 private slots:
     void onAddComponentClicked(QListWidgetItem* item);
@@ -80,9 +80,9 @@ private:
     QAction* m_saveAction = nullptr;
     QAction* m_newAction = nullptr;
     QAction* m_openAction = nullptr;
-    QAction* m_undoAction;
-    QAction* m_redoAction;
-    QAction* m_webPageAction;
+    QAction* m_undoAction = nullptr;
+    QAction* m_redoAction = nullptr;
+    QAction* m_webPageAction = nullptr;
     QAction* m_clearAction = nullptr;
     QAction* m_copyAction = nullptr;
     QAction* m_pasteAction = nullptr;

@@ -744,7 +744,7 @@ void ESP32Item::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
         f.setBold(false);
         painter->setFont(f);
         painter->drawText(QRectF(body.left(), shieldTop + 22, bw, 10), Qt::AlignCenter, "ESP32-C3-WROOM-02");
-    } else if (boardId == "esp32-c3-devkitm-1" || boardId == "esp32-c3-devkitm-1") {
+    } else if (boardId == "esp32-c3-devkitm-1" || boardId == "esp32-c3-supermini") {
         // ESP32-C3 Mini / SuperMini: Clean modern light-gray board matching the platform
         painter->setPen(QPen(QColor(186, 195, 204), 1));
         painter->setBrush(QColor(241, 245, 249)); // Clean slate-100 (light gray)
@@ -988,7 +988,7 @@ void ESP32Item::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
             }
             painter->drawRoundedRect(padRect, 1.5, 1.5);
         } else {
-            bool isC3Mini = (boardId == "esp32-c3-devkitm-1" || boardId == "esp32-c3-devkitm-1");
+            bool isC3Mini = (boardId == "esp32-c3-devkitm-1" || boardId == "esp32-c3-supermini");
             if (isC3Mini) {
                 // Solid colors for modern aesthetic
                 QColor pinColor = QColor(59, 130, 246); // Blue (GPIO/Signal)

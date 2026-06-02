@@ -521,16 +521,39 @@ void BlockEditor::refreshPalette() {
         return;
     }
 
-    // Section 1: Variables
-    auto* varHeader = new QLabel("VARIÁVEIS DO ESCOPO", this);
-    varHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #64748B; padding-left: 2px; padding-top: 4px; background: transparent;");
-    m_paletteLayout->addWidget(varHeader);
+    // Categorize variables
+    QVector<VariableDef> pins;
+    QVector<VariableDef> globals;
 
     for (const auto& varDef : m_currentScopeVariables) {
-        m_paletteLayout->addWidget(new VisualVariableItem(varDef, this));
+        if (varDef.type == VarType::PIN || varDef.scope == VarScope::RUNTIME_OUTPUT) {
+            pins.append(varDef);
+        } else {
+            globals.append(varDef);
+        }
     }
 
-    // Section 2: EEPROM Registry (Discovery of globally saved variables/keys)
+    // Section 1: Pinos e Atuadores
+    if (!pins.isEmpty()) {
+        auto* pinHeader = new QLabel("🔌 PINOS E ATUADORES", this);
+        pinHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #EC4899; padding-left: 2px; padding-top: 4px; background: transparent;");
+        m_paletteLayout->addWidget(pinHeader);
+        for (const auto& varDef : pins) {
+            m_paletteLayout->addWidget(new VisualVariableItem(varDef, this));
+        }
+    }
+
+    // Section 2: Variáveis Globais
+    if (!globals.isEmpty()) {
+        auto* globHeader = new QLabel("🌐 VARIÁVEIS GLOBAIS", this);
+        globHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #3B82F6; padding-left: 2px; padding-top: 10px; background: transparent;");
+        m_paletteLayout->addWidget(globHeader);
+        for (const auto& varDef : globals) {
+            m_paletteLayout->addWidget(new VisualVariableItem(varDef, this));
+        }
+    }
+
+    // Section 3: EEPROM Registry (Discovery of globally saved variables/keys)
     QSet<QString> eepromKeys;
     // Scan all event blocks in the entire project
     for (auto it = m_eventBlockStorage.begin(); it != m_eventBlockStorage.end(); ++it) {
@@ -554,7 +577,7 @@ void BlockEditor::refreshPalette() {
     }
     
     if (!eepromKeys.isEmpty()) {
-        auto* eepromHeader = new QLabel("REGISTRO EEPROM (Salvos)", this);
+        auto* eepromHeader = new QLabel("💾 REGISTRO EEPROM (Salvos)", this);
         eepromHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #EF4444; padding-left: 2px; padding-top: 10px; background: transparent;");
         m_paletteLayout->addWidget(eepromHeader);
         
@@ -593,7 +616,7 @@ static bool isValidIdentifier(const QString& name) {
         "Serial", "print", "println", "EEPROM", "commit", "put", "get", "restoredVal", "Valor"
     };
     if (reserved.contains(name)) return false;
-    if (name.startsWith("PIN_")) return false;
+    if (reserved.contains(name)) return false;
     return true;
 }
 
@@ -614,8 +637,23 @@ void BlockEditor::rebuildScopeVariables() {
             varType = block.createVarType;
         } else if (block.type == LogicBlockType::MATH) {
             tgt = block.mathTarget.trimmed().remove(" ");
+            if (block.mathOperator == "/" || block.mathOperand1.contains(".") || block.mathOperand2.contains(".")) {
+                varType = VarType::FLOAT;
+            } else {
+                varType = VarType::INT;
+            }
         } else if (block.type == LogicBlockType::ASSIGNMENT) {
             tgt = block.assignTarget.trimmed().remove(" ");
+            QString expr = block.assignExpression.trimmed();
+            if ((expr.startsWith("\"") && expr.endsWith("\"")) || (expr.startsWith("'") && expr.endsWith("'"))) {
+                varType = VarType::STRING;
+            } else if (expr.toLower() == "true" || expr.toLower() == "false") {
+                varType = VarType::BOOL;
+            } else if (expr.contains(QRegularExpression("^[0-9]+\\.[0-9]+$"))) {
+                varType = VarType::FLOAT;
+            } else {
+                varType = VarType::INT;
+            }
         }
 
         if (!tgt.isEmpty() && ::isValidIdentifier(tgt)) {
@@ -624,17 +662,21 @@ void BlockEditor::rebuildScopeVariables() {
                 
                 VariableDef def;
                 def.name = tgt;
-                def.type = varType;
-                def.scope = VarScope::LOCAL_EVENT;
+                def.type = tgt.startsWith("PIN_") ? VarType::PIN : varType;
+                def.scope = VarScope::COMP_GLOBAL;
                 switch (def.type) {
                     case VarType::INT: def.initialValue = "0"; break;
                     case VarType::FLOAT: def.initialValue = "0.0"; break;
                     case VarType::BOOL: def.initialValue = "false"; break;
                     case VarType::STRING: def.initialValue = "\"\""; break;
+                    case VarType::PIN: def.initialValue = "0"; break;
                     default: def.initialValue = "0"; break;
                 }
-                def.description = QString("Variável Local (%1)").arg(VariableDef::typeToString(def.type));
+                def.description = QString("Variável Global (%1)").arg(VariableDef::typeToString(def.type));
                 m_currentScopeVariables.append(def);
+            } else {
+                // Se a variável já existir (ex: foi inferida errada primeiro), podemos tentar atualizar o tipo se for mais "rico"
+                // Para não complicar muito, vamos manter o tipo que foi criado primeiro (presumivelmente CREATE_VAR vem antes se existir).
             }
         }
     }
@@ -760,9 +802,9 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
         if (slider.compare(compId, Qt::CaseInsensitive) == 0) continue; // Skip to avoid duplicate in current slider scope
         VariableDef def;
         def.name = sanitizeIdentifier(slider);
-        def.type = VarType::STRING;
+        def.type = VarType::INT;
         def.scope = VarScope::COMP_GLOBAL;
-        def.initialValue = "\"0\"";
+        def.initialValue = "0";
         def.description = QString("Elemento Web Slider (%1)").arg(slider);
         m_hardwareScopeVariables.append(def);
     }
@@ -779,10 +821,11 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
     } else if (compId.contains("input", Qt::CaseInsensitive) || compId.contains("slider", Qt::CaseInsensitive)) {
         VariableDef def;
         def.name = compId;
-        def.type = VarType::STRING;
+        bool isSlider = compId.contains("slider", Qt::CaseInsensitive);
+        def.type = isSlider ? VarType::INT : VarType::STRING;
         def.scope = VarScope::LOCAL_EVENT;
-        def.initialValue = "\"\"";
-        def.description = compId.contains("slider", Qt::CaseInsensitive) ? "Valor atual do slider (0-255)" : "Valor digitado no campo de texto";
+        def.initialValue = isSlider ? "0" : "\"\"";
+        def.description = isSlider ? "Valor atual do slider (0-100)" : "Valor digitado no campo de texto";
         m_hardwareScopeVariables.append(def);
     }
 

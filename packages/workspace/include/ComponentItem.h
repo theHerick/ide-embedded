@@ -140,7 +140,7 @@ public:
     void setCustomLabels(const QString& left, const QString& right);
 
 private:
-    double m_resistance;
+    double m_resistance = 1000.0;
     QString m_customTextL;
     QString m_customTextR;
 };
@@ -164,9 +164,9 @@ public:
     void setSmdSize(const QString& size);
 
 private:
-    double m_capacitance; // in uF
-    bool m_isSMD;
-    QString m_smdSize;
+    double m_capacitance = 0.000001; // 1uF default
+    bool m_isSMD = false;
+    QString m_smdSize = "1206";
 };
 
 // Potentiometer Item
@@ -187,7 +187,7 @@ protected:
     void wheelEvent(QGraphicsSceneWheelEvent* event) override;
 
 private:
-    double m_value;
+    double m_value = 0.0;
 };
 
 // Buzzer Item
@@ -232,8 +232,8 @@ public:
     void setCurrentAngle(double angle);
 
 private:
-    QString m_motorType; // e.g. "servo90", "servo180", "servo360", "dc", "stepper"
-    double m_currentAngle;
+    QString m_motorType = "dc"; // e.g. "servo90", "servo180", "servo360", "dc", "stepper"
+    double m_currentAngle = 0.0;
 };
 
 // BESS (Battery Energy Storage System) Item
@@ -249,7 +249,7 @@ public:
     void setChargeLevel(double level);
     
 private:
-    double m_chargeLevel; // 0.0 to 100.0
+    double m_chargeLevel = 100.0; // 0.0 to 100.0
 };
 
 // BESS Charger Item (TP4056 style)
@@ -268,7 +268,7 @@ protected:
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
     
 private:
-    bool m_isPluggedIn;
+    bool m_isPluggedIn = false;
 };
 
 // DHT22 (Temperature & Humidity Sensor) Item
@@ -291,8 +291,8 @@ protected:
     void wheelEvent(QGraphicsSceneWheelEvent* event) override;
 
 private:
-    double m_humidity;
-    double m_temperature;
+    double m_humidity = 50.0;
+    double m_temperature = 25.0;
 };
 
 // HC-SR04 (Ultrasonic Distance Sensor) Item
@@ -313,7 +313,7 @@ protected:
     void wheelEvent(QGraphicsSceneWheelEvent* event) override;
 
 private:
-    double m_distance;
+    double m_distance = 100.0;
 };
 
 // Ground (Terra) Item
