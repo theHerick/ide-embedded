@@ -712,7 +712,7 @@ void HardwareSimulator::onReadyRead() {
                     .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30)).arg(id);
             } else if (type == "Slider") {
                 int sliderVal = m_simVariables.value(id, "0").toInt();
-                html += QString("<input type='range' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' id='%5' min='0' max='255' value='%6' oninput='sendVar(\"%5\", this.value)'>\n")
+                html += QString("<input type='range' class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px;' id='%5' min='0' max='100' value='%6' oninput='sendVar(\"%5\", this.value)'>\n")
                     .arg(x).arg(y).arg(el["width"].toInt(150)).arg(el["height"].toInt(30)).arg(id).arg(sliderVal);
             } else if (type == "LED") {
                 QString val = m_simVariables.value(id, "0").toString();
@@ -1327,14 +1327,14 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                     }
                     
                     int sliderVal = m_simVariables.value(slideId, "0").toInt();
-                    int targetVal = percentage * 255 / 100;
+                    int targetVal = percentage;
                     cond = (sliderVal == targetVal);
                     
                     if (cond) {
                         emit serialMessage(QString("Simulador: QUANDO SLIDER (%1 == %2%) verdadeiro").arg(slideId).arg(percentage), "DEBUG");
                         execStack.last().lastIfTaken = true;
                     } else {
-                        emit serialMessage(QString("Simulador: QUANDO SLIDER (%1 == %2%) falso (atual: %3)").arg(slideId).arg(percentage).arg(sliderVal), "DEBUG");
+                        emit serialMessage(QString("Simulador: QUANDO SLIDER (%1 == %2%) falso (atual: %3%)").arg(slideId).arg(percentage).arg(sliderVal), "DEBUG");
                     }
                 } else {
                     // This is a new, independent 'IF' block

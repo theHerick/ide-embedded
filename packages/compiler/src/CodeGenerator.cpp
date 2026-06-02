@@ -402,7 +402,7 @@ static QString compileBlocks(
                     slideId = condExpr.left(colonIdx).trimmed();
                     percentage = condExpr.mid(colonIdx + 1).trimmed().toInt();
                 }
-                int targetVal = percentage * 255 / 100;
+                int targetVal = percentage;
                 res += QString("%1if (Valor.toInt() == %2) {\n").arg(indent).arg(targetVal);
             } else {
                 res += QString("%1if (%2) {\n").arg(indent).arg(condExpr);
@@ -2157,7 +2157,7 @@ QString CodeGenerator::generateArduinoCode(
                 code += QString("  html += \"<div class='elem' style='left:%1px; top:%2px; width:%3px; height:%4px; background:rgba(255,255,255,0.9); border-radius:10px; border:1px solid #4fc3f7; padding:10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'><canvas id='%5'></canvas></div>\";\n")
                     .arg(x).arg(y).arg(el["width"].toInt(300)).arg(el["height"].toInt(200)).arg(id);
             } else if (type == "Slider") {
-                code += QString("  html += \"<input type='range' class='elem' min='0' max='255' value='0' style='left:%1px; top:%2px; width:%3px;' id='%4' onchange='sendVar(\\\"%4\\\", this.value)'>\";\n")
+                code += QString("  html += \"<input type='range' class='elem' min='0' max='100' value='0' style='left:%1px; top:%2px; width:%3px;' id='%4' onchange='sendVar(\\\"%4\\\", this.value)'>\";\n")
                     .arg(x).arg(y).arg(el["width"].toInt(150)).arg(id);
             } else if (type == "LED") {
                 int size = el.contains("width") ? qMin(el["width"].toInt(), el["height"].toInt()) : 40;
