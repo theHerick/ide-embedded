@@ -21,6 +21,7 @@ class BessItem;
 class DHT22Item;
 class HCSR04Item;
 class CapacitorItem;
+class LEDItem;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -35,6 +36,7 @@ private slots:
     void onToolboxContextMenu(const QPoint& pos);
     void editResistorValue(ResistorItem* resistor);
     void editCapacitorProperties(CapacitorItem* capacitor);
+    void editLEDProperties(LEDItem* led);
     void editPotentiometerValue(PotentiometerItem* potentiometer);
     void editMotorProperties(MotorItem* motor);
     void editBessProperties(BessItem* bess);

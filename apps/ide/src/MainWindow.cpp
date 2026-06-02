@@ -1363,6 +1363,12 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
             m_selectedComponent = comp;
             openEventEditor(comp, "aoLigar");
         });
+
+        QAction* actEdit = menu.addAction("Editar LED...");
+        connect(actEdit, &QAction::triggered, this, [this, comp]() {
+            auto* led = static_cast<LEDItem*>(comp);
+            this->editLEDProperties(led);
+        });
     } else if (comp->componentType() == "resistor") {
         QAction* actEdit = menu.addAction("Editar Resistência...");
         connect(actEdit, &QAction::triggered, this, [this, comp]() {
@@ -2745,17 +2751,118 @@ void MainWindow::editCapacitorProperties(CapacitorItem* capacitor) {
 }
 
 
+void MainWindow::editLEDProperties(LEDItem* led) {
+    if (!led) return;
+
+    QDialog dialog(this);
+    dialog.setWindowTitle("Configurar LED");
+    dialog.setMinimumWidth(340);
+    dialog.setStyleSheet(
+        "QDialog { background: #FFFFFF; border: 1px solid #E6EEF3; }"
+        "QLabel { color: #0F172A; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }"
+        "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
+        "QComboBox:focus { border-color: #93C5FD; }"
+        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
+        "QPushButton:hover { background: #1E40AF; }"
+        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
+        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
+    );
+
+    auto* layout = new QVBoxLayout(&dialog);
+    layout->setSpacing(14);
+    layout->setContentsMargins(20, 20, 20, 20);
+
+    // Packaging Type
+    auto* pkgLabel = new QLabel("Encapsulamento:", &dialog);
+    layout->addWidget(pkgLabel);
+
+    auto* pkgCombo = new QComboBox(&dialog);
+    pkgCombo->addItem("Clássico (Dome Cilíndrico de 5mm)", false);
+    pkgCombo->addItem("SMD (Montagem em Superfície)", true);
+    
+    bool isLedSMD = led->property("isSMD").toBool();
+    pkgCombo->setCurrentIndex(isLedSMD ? 1 : 0);
+    layout->addWidget(pkgCombo);
+
+    // SMD size selector
+    auto* sizeLabel = new QLabel("Tamanho SMD:", &dialog);
+    layout->addWidget(sizeLabel);
+
+    auto* sizeCombo = new QComboBox(&dialog);
+    sizeCombo->addItems({"0603", "0805", "1206", "5050"});
+    
+    QString currentSize = led->property("smdSize").toString();
+    int currentSizeIdx = sizeCombo->findText(currentSize);
+    if (currentSizeIdx != -1) {
+        sizeCombo->setCurrentIndex(currentSizeIdx);
+    } else {
+        sizeCombo->setCurrentIndex(1); // Default to 0805
+    }
+    layout->addWidget(sizeCombo);
+
+    auto updateSmdVisibility = [sizeLabel, sizeCombo](bool isSMD) {
+        sizeLabel->setEnabled(isSMD);
+        sizeCombo->setEnabled(isSMD);
+    };
+
+    connect(pkgCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [pkgCombo, updateSmdVisibility](int index) {
+        bool isSMD = pkgCombo->itemData(index).toBool();
+        updateSmdVisibility(isSMD);
+    });
+
+    updateSmdVisibility(isLedSMD);
+
+    // Accept / Cancel action buttons
+    auto* buttonLayout = new QHBoxLayout();
+    buttonLayout->setSpacing(10);
+
+    auto* cancelBtn = new QPushButton("Cancelar", &dialog);
+    cancelBtn->setObjectName("cancelBtn");
+    connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+    auto* saveBtn = new QPushButton("Salvar", &dialog);
+    connect(saveBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+
+    buttonLayout->addWidget(cancelBtn);
+    buttonLayout->addWidget(saveBtn);
+    layout->addLayout(buttonLayout);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        bool newIsSMD = pkgCombo->currentData().toBool();
+        QString newSmdSize = sizeCombo->currentText();
+
+        led->setProperty("isSMD", newIsSMD);
+        if (newIsSMD) {
+            led->setProperty("smdSize", newSmdSize);
+            led->updateLayoutForSMD(newSmdSize);
+        } else {
+            // Restore original pins localPos for non-SMD LED
+            led->pins()[0].localPos = QPointF(-10, 30);
+            led->pins()[1].localPos = QPointF(10, 30);
+            led->update();
+        }
+
+        compileCode();
+        statusBar()->showMessage(QString("LED %1 configurado para %2")
+            .arg(led->id())
+            .arg(newIsSMD ? "SMD " + newSmdSize : "Dome Cilíndrico"), 3000);
+    }
+}
+
+
 void MainWindow::editResistorValue(ResistorItem* resistor) {
     if (!resistor) return;
 
     QDialog dialog(this);
     dialog.setWindowTitle("Editar Resistência");
-    dialog.setMinimumWidth(320);
+    dialog.setMinimumWidth(340);
     dialog.setStyleSheet(
         "QDialog { background: #FFFFFF; border: 1px solid #E6EEF3; }"
         "QLabel { color: #0F172A; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }"
         "QDoubleSpinBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-weight: bold; selection-background-color: #DBEAFE; }"
         "QDoubleSpinBox:focus { border-color: #93C5FD; }"
+        "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
+        "QComboBox:focus { border-color: #93C5FD; }"
         "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QPushButton:hover { background: #1E40AF; }"
         "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
@@ -2799,6 +2906,46 @@ void MainWindow::editResistorValue(ResistorItem* resistor) {
     quickBtnLayout->addWidget(btn1k);
     quickBtnLayout->addWidget(btn10k);
     layout->addLayout(quickBtnLayout);
+
+    // Packaging Type
+    auto* pkgLabel = new QLabel("Encapsulamento:", &dialog);
+    layout->addWidget(pkgLabel);
+
+    auto* pkgCombo = new QComboBox(&dialog);
+    pkgCombo->addItem("Clássico (Trough-hole / Com Terminais)", false);
+    pkgCombo->addItem("SMD (Montagem em Superfície)", true);
+    
+    bool isResistorSMD = resistor->property("isSMD").toBool();
+    pkgCombo->setCurrentIndex(isResistorSMD ? 1 : 0);
+    layout->addWidget(pkgCombo);
+
+    // SMD size selector
+    auto* sizeLabel = new QLabel("Tamanho SMD:", &dialog);
+    layout->addWidget(sizeLabel);
+
+    auto* sizeCombo = new QComboBox(&dialog);
+    sizeCombo->addItems({"0402", "0603", "0805", "1206"});
+    
+    QString currentSize = resistor->property("smdSize").toString();
+    int currentSizeIdx = sizeCombo->findText(currentSize);
+    if (currentSizeIdx != -1) {
+        sizeCombo->setCurrentIndex(currentSizeIdx);
+    } else {
+        sizeCombo->setCurrentIndex(3); // Default to 1206
+    }
+    layout->addWidget(sizeCombo);
+
+    auto updateSmdVisibility = [sizeLabel, sizeCombo](bool isSMD) {
+        sizeLabel->setEnabled(isSMD);
+        sizeCombo->setEnabled(isSMD);
+    };
+
+    connect(pkgCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [pkgCombo, updateSmdVisibility](int index) {
+        bool isSMD = pkgCombo->itemData(index).toBool();
+        updateSmdVisibility(isSMD);
+    });
+
+    updateSmdVisibility(isResistorSMD);
 
     // Accept / Cancel action buttons
     auto* buttonLayout = new QHBoxLayout();
