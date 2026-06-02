@@ -1208,6 +1208,15 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
             }
         }
     } else if (comp->componentType() == "esp32" || comp->componentType() == "board" || comp->componentType() == "generic") {
+        QString boardName = "Microcontrolador";
+        QVariant cfgVar = comp->property("microcontrollerConfig");
+        if (cfgVar.isValid() && cfgVar.canConvert<QString>()) {
+            QJsonDocument doc = QJsonDocument::fromJson(cfgVar.toString().toUtf8());
+            if (doc.isObject()) {
+                boardName = doc.object().value("board").toString().toUpper();
+            }
+        }
+
         QAction* actStart = menu.addAction("Evento: Ao Iniciar (aoIniciar)");
         connect(actStart, &QAction::triggered, this, [this, comp]() {
             m_scene->clearSelection();
@@ -1429,11 +1438,6 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
     if (!menu.actions().isEmpty()) {
         menu.addSeparator();
     }
-    
-    QAction* actModel = menu.addAction("Ver Modelagem...");
-    connect(actModel, &QAction::triggered, this, [this, comp]() {
-        showComponentModeling(comp);
-    });
     
     QAction* rotateAct = menu.addAction("Girar 90 graus");
     connect(rotateAct, &QAction::triggered, this, [this, comp]() {
