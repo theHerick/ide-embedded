@@ -715,9 +715,9 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
     for (const auto& led : avLeds) {
         VariableDef def;
         def.name = "PIN_" + sanitizeIdentifier(led);
-        def.type = VarType::BOOL;
+        def.type = VarType::PIN;
         def.scope = VarScope::RUNTIME_OUTPUT;
-        def.initialValue = "false";
+        def.initialValue = "0";
         def.description = QString("Atuador Digital / LED (%1)").arg(led);
         m_hardwareScopeVariables.append(def);
     }
@@ -726,9 +726,9 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
     for (const auto& pot : avPots) {
         VariableDef def;
         def.name = "PIN_" + sanitizeIdentifier(pot);
-        def.type = VarType::FLOAT;
+        def.type = VarType::PIN;
         def.scope = VarScope::RUNTIME_OUTPUT;
-        def.initialValue = "0.0";
+        def.initialValue = "0";
         def.description = QString("Sensor Analógico (%1)").arg(pot);
         m_hardwareScopeVariables.append(def);
     }
@@ -737,9 +737,9 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
     for (const auto& buz : avBuzzers) {
         VariableDef def;
         def.name = "PIN_" + sanitizeIdentifier(buz);
-        def.type = VarType::BOOL;
+        def.type = VarType::PIN;
         def.scope = VarScope::RUNTIME_OUTPUT;
-        def.initialValue = "false";
+        def.initialValue = "0";
         def.description = QString("Buzzer (%1)").arg(buz);
         m_hardwareScopeVariables.append(def);
     }
@@ -748,7 +748,7 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
     for (const auto& mot : avMotors) {
         VariableDef def;
         def.name = "PIN_" + sanitizeIdentifier(mot);
-        def.type = VarType::INT;
+        def.type = VarType::PIN;
         def.scope = VarScope::RUNTIME_OUTPUT;
         def.initialValue = "0";
         def.description = QString("Motor / Atuador de Rotação (%1)").arg(mot);

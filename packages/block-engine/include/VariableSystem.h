@@ -11,6 +11,7 @@ enum class VarType {
     FLOAT,
     BOOL,
     STRING,
+    PIN,
     UNKNOWN
 };
 
@@ -34,6 +35,7 @@ struct VariableDef {
             case VarType::FLOAT: return "FLOAT";
             case VarType::BOOL: return "BOOL";
             case VarType::STRING: return "STRING";
+            case VarType::PIN: return "PIN";
             default: return "ANY";
         }
     }
@@ -44,6 +46,7 @@ struct VariableDef {
         if (s == "FLOAT" || s == "DOUBLE") return VarType::FLOAT;
         if (s == "BOOL" || s == "BOOLEAN") return VarType::BOOL;
         if (s == "STRING") return VarType::STRING;
+        if (s == "PIN") return VarType::PIN;
         return VarType::UNKNOWN;
     }
 
@@ -53,6 +56,7 @@ struct VariableDef {
             case VarType::FLOAT: return QColor("#3B82F6");  // Blue
             case VarType::BOOL: return QColor("#8B5CF6");   // Purple
             case VarType::STRING: return QColor("#F59E0B"); // Orange
+            case VarType::PIN: return QColor("#EC4899");    // Pink
             default: return QColor("#64748B");              // Gray
         }
     }
