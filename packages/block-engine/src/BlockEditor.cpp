@@ -535,7 +535,7 @@ void BlockEditor::refreshPalette() {
 
     // Section 1: Pinos e Atuadores
     if (!pins.isEmpty()) {
-        auto* pinHeader = new QLabel("🔌 PINOS E ATUADORES", this);
+        auto* pinHeader = new QLabel("PINOS E ATUADORES", this);
         pinHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #EC4899; padding-left: 2px; padding-top: 4px; background: transparent;");
         m_paletteLayout->addWidget(pinHeader);
         for (const auto& varDef : pins) {
@@ -545,7 +545,7 @@ void BlockEditor::refreshPalette() {
 
     // Section 2: Variáveis Globais
     if (!globals.isEmpty()) {
-        auto* globHeader = new QLabel("🌐 VARIÁVEIS GLOBAIS", this);
+        auto* globHeader = new QLabel("VARIÁVEIS GLOBAIS", this);
         globHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #3B82F6; padding-left: 2px; padding-top: 10px; background: transparent;");
         m_paletteLayout->addWidget(globHeader);
         for (const auto& varDef : globals) {
@@ -577,7 +577,7 @@ void BlockEditor::refreshPalette() {
     }
     
     if (!eepromKeys.isEmpty()) {
-        auto* eepromHeader = new QLabel("💾 REGISTRO EEPROM (Salvos)", this);
+        auto* eepromHeader = new QLabel("REGISTRO EEPROM (Salvos)", this);
         eepromHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #EF4444; padding-left: 2px; padding-top: 10px; background: transparent;");
         m_paletteLayout->addWidget(eepromHeader);
         
