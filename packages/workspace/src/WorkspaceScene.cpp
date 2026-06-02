@@ -8,6 +8,7 @@
 #include <cmath>
 #include <QGraphicsView>
 #include "SmdWizardDialog.h"
+#include "BlockEditor.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Static helpers
@@ -283,6 +284,13 @@ ConnectionCable* WorkspaceScene::connectPins(ComponentItem* srcComp, const QStri
 // deleteSelected
 // ─────────────────────────────────────────────────────────────────────────────
 void WorkspaceScene::deleteSelected() {
+    if (parent()) {
+        auto* editor = parent()->findChild<BlockEditor*>();
+        if (editor && editor->isVisible()) {
+            return;
+        }
+    }
+
     auto selectedList = selectedItems();
     if (selectedList.isEmpty()) return;
 
@@ -635,6 +643,13 @@ void WorkspaceScene::keyPressEvent(QKeyEvent* event) {
         return;
     }
     if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        if (parent()) {
+            auto* editor = parent()->findChild<BlockEditor*>();
+            if (editor && editor->isVisible()) {
+                event->ignore();
+                return;
+            }
+        }
         if (m_isSimulating) {
             event->ignore();
             return;
