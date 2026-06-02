@@ -635,6 +635,10 @@ void HardwareSimulator::onReadyRead() {
         client->write(response.toUtf8());
         client->disconnectFromHost();
     } else if (req.startsWith("GET / ")) {
+        QJsonObject webData = m_webPageData;
+        bool authEnabled = webData.value("auth_enabled").toBool();
+        QString authPass = webData.value("auth_pass").toString();
+
         // Generate HTML
         QString html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>";
         html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
@@ -655,10 +659,35 @@ void HardwareSimulator::onReadyRead() {
         html += "input[type='range'].elem::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #0288d1; cursor: pointer; transition: background 0.15s ease-in-out; }";
         html += "input[type='range'].elem::-webkit-slider-thumb:hover { background: #01579b; }";
         html += ".text.elem { font-size: 16px; color: #01579b; font-weight: 600; text-shadow: 0 1px 1px rgba(255,255,255,0.8); }";
-        html += "</style></head><body>";
-        html += "<div class='container'>";
         
-        QJsonObject webData = m_webPageData;
+        // CSS da tela de login premium
+        html += "#login-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: none; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); z-index: 9999; }";
+        html += ".login-card { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 30px; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; color: #f8fafc; }";
+        html += ".login-card h2 { margin-top: 0; font-size: 20px; font-weight: 600; color: #38bdf8; letter-spacing: 0.5px; margin-bottom: 8px; }";
+        html += ".login-card p { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }";
+        html += ".login-input { width: 100%; box-sizing: border-box; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 10px 14px; color: #ffffff; font-size: 14px; outline: none; margin-bottom: 16px; transition: all 0.2s ease; }";
+        html += ".login-input:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }";
+        html += ".login-btn { width: 100%; background: #0288d1; color: white; border: none; border-radius: 8px; padding: 12px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(2,136,209,0.3); }";
+        html += ".login-btn:hover { background: #039be5; transform: translateY(-1px); }";
+        html += ".error-msg { color: #ef4444; font-size: 12px; margin-top: 12px; display: none; font-weight: 500; }";
+        html += "@keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }";
+        
+        html += "</style></head><body>";
+        
+        // Div da Tela de Login
+        html += "<div id='login-screen'>";
+        html += "  <div class='login-card' id='login-card'>";
+        html += "    <h2>Acesso Protegido</h2>";
+        html += "    <p>Esta página exige autenticação para ser acessada.</p>";
+        html += "    <input type='password' class='login-input' id='password-input' placeholder='Digite a senha' onkeydown='if(event.key===\"Enter\") tryLogin()'>";
+        html += "    <button class='login-btn' onclick='tryLogin()'>Acessar Painel</button>";
+        html += "    <div class='error-msg' id='login-error'></div>";
+        html += "  </div>";
+        html += "</div>";
+
+        // Div da página principal (escondida por padrão)
+        html += "<div class='container' id='main-container' style='display: none;'>";
+        
         QJsonArray elements = webData["elements"].toArray();
         for (int i = 0; i < elements.size(); ++i) {
             QJsonObject el = elements[i].toObject();
@@ -701,7 +730,14 @@ void HardwareSimulator::onReadyRead() {
         html += "<script>\n";
         html += "function sendEvent(btn) { fetch('/event?btn=' + btn, {method: 'POST'}); }\n";
         html += "function sendVar(varName, val) { fetch('/event?var=' + varName + '&val=' + val, {method: 'POST'}); }\n";
-        html += "setInterval(() => { fetch('/data').then(r=>r.json()).then(d => { \n";
+        
+        html += QString("const authEnabled = %1;\n").arg(authEnabled ? "true" : "false");
+        html += QString("const correctPass = \"%1\";\n").arg(authPass.replace("\"", "\\\""));
+        html += "let pollingInterval = null;\n";
+        
+        html += "function startDataPolling() {\n";
+        html += "  if (pollingInterval) return;\n";
+        html += "  pollingInterval = setInterval(() => { fetch('/data').then(r=>r.json()).then(d => { \n";
         for (int i = 0; i < elements.size(); ++i) {
             QJsonObject el = elements[i].toObject();
             QString type = el["type"].toString();
@@ -724,7 +760,44 @@ void HardwareSimulator::onReadyRead() {
                 html += QString("}\n");
             }
         }
-        html += "}); }, 1000);\n";
+        html += "  }); }, 1000);\n";
+        html += "}\n";
+
+        html += "function checkAuth() {\n";
+        html += "  if (authEnabled) {\n";
+        html += "    const isAuth = sessionStorage.getItem('webpage_authenticated') === 'true';\n";
+        html += "    if (isAuth) {\n";
+        html += "      document.getElementById('login-screen').style.display = 'none';\n";
+        html += "      document.getElementById('main-container').style.display = 'block';\n";
+        html += "      startDataPolling();\n";
+        html += "    } else {\n";
+        html += "      document.getElementById('login-screen').style.display = 'flex';\n";
+        html += "      document.getElementById('main-container').style.display = 'none';\n";
+        html += "    }\n";
+        html += "  } else {\n";
+        html += "    document.getElementById('login-screen').style.display = 'none';\n";
+        html += "    document.getElementById('main-container').style.display = 'block';\n";
+        html += "    startDataPolling();\n";
+        html += "  }\n";
+        html += "}\n";
+
+        html += "function tryLogin() {\n";
+        html += "  const entered = document.getElementById('password-input').value;\n";
+        html += "  if (entered === correctPass) {\n";
+        html += "    sessionStorage.setItem('webpage_authenticated', 'true');\n";
+        html += "    checkAuth();\n";
+        html += "  } else {\n";
+        html += "    const errorEl = document.getElementById('login-error');\n";
+        html += "    errorEl.innerText = 'Senha incorreta. Tente novamente.';\n";
+        html += "    errorEl.style.display = 'block';\n";
+        html += "    const card = document.getElementById('login-card');\n";
+        html += "    card.style.animation = 'none';\n";
+        html += "    card.offsetHeight;\n";
+        html += "    card.style.animation = 'shake 0.4s ease';\n";
+        html += "  }\n";
+        html += "}\n";
+        
+        html += "window.onload = checkAuth;\n";
         html += "</script></body></html>";
 
         QString response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n" + html;
