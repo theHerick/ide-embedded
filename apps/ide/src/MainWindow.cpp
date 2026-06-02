@@ -3006,9 +3006,14 @@ void MainWindow::editResistorValue(ResistorItem* resistor) {
         bool newIsSMD = pkgCombo->currentData().toBool();
         QString newSmdSize = sizeCombo->currentText();
         resistor->setProperty("isSMD", newIsSMD);
-        resistor->setProperty("smdSize", newSmdSize);
-        resistor->updateLayoutForSMD(newSmdSize);
-        resistor->update();
+        if (newIsSMD) {
+            resistor->setProperty("smdSize", newSmdSize);
+            resistor->updateLayoutForSMD(newSmdSize);
+        } else {
+            resistor->pins()[0].localPos = QPointF(-30, 0);
+            resistor->pins()[1].localPos = QPointF(30, 0);
+            resistor->update();
+        }
         
         // Force workspace compile update in real-time
         compileCode();
