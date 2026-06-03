@@ -544,10 +544,15 @@ void BlockEditor::refreshPalette() {
     }
 
     // Section 2: Variáveis Globais
-    if (!globals.isEmpty()) {
-        auto* globHeader = new QLabel("VARIÁVEIS GLOBAIS", this);
-        globHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #3B82F6; padding-left: 2px; padding-top: 10px; background: transparent;");
-        m_paletteLayout->addWidget(globHeader);
+    auto* globHeader = new QLabel("VARIÁVEIS GLOBAIS", this);
+    globHeader->setStyleSheet(QString("font-size: 10px; font-weight: bold; color: #3B82F6; padding-left: 2px; padding-top: %1px; background: transparent;").arg(pins.isEmpty() ? 4 : 10));
+    m_paletteLayout->addWidget(globHeader);
+    
+    if (globals.isEmpty()) {
+        auto* emptyLbl = new QLabel("Nenhuma criada", this);
+        emptyLbl->setStyleSheet("font-size: 10px; color: #94A3B8; padding-left: 2px; font-style: italic; background: transparent;");
+        m_paletteLayout->addWidget(emptyLbl);
+    } else {
         for (const auto& varDef : globals) {
             m_paletteLayout->addWidget(new VisualVariableItem(varDef, this));
         }
