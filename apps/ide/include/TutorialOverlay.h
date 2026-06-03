@@ -234,9 +234,35 @@ protected:
         return false;
     }
 
+    QWidget* getWidgetUnderneath(const QPoint& globalPos) {
+        bool wasTransparent = testAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        QWidget* widget = QApplication::widgetAt(globalPos);
+        setAttribute(Qt::WA_TransparentForMouseEvents, wasTransparent);
+        return widget;
+    }
+
+    void forwardEvent(QMouseEvent* event) {
+        QPoint globalPos = QCursor::pos();
+        QWidget* target = getWidgetUnderneath(globalPos);
+        if (target && target != this && !isAncestorOf(target)) {
+            QPoint localPos = target->mapFromGlobal(globalPos);
+            QMouseEvent newEvent(
+                event->type(),
+                localPos,
+                globalPos,
+                event->button(),
+                event->buttons(),
+                event->modifiers()
+            );
+            QApplication::sendEvent(target, &newEvent);
+        }
+    }
+
     void mousePressEvent(QMouseEvent* event) override {
         if (shouldIgnoreEvent(event->pos())) {
-            event->ignore();
+            forwardEvent(event);
+            event->accept();
         } else {
             event->accept();
         }
@@ -244,7 +270,8 @@ protected:
 
     void mouseReleaseEvent(QMouseEvent* event) override {
         if (shouldIgnoreEvent(event->pos())) {
-            event->ignore();
+            forwardEvent(event);
+            event->accept();
         } else {
             event->accept();
         }
@@ -252,7 +279,8 @@ protected:
 
     void mouseDoubleClickEvent(QMouseEvent* event) override {
         if (shouldIgnoreEvent(event->pos())) {
-            event->ignore();
+            forwardEvent(event);
+            event->accept();
         } else {
             event->accept();
         }
