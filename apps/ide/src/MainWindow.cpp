@@ -5211,7 +5211,7 @@ void MainWindow::startInteractiveTutorial() {
         "compilar o código do seu projeto.\n\n"
         "O resultado aparecerá no console abaixo.",
         "Clique aqui para compilar!",
-        buildWidget, QRect(), TutorialStep::Down
+        buildWidget, QRect(), TutorialStep::Up
     });
 
     // Step 4: Play
@@ -5222,7 +5222,7 @@ void MainWindow::startInteractiveTutorial() {
         "O osciloscópio aparecerá e você poderá interagir\n"
         "com os componentes (clicar em botões, girar potenciômetros).",
         "Clique aqui para simular!",
-        playWidget, QRect(), TutorialStep::Down
+        playWidget, QRect(), TutorialStep::Up
     });
 
     // Step 5: Right-click components
@@ -5245,7 +5245,7 @@ void MainWindow::startInteractiveTutorial() {
         "Use blocos como \"Ação\" (ligar/desligar), \"Aguardar\" (delay),\n"
         "\"Se\" (condição), e arraste variáveis do painel lateral.",
         "Dois cliques na área vazia para buscar blocos!",
-        m_blockEditor, QRect(), TutorialStep::Left
+        m_blockEditor, QRect(), TutorialStep::Right
     });
 
     // Step 7: Congratulations
