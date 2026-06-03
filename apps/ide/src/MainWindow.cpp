@@ -521,7 +521,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
             int step = m_tutorialOverlay->currentStep();
             logMessage(QString("Tutorial: Build acionado no Passo %1").arg(step), "SYSTEM");
-            if (step == 11) {
+            if (step == 12) {
                 m_tutorialOverlay->advance();
             }
         }
@@ -531,7 +531,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
             int step = m_tutorialOverlay->currentStep();
             logMessage(QString("Tutorial: Play acionado no Passo %1").arg(step), "SYSTEM");
-            if (step == 12) {
+            if (step == 13) {
                 m_tutorialOverlay->advance();
             }
         }
@@ -541,7 +541,22 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
             int step = m_tutorialOverlay->currentStep();
             logMessage(QString("Tutorial: Blocos modificados no Passo %1").arg(step), "SYSTEM");
-            if (step == 10) {
+
+            QVector<EventLogicBlock> active = m_blockEditor->getActiveBlocks();
+            bool hasActionBlock = false;
+            bool hasTargetFilled = false;
+            for (const auto& b : active) {
+                if (b.type == LogicBlockType::ACTION) {
+                    hasActionBlock = true;
+                    if (!b.actionTarget.trimmed().isEmpty()) {
+                        hasTargetFilled = true;
+                    }
+                }
+            }
+
+            if (step == 10 && hasActionBlock) {
+                m_tutorialOverlay->advance();
+            } else if (step == 11 && hasTargetFilled) {
                 m_tutorialOverlay->advance();
             }
         }
@@ -5355,23 +5370,33 @@ void MainWindow::startInteractiveTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Step 11: Build
+    // Step 11: Drag LED to Action
     steps.append({
-        "11. Compilar o Projeto",
+        "11. Associar o LED à Ação",
+        "Para definir que o LED é o alvo desta ação, arraste-o da paleta à esquerda:\n\n"
+        "1. Clique e segure o bloco rosa 'LED_2 [GPIO2]' na paleta de 'PINOS E ATUADORES'.\n"
+        "2. Arraste e solte-o no campo 'Alvo (Pino / Var)' do seu bloco de Ação.",
+        "Arraste o pino LED_2 para o campo Alvo!",
+        nullptr, QRect(), TutorialStep::Left
+    });
+
+    // Step 12: Build
+    steps.append({
+        "12. Compilar o Projeto",
         "Clique no botão de Build (ícone de ferramentas na barra superior) para compilar a lógica e o hardware do seu circuito.",
         "Clique no botão de Build no topo para compilar!",
         buildWidget, QRect(), TutorialStep::Up
     });
 
-    // Step 12: Play Simulation
+    // Step 13: Play Simulation
     steps.append({
-        "12. Iniciar Simulação",
+        "13. Iniciar Simulação",
         "Com o código compilado com sucesso, clique no botão de Play no topo para rodar a simulação interativa!",
         "Clique no botão de Play no topo para iniciar a simulação!",
         playWidget, QRect(), TutorialStep::Up
     });
 
-    // Step 13: Done
+    // Step 14: Done
     steps.append({
         "Parabéns! Circuito pronto e rodando!",
         "Você acabou de montar e programar seu circuito!\n\n"

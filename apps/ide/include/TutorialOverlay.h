@@ -12,6 +12,8 @@
 #include <QGraphicsDropShadowEffect>
 #include <QTimer>
 #include <QApplication>
+#include <QPointer>
+#include "VariableSystem.h"
 
 struct TutorialStep {
     QString title;
@@ -363,10 +365,26 @@ private:
         update();
     }
 
+    QWidget* resolveTargetWidget(const TutorialStep& step) const {
+        if (m_currentStep == 11) {
+            if (parentWidget()) {
+                for (auto* item : parentWidget()->findChildren<VisualVariableItem*>()) {
+                    if (item->getDef().type == VarType::PIN && 
+                        item->getDef().name.contains("LED", Qt::CaseInsensitive) && 
+                        item->isVisible()) {
+                        return item;
+                    }
+                }
+            }
+        }
+        return step.targetWidget;
+    }
+
     QRect getTargetRect(const TutorialStep& step) const {
-        if (step.targetWidget && step.targetWidget->isVisible()) {
-            QPoint topLeft = step.targetWidget->mapTo(parentWidget(), QPoint(0, 0));
-            return QRect(topLeft, step.targetWidget->size());
+        QWidget* targetW = resolveTargetWidget(step);
+        if (targetW && targetW->isVisible()) {
+            QPoint topLeft = targetW->mapTo(parentWidget(), QPoint(0, 0));
+            return QRect(topLeft, targetW->size());
         }
         if (!step.customTargetRect.isNull()) {
             return step.customTargetRect;
