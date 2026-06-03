@@ -41,7 +41,6 @@ public:
         setAttribute(Qt::WA_TransparentForMouseEvents, false);
         setAttribute(Qt::WA_TranslucentBackground, true);
         setMouseTracking(true);
-        qApp->installEventFilter(this);
 
         // Card widget
         m_card = new QWidget(this);
@@ -152,11 +151,7 @@ public:
         });
     }
 
-    ~TutorialOverlay() override {
-        if (qApp) {
-            qApp->removeEventFilter(this);
-        }
-    }
+    ~TutorialOverlay() override {}
 
     void setSteps(const QVector<TutorialStep>& steps) {
         m_steps = steps;
@@ -189,6 +184,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent*) override {
+        updateMask();
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
 
@@ -303,125 +299,60 @@ protected:
     void resizeEvent(QResizeEvent*) override {
         if (m_currentStep < m_steps.size()) {
             positionCard(m_steps[m_currentStep]);
+            updateMask();
         }
     }
 
-    bool shouldIgnoreEvent(const QPoint& pos) const {
+    void updateMask() {
+        QRegion r(rect());
         if (m_currentStep < m_steps.size()) {
             if (m_currentStep == 11) {
-                // Allow interaction with both the variable block and the action block target
                 QWidget* varW = resolveTargetWidget(m_steps[11]);
                 QWidget* targetW = resolveActionTargetWidget();
                 if (varW && targetW && varW->isVisible()) {
                     QPoint topLeftVar = varW->mapTo(parentWidget(), QPoint(0, 0));
-                    QRect expandedVar = QRect(topLeftVar, varW->size()).adjusted(-12, -12, 12, 12);
-
+                    QRect rectVar(topLeftVar, varW->size());
+                    
                     QPoint topLeftTgt = targetW->mapTo(parentWidget(), QPoint(0, 0));
-                    QRect expandedTgt = QRect(topLeftTgt, targetW->size()).adjusted(-12, -12, 12, 12);
-
-                    return expandedVar.contains(pos) || expandedTgt.contains(pos);
+                    QRect rectTgt(topLeftTgt, targetW->size());
+                    
+                    r = r.subtracted(QRegion(rectVar));
+                    r = r.subtracted(QRegion(rectTgt));
+                }
+            } else {
+                QRect spotRect = getTargetRect(m_steps[m_currentStep]);
+                if (!spotRect.isNull()) {
+                    r = r.subtracted(QRegion(spotRect));
                 }
             }
-            QRect spotRect = getTargetRect(m_steps[m_currentStep]);
-            if (!spotRect.isNull()) {
-                QRect expanded = spotRect.adjusted(-12, -12, 12, 12);
-                return expanded.contains(pos);
-            }
         }
-        return false;
-    }
-
-    bool eventFilter(QObject* watched, QEvent* event) override {
-        if (event->type() == QEvent::MouseButtonRelease ||
-            event->type() == QEvent::Drop ||
-            event->type() == QEvent::DragLeave) {
-            // Restore mouse event interception after the interaction finishes (give it a small delay)
-            QTimer::singleShot(50, this, [this]() {
-                setAttribute(Qt::WA_TransparentForMouseEvents, false);
-            });
+        if (m_card) {
+            r = r.united(QRegion(m_card->geometry()));
         }
-        return QWidget::eventFilter(watched, event);
-    }
-
-    QWidget* getWidgetUnderneath(const QPoint& globalPos) {
-        bool wasTransparent = testAttribute(Qt::WA_TransparentForMouseEvents);
-        setAttribute(Qt::WA_TransparentForMouseEvents, true);
-        QWidget* widget = QApplication::widgetAt(globalPos);
-        setAttribute(Qt::WA_TransparentForMouseEvents, wasTransparent);
-        return widget;
-    }
-
-    void forwardEvent(QMouseEvent* event) {
-        QPoint globalPos = QCursor::pos();
-        QWidget* target = getWidgetUnderneath(globalPos);
-        if (target && target != this && !isAncestorOf(target)) {
-            QPoint localPos = target->mapFromGlobal(globalPos);
-            QMouseEvent newEvent(
-                event->type(),
-                localPos,
-                globalPos,
-                event->button(),
-                event->buttons(),
-                event->modifiers()
-            );
-            QApplication::sendEvent(target, &newEvent);
-        }
-    }
-
-    void mouseMoveEvent(QMouseEvent* event) override {
-        if (shouldIgnoreEvent(event->pos())) {
-            forwardEvent(event);
-            event->accept();
-        } else {
-            event->accept();
+        
+        if (r != m_lastMaskRegion) {
+            m_lastMaskRegion = r;
+            setMask(r);
         }
     }
 
     void mousePressEvent(QMouseEvent* event) override {
-        if (shouldIgnoreEvent(event->pos())) {
-            setAttribute(Qt::WA_TransparentForMouseEvents, true);
-            forwardEvent(event);
-            event->accept();
-        } else {
-            event->accept();
-        }
+        event->accept();
     }
 
     void mouseReleaseEvent(QMouseEvent* event) override {
-        if (shouldIgnoreEvent(event->pos())) {
-            forwardEvent(event);
-            event->accept();
-        } else {
-            event->accept();
-        }
+        event->accept();
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override {
+        event->accept();
     }
 
     void mouseDoubleClickEvent(QMouseEvent* event) override {
-        if (shouldIgnoreEvent(event->pos())) {
-            forwardEvent(event);
-            event->accept();
-        } else {
-            event->accept();
-        }
+        event->accept();
     }
 
     void contextMenuEvent(QContextMenuEvent* event) override {
-        if (shouldIgnoreEvent(event->pos())) {
-            QPoint globalPos = QCursor::pos();
-            QWidget* target = getWidgetUnderneath(globalPos);
-            if (target && target != this && !isAncestorOf(target)) {
-                QPoint localPos = target->mapFromGlobal(globalPos);
-                QContextMenuEvent newEvent(
-                    event->reason(),
-                    localPos,
-                    globalPos,
-                    event->modifiers()
-                );
-                QApplication::sendEvent(target, &newEvent);
-                event->accept();
-                return;
-            }
-        }
         event->accept();
     }
 
@@ -608,4 +539,5 @@ private:
     QPushButton* m_btnPrev;
     QPushButton* m_btnNext;
     QPropertyAnimation* m_pulseAnim;
+    QRegion m_lastMaskRegion;
 };
