@@ -28,6 +28,7 @@ struct VariableDef {
     VarScope scope;
     QString initialValue; // Used primarily for LOCAL_EVENT
     QString description;
+    QString uiLabel; // Used for custom UI label override (e.g., "[PIN] LED_2 [GPIO 2]")
 
     static QString typeToString(VarType t) {
         switch (t) {

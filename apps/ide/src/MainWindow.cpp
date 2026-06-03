@@ -1029,7 +1029,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
         return;
     }
 
-    auto hasValidGPIO = [&](ComponentItem* target) -> bool {
+    auto getConnectedGPIO = [&](ComponentItem* target) -> QString {
         QSet<QString> visited;
         QList<ComponentItem*> queue;
         queue.append(target);
@@ -1062,7 +1062,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
                         QString espPin = pin.connectedToPin;
                         // Exclude power pins
                         if (!espPin.contains("5V") && !espPin.contains("3V3") && !espPin.contains("GND") && !espPin.contains("VIN")) {
-                            return true;
+                            return espPin;
                         }
                     } else {
                         queue.append(connComp);
@@ -1070,7 +1070,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
                 }
             }
         }
-        return false;
+        return QString();
     };
 
     // Auto load contextual events
@@ -1084,17 +1084,20 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
         if (c->componentType() == "dht22") avDhts.append(c->name());
         if (c->componentType() == "hcsr04") avHcsrs.append(c->name());
 
-        if (!hasValidGPIO(c)) continue; // Only show components connected to valid GPIOs!
+        QString gpio = getConnectedGPIO(c);
+        if (gpio.isEmpty()) continue; // Only show components connected to valid GPIOs!
 
-        if (c->componentType() == "led") avLeds.append(c->name());
-        else if (c->componentType() == "potentiometer") avPots.append(c->name());
-        else if (c->componentType() == "bess") avPots.append(c->name() == "Bateria LiPo" || c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name());
-        else if (c->componentType() == "buzzer") avBuzzers.append(c->name());
-        else if (c->componentType() == "motor") avMotors.append(c->name());
+        QString entry = c->name() + "|" + gpio;
+
+        if (c->componentType() == "led") avLeds.append(entry);
+        else if (c->componentType() == "potentiometer") avPots.append(entry);
+        else if (c->componentType() == "bess") avPots.append((c->name() == "Bateria LiPo" || c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name()) + "|" + gpio);
+        else if (c->componentType() == "buzzer") avBuzzers.append(entry);
+        else if (c->componentType() == "motor") avMotors.append(entry);
         else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
-            if (custom->category() == "digital_actuator") avLeds.append(custom->name());
-            else if (custom->category() == "analog_input") avPots.append(custom->name());
-            else if (custom->category() == "active_actuator") avBuzzers.append(custom->name());
+            if (custom->category() == "digital_actuator") avLeds.append(entry);
+            else if (custom->category() == "analog_input") avPots.append(entry);
+            else if (custom->category() == "active_actuator") avBuzzers.append(entry);
         }
     }
 

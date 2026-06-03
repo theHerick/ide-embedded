@@ -763,49 +763,30 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
         }
     }
 
-    // Add LEDs/Actuators
-    for (const auto& led : avLeds) {
-        VariableDef def;
-        def.name = "PIN_" + sanitizeIdentifier(led);
-        def.type = VarType::PIN;
-        def.scope = VarScope::RUNTIME_OUTPUT;
-        def.initialValue = "0";
-        def.description = QString("Atuador Digital / LED (%1)").arg(led);
-        m_hardwareScopeVariables.append(def);
-    }
+    auto addHardwarePin = [&](const QStringList& list, const QString& descrPrefix) {
+        for (const auto& item : list) {
+            QStringList parts = item.split("|");
+            QString compName = parts[0];
+            QString gpio = parts.size() > 1 ? parts[1] : "";
 
-    // Add Potentiometers/Sensors
-    for (const auto& pot : avPots) {
-        VariableDef def;
-        def.name = "PIN_" + sanitizeIdentifier(pot);
-        def.type = VarType::PIN;
-        def.scope = VarScope::RUNTIME_OUTPUT;
-        def.initialValue = "0";
-        def.description = QString("Sensor Analógico (%1)").arg(pot);
-        m_hardwareScopeVariables.append(def);
-    }
+            VariableDef def;
+            def.name = sanitizeIdentifier(compName).toUpper();
+            def.type = VarType::PIN;
+            def.scope = VarScope::RUNTIME_OUTPUT;
+            def.initialValue = "0";
+            def.description = QString("%1 (%2)").arg(descrPrefix).arg(compName);
+            def.uiLabel = def.name;
+            if (!gpio.isEmpty()) {
+                def.uiLabel += QString(" [%1]").arg(gpio);
+            }
+            m_hardwareScopeVariables.append(def);
+        }
+    };
 
-    // Add Buzzers
-    for (const auto& buz : avBuzzers) {
-        VariableDef def;
-        def.name = "PIN_" + sanitizeIdentifier(buz);
-        def.type = VarType::PIN;
-        def.scope = VarScope::RUNTIME_OUTPUT;
-        def.initialValue = "0";
-        def.description = QString("Buzzer (%1)").arg(buz);
-        m_hardwareScopeVariables.append(def);
-    }
-
-    // Add Motors
-    for (const auto& mot : avMotors) {
-        VariableDef def;
-        def.name = "PIN_" + sanitizeIdentifier(mot);
-        def.type = VarType::PIN;
-        def.scope = VarScope::RUNTIME_OUTPUT;
-        def.initialValue = "0";
-        def.description = QString("Motor / Atuador de Rotação (%1)").arg(mot);
-        m_hardwareScopeVariables.append(def);
-    }
+    addHardwarePin(avLeds, "Atuador Digital / LED");
+    addHardwarePin(avPots, "Sensor Analógico");
+    addHardwarePin(avBuzzers, "Buzzer");
+    addHardwarePin(avMotors, "Motor / Atuador de Rotação");
 
     // Add global Web Sliders
     for (const auto& slider : avSliders) {

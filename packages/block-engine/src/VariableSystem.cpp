@@ -38,7 +38,7 @@ VisualVariableItem::VisualVariableItem(const VariableDef& varDef, QWidget* paren
     typeLabel->setObjectName("typeLabel");
     typeLabel->setStyleSheet("color: rgba(255,255,255,0.85); font-size: 9px; font-weight: bold; font-family: monospace; background: transparent;");
     
-    QString displayText = m_def.name;
+    QString displayText = m_def.uiLabel.isEmpty() ? m_def.name : m_def.uiLabel;
     if (m_def.type != VarType::PIN && m_def.scope != VarScope::RUNTIME_OUTPUT && !m_def.initialValue.isEmpty()) {
         displayText += " = " + m_def.initialValue;
     }
