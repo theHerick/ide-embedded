@@ -1,0 +1,389 @@
+#pragma once
+#include <QWidget>
+#include <QPainter>
+#include <QPainterPath>
+#include <QMouseEvent>
+#include <QPushButton>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPropertyAnimation>
+#include <QGraphicsDropShadowEffect>
+#include <QTimer>
+#include <QApplication>
+
+struct TutorialStep {
+    QString title;
+    QString description;
+    QString hint;           // Green hint box text
+    QWidget* targetWidget;  // Widget to spotlight (nullptr = center of screen)
+    QRect customTargetRect; // Alternative to targetWidget
+    enum ArrowDir { None, Up, Down, Left, Right } arrowDir = None;
+};
+
+class TutorialOverlay : public QWidget {
+    Q_OBJECT
+    Q_PROPERTY(qreal pulseRadius READ pulseRadius WRITE setPulseRadius)
+
+public:
+    explicit TutorialOverlay(QWidget* parent = nullptr)
+        : QWidget(parent)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents, false);
+        setMouseTracking(true);
+
+        // Card widget
+        m_card = new QWidget(this);
+        m_card->setFixedWidth(420);
+        m_card->setStyleSheet(
+            "QWidget#tutCard { background: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; }"
+        );
+        m_card->setObjectName("tutCard");
+
+        auto* shadow = new QGraphicsDropShadowEffect(m_card);
+        shadow->setBlurRadius(40);
+        shadow->setOffset(0, 8);
+        shadow->setColor(QColor(0, 0, 0, 80));
+        m_card->setGraphicsEffect(shadow);
+
+        auto* cardLayout = new QVBoxLayout(m_card);
+        cardLayout->setContentsMargins(24, 20, 24, 20);
+        cardLayout->setSpacing(10);
+
+        // Step indicator
+        m_stepLabel = new QLabel(m_card);
+        m_stepLabel->setStyleSheet("font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #94A3B8;");
+        cardLayout->addWidget(m_stepLabel);
+
+        // Title
+        m_titleLabel = new QLabel(m_card);
+        m_titleLabel->setWordWrap(true);
+        m_titleLabel->setStyleSheet("font-size: 18px; font-weight: 900; color: #0F172A; font-family: 'Segoe UI', Arial, sans-serif;");
+        cardLayout->addWidget(m_titleLabel);
+
+        // Description
+        m_descLabel = new QLabel(m_card);
+        m_descLabel->setWordWrap(true);
+        m_descLabel->setStyleSheet("font-size: 13px; color: #475569; line-height: 1.5; font-family: 'Segoe UI', Arial, sans-serif;");
+        cardLayout->addWidget(m_descLabel);
+
+        // Hint box
+        m_hintBox = new QWidget(m_card);
+        m_hintBox->setStyleSheet("background: #F0FDF4; border: 1px solid #86EFAC; border-radius: 8px;");
+        auto* hintLay = new QHBoxLayout(m_hintBox);
+        hintLay->setContentsMargins(12, 8, 12, 8);
+        m_hintArrow = new QLabel(m_hintBox);
+        m_hintArrow->setText("👆");
+        m_hintArrow->setFixedWidth(24);
+        m_hintArrow->setStyleSheet("font-size: 16px;");
+        hintLay->addWidget(m_hintArrow);
+        m_hintLabel = new QLabel(m_hintBox);
+        m_hintLabel->setWordWrap(true);
+        m_hintLabel->setStyleSheet("font-size: 12px; font-weight: 600; color: #166534;");
+        hintLay->addWidget(m_hintLabel, 1);
+        cardLayout->addWidget(m_hintBox);
+
+        // Button row
+        auto* btnRow = new QHBoxLayout();
+        btnRow->setSpacing(10);
+
+        m_btnSkip = new QPushButton("Pular Tutorial", m_card);
+        m_btnSkip->setStyleSheet(
+            "QPushButton { background: transparent; border: none; color: #94A3B8; font-size: 12px; font-weight: 600; padding: 8px 12px; }"
+            "QPushButton:hover { color: #475569; text-decoration: underline; }"
+        );
+
+        m_btnPrev = new QPushButton("Anterior", m_card);
+        m_btnPrev->setFixedWidth(90);
+        m_btnPrev->setStyleSheet(
+            "QPushButton { background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 10px; color: #475569; padding: 10px; font-weight: 700; font-size: 12px; }"
+            "QPushButton:hover { background: #E2E8F0; color: #0F172A; }"
+            "QPushButton:disabled { color: #CBD5E1; border-color: #E2E8F0; }"
+        );
+
+        m_btnNext = new QPushButton("Próximo", m_card);
+        m_btnNext->setFixedWidth(110);
+        m_btnNext->setStyleSheet(
+            "QPushButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #2563EB,stop:1 #1D4ED8); border: none; border-radius: 10px; color: #FFFFFF; padding: 10px; font-weight: 700; font-size: 12px; }"
+            "QPushButton:hover { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1D4ED8,stop:1 #1E40AF); }"
+        );
+
+        btnRow->addWidget(m_btnSkip);
+        btnRow->addStretch();
+        btnRow->addWidget(m_btnPrev);
+        btnRow->addWidget(m_btnNext);
+        cardLayout->addLayout(btnRow);
+
+        // Pulse animation
+        m_pulseAnim = new QPropertyAnimation(this, "pulseRadius", this);
+        m_pulseAnim->setDuration(1200);
+        m_pulseAnim->setStartValue(0.0);
+        m_pulseAnim->setEndValue(20.0);
+        m_pulseAnim->setLoopCount(-1);
+
+        // Connections
+        connect(m_btnNext, &QPushButton::clicked, this, [this]() {
+            if (m_currentStep < m_steps.size() - 1) {
+                m_currentStep++;
+                showStep(m_currentStep);
+            } else {
+                close();
+            }
+        });
+        connect(m_btnPrev, &QPushButton::clicked, this, [this]() {
+            if (m_currentStep > 0) {
+                m_currentStep--;
+                showStep(m_currentStep);
+            }
+        });
+        connect(m_btnSkip, &QPushButton::clicked, this, [this]() {
+            close();
+        });
+    }
+
+    void setSteps(const QVector<TutorialStep>& steps) {
+        m_steps = steps;
+        m_currentStep = 0;
+    }
+
+    void start() {
+        if (m_steps.isEmpty()) return;
+        m_currentStep = 0;
+        resize(parentWidget()->size());
+        show();
+        raise();
+        showStep(0);
+        m_pulseAnim->start();
+    }
+
+    qreal pulseRadius() const { return m_pulse; }
+    void setPulseRadius(qreal r) { m_pulse = r; update(); }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+
+        // Dark overlay
+        p.fillRect(rect(), QColor(15, 23, 42, 160));
+
+        if (m_currentStep < m_steps.size()) {
+            QRect spotRect = getTargetRect(m_steps[m_currentStep]);
+
+            if (!spotRect.isNull()) {
+                // Cut out the spotlight hole with rounded corners
+                QRect expanded = spotRect.adjusted(-12, -12, 12, 12);
+
+                // Glow ring (pulse)
+                QPen glowPen(QColor(59, 130, 246, 120), 3 + m_pulse * 0.3);
+                p.setPen(glowPen);
+                p.setBrush(Qt::NoBrush);
+                p.drawRoundedRect(expanded.adjusted(-(int)m_pulse, -(int)m_pulse, (int)m_pulse, (int)m_pulse), 14, 14);
+
+                // Clear the spotlight area
+                p.setCompositionMode(QPainter::CompositionMode_Clear);
+                p.setPen(Qt::NoPen);
+                p.setBrush(Qt::black);
+                p.drawRoundedRect(expanded, 12, 12);
+                p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+                // White border around spotlight
+                QPen borderPen(QColor(255, 255, 255, 200), 2.5);
+                p.setPen(borderPen);
+                p.setBrush(Qt::NoBrush);
+                p.drawRoundedRect(expanded, 12, 12);
+
+                // Draw arrow from card to spotlight
+                drawArrow(p, spotRect);
+            }
+        }
+    }
+
+    void resizeEvent(QResizeEvent*) override {
+        if (m_currentStep < m_steps.size()) {
+            positionCard(m_steps[m_currentStep]);
+        }
+    }
+
+    void mousePressEvent(QMouseEvent* event) override {
+        // Allow clicks through to the spotlighted area
+        if (m_currentStep < m_steps.size()) {
+            QRect spotRect = getTargetRect(m_steps[m_currentStep]);
+            if (!spotRect.isNull()) {
+                QRect expanded = spotRect.adjusted(-12, -12, 12, 12);
+                if (expanded.contains(event->pos())) {
+                    // Let the click through
+                    event->ignore();
+                    return;
+                }
+            }
+        }
+        event->accept(); // Block clicks outside spotlight
+    }
+
+private:
+    void showStep(int idx) {
+        if (idx < 0 || idx >= m_steps.size()) return;
+        const auto& step = m_steps[idx];
+
+        m_stepLabel->setText(QString("PASSO %1 DE %2").arg(idx + 1).arg(m_steps.size()));
+        m_titleLabel->setText(step.title);
+        m_descLabel->setText(step.description);
+
+        if (step.hint.isEmpty()) {
+            m_hintBox->hide();
+        } else {
+            m_hintLabel->setText(step.hint);
+            m_hintBox->show();
+
+            // Arrow emoji based on direction
+            switch (step.arrowDir) {
+                case TutorialStep::Up:    m_hintArrow->setText("👆"); break;
+                case TutorialStep::Down:  m_hintArrow->setText("👇"); break;
+                case TutorialStep::Left:  m_hintArrow->setText("👈"); break;
+                case TutorialStep::Right: m_hintArrow->setText("👉"); break;
+                default: m_hintArrow->setText("💡"); break;
+            }
+        }
+
+        m_btnPrev->setEnabled(idx > 0);
+        m_btnNext->setText(idx == m_steps.size() - 1 ? "Concluir!" : "Próximo");
+
+        // Change next button color on last step
+        if (idx == m_steps.size() - 1) {
+            m_btnNext->setStyleSheet(
+                "QPushButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #059669,stop:1 #047857); border: none; border-radius: 10px; color: #FFFFFF; padding: 10px; font-weight: 700; font-size: 12px; }"
+                "QPushButton:hover { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #047857,stop:1 #065F46); }"
+            );
+        } else {
+            m_btnNext->setStyleSheet(
+                "QPushButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #2563EB,stop:1 #1D4ED8); border: none; border-radius: 10px; color: #FFFFFF; padding: 10px; font-weight: 700; font-size: 12px; }"
+                "QPushButton:hover { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1D4ED8,stop:1 #1E40AF); }"
+            );
+        }
+
+        m_card->adjustSize();
+        positionCard(step);
+        update();
+    }
+
+    QRect getTargetRect(const TutorialStep& step) const {
+        if (step.targetWidget && step.targetWidget->isVisible()) {
+            QPoint topLeft = step.targetWidget->mapTo(parentWidget(), QPoint(0, 0));
+            return QRect(topLeft, step.targetWidget->size());
+        }
+        if (!step.customTargetRect.isNull()) {
+            return step.customTargetRect;
+        }
+        return QRect();
+    }
+
+    void positionCard(const TutorialStep& step) {
+        QRect target = getTargetRect(step);
+        int cx, cy;
+
+        if (target.isNull()) {
+            // Center of screen
+            cx = (width() - m_card->width()) / 2;
+            cy = (height() - m_card->height()) / 2;
+        } else {
+            // Position card relative to target
+            switch (step.arrowDir) {
+                case TutorialStep::Up:
+                    cx = target.center().x() - m_card->width() / 2;
+                    cy = target.bottom() + 30;
+                    break;
+                case TutorialStep::Down:
+                    cx = target.center().x() - m_card->width() / 2;
+                    cy = target.top() - m_card->height() - 30;
+                    break;
+                case TutorialStep::Left:
+                    cx = target.right() + 30;
+                    cy = target.center().y() - m_card->height() / 2;
+                    break;
+                case TutorialStep::Right:
+                    cx = target.left() - m_card->width() - 30;
+                    cy = target.center().y() - m_card->height() / 2;
+                    break;
+                default:
+                    cx = target.center().x() - m_card->width() / 2;
+                    cy = target.bottom() + 30;
+                    break;
+            }
+        }
+
+        // Clamp to screen bounds
+        cx = qBound(20, cx, width() - m_card->width() - 20);
+        cy = qBound(20, cy, height() - m_card->height() - 20);
+
+        m_card->move(cx, cy);
+    }
+
+    void drawArrow(QPainter& p, const QRect& target) {
+        if (target.isNull() || m_currentStep >= m_steps.size()) return;
+
+        QPoint cardCenter(m_card->x() + m_card->width() / 2, m_card->y() + m_card->height() / 2);
+        QPoint targetCenter = target.center();
+
+        // Determine arrow endpoints based on card position relative to target
+        QPoint arrowStart, arrowEnd;
+        const auto& step = m_steps[m_currentStep];
+
+        switch (step.arrowDir) {
+            case TutorialStep::Up:
+                arrowStart = QPoint(m_card->x() + m_card->width() / 2, m_card->y());
+                arrowEnd = QPoint(target.center().x(), target.bottom() + 14);
+                break;
+            case TutorialStep::Down:
+                arrowStart = QPoint(m_card->x() + m_card->width() / 2, m_card->y() + m_card->height());
+                arrowEnd = QPoint(target.center().x(), target.top() - 14);
+                break;
+            case TutorialStep::Left:
+                arrowStart = QPoint(m_card->x(), cardCenter.y());
+                arrowEnd = QPoint(target.right() + 14, target.center().y());
+                break;
+            case TutorialStep::Right:
+                arrowStart = QPoint(m_card->x() + m_card->width(), cardCenter.y());
+                arrowEnd = QPoint(target.left() - 14, target.center().y());
+                break;
+            default:
+                return;
+        }
+
+        // Draw dashed line
+        QPen dashPen(QColor(59, 130, 246, 200), 2.5, Qt::DashLine);
+        p.setPen(dashPen);
+        p.drawLine(arrowStart, arrowEnd);
+
+        // Draw arrowhead
+        double angle = std::atan2(arrowEnd.y() - arrowStart.y(), arrowEnd.x() - arrowStart.x());
+        int arrowSize = 12;
+        QPointF p1 = arrowEnd - QPointF(arrowSize * std::cos(angle - 0.4), arrowSize * std::sin(angle - 0.4));
+        QPointF p2 = arrowEnd - QPointF(arrowSize * std::cos(angle + 0.4), arrowSize * std::sin(angle + 0.4));
+
+        QPainterPath arrowHead;
+        arrowHead.moveTo(arrowEnd);
+        arrowHead.lineTo(p1);
+        arrowHead.lineTo(p2);
+        arrowHead.closeSubpath();
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(59, 130, 246, 220));
+        p.drawPath(arrowHead);
+    }
+
+    QVector<TutorialStep> m_steps;
+    int m_currentStep = 0;
+    qreal m_pulse = 0;
+
+    QWidget* m_card;
+    QLabel* m_stepLabel;
+    QLabel* m_titleLabel;
+    QLabel* m_descLabel;
+    QWidget* m_hintBox;
+    QLabel* m_hintArrow;
+    QLabel* m_hintLabel;
+    QPushButton* m_btnSkip;
+    QPushButton* m_btnPrev;
+    QPushButton* m_btnNext;
+    QPropertyAnimation* m_pulseAnim;
+};

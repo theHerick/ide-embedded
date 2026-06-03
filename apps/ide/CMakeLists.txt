@@ -5,11 +5,13 @@ add_executable(ide-embedded WIN32
     include/OscilloscopePanel.h
     include/WebPageEditorDialog.h
     include/WebElementItem.h
+    include/TutorialOverlay.h
     main.cpp
     src/MainWindow.cpp
     src/OscilloscopePanel.cpp
     src/WebPageEditorDialog.cpp
     src/WebElementItem.cpp
+    src/TutorialOverlay.cpp
     resources.qrc
     resources.rc
 )

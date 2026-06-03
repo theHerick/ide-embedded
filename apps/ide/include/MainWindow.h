@@ -11,6 +11,7 @@
 #include "BlockEditor.h"
 #include "HardwareSimulator.h"
 #include "OscilloscopePanel.h"
+#include "TutorialOverlay.h"
 #include <QTabWidget>
 
 class ResistorItem;
@@ -60,6 +61,7 @@ private slots:
     void exportLaserPNG();
     void viewCompiledCodeModal();
     void showFirmwareInfo();
+    void startInteractiveTutorial();
     void platformIOConfigTriggered();
 
 private:
@@ -86,6 +88,7 @@ private:
     QAction* m_clearAction = nullptr;
     QAction* m_copyAction = nullptr;
     QAction* m_pasteAction = nullptr;
+    TutorialOverlay* m_tutorialOverlay = nullptr;
 
     // Active tracking
     ComponentItem* m_selectedComponent = nullptr;

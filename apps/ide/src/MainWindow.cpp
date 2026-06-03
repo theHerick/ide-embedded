@@ -4699,329 +4699,67 @@ void MainWindow::showFirmwareInfo() {
     auto* tabs = new QTabWidget(&dialog);
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TAB 0: MINI TUTORIAL INTERATIVO
+    // TAB 0: TUTORIAL INTERATIVO (LAUNCHER)
     // ─────────────────────────────────────────────────────────────────────────
     {
         auto* tutWidget = new QWidget();
         auto* tutLayout = new QVBoxLayout(tutWidget);
-        tutLayout->setContentsMargins(0, 0, 0, 0);
-        tutLayout->setSpacing(0);
+        tutLayout->setContentsMargins(40, 40, 40, 40);
+        tutLayout->setSpacing(20);
+        tutLayout->setAlignment(Qt::AlignCenter);
 
-        // Tutorial content area (scrollable HTML)
-        auto* tutScroll = new QScrollArea(tutWidget);
-        tutScroll->setWidgetResizable(true);
-        tutScroll->setStyleSheet("QScrollArea { border: none; background: #F0F4F8; }");
+        auto* icon = new QLabel(tutWidget);
+        icon->setAlignment(Qt::AlignCenter);
+        icon->setText(R"(<div style="font-size: 48px; text-align: center;">🎓</div>)");
+        icon->setTextFormat(Qt::RichText);
+        tutLayout->addWidget(icon);
 
-        auto* tutContent = new QLabel(tutScroll);
-        tutContent->setWordWrap(true);
-        tutContent->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-        tutContent->setTextFormat(Qt::RichText);
-        tutContent->setStyleSheet("QLabel { padding: 24px; background: #F0F4F8; }");
-        tutScroll->setWidget(tutContent);
-        tutLayout->addWidget(tutScroll, 1);
+        auto* title = new QLabel("Tutorial Interativo", tutWidget);
+        title->setAlignment(Qt::AlignCenter);
+        title->setStyleSheet("font-size: 22px; font-weight: 900; color: #0F172A;");
+        tutLayout->addWidget(title);
 
-        // Navigation bar
-        auto* navBar = new QWidget(tutWidget);
-        navBar->setFixedHeight(60);
-        navBar->setStyleSheet("background: #FFFFFF; border-top: 1px solid #E2E8F0;");
-        auto* navLay = new QHBoxLayout(navBar);
-        navLay->setContentsMargins(20, 10, 20, 10);
+        auto* desc = new QLabel(
+            "Aprenda a usar o IDE Embedded com um guia passo a passo\n"
+            "diretamente na interface! O tutorial vai escurecer a tela,\n"
+            "destacar os botões certos e mostrar setas apontando\n"
+            "exatamente onde você deve clicar.", tutWidget);
+        desc->setAlignment(Qt::AlignCenter);
+        desc->setWordWrap(true);
+        desc->setStyleSheet("font-size: 13px; color: #475569; line-height: 1.6;");
+        tutLayout->addWidget(desc);
 
-        auto* btnTutPrev = new QPushButton("Anterior", navBar);
-        btnTutPrev->setFixedWidth(100);
-        btnTutPrev->setStyleSheet(
-            "QPushButton { background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 8px; color: #475569; padding: 8px; font-weight: bold; font-size: 12px; }"
-            "QPushButton:hover { background: #E2E8F0; color: #0F172A; }"
-            "QPushButton:disabled { background: #F8FAFC; color: #CBD5E1; border-color: #E2E8F0; }"
+        tutLayout->addSpacing(10);
+
+        auto* btnStart = new QPushButton("Iniciar Tutorial Interativo", tutWidget);
+        btnStart->setFixedSize(280, 50);
+        btnStart->setCursor(Qt::PointingHandCursor);
+        btnStart->setStyleSheet(
+            "QPushButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #2563EB,stop:1 #7C3AED); border: none; border-radius: 14px; "
+            "  color: #FFFFFF; padding: 14px; font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }"
+            "QPushButton:hover { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1D4ED8,stop:1 #6D28D9); }"
         );
 
-        auto* lblTutPage = new QLabel("1 / 5", navBar);
-        lblTutPage->setAlignment(Qt::AlignCenter);
-        lblTutPage->setStyleSheet("font-size: 13px; font-weight: 700; color: #475569;");
+        auto* btnCenter = new QHBoxLayout();
+        btnCenter->addStretch();
+        btnCenter->addWidget(btnStart);
+        btnCenter->addStretch();
+        tutLayout->addLayout(btnCenter);
 
-        auto* btnTutNext = new QPushButton("Próximo", navBar);
-        btnTutNext->setFixedWidth(100);
-        btnTutNext->setStyleSheet(
-            "QPushButton { background: #2563EB; border: none; border-radius: 8px; color: #FFFFFF; padding: 8px; font-weight: bold; font-size: 12px; }"
-            "QPushButton:hover { background: #1D4ED8; }"
-            "QPushButton:disabled { background: #93C5FD; color: #DBEAFE; }"
-        );
+        auto* hint = new QLabel("O tutorial fecha essa janela e guia você pela IDE real.", tutWidget);
+        hint->setAlignment(Qt::AlignCenter);
+        hint->setStyleSheet("font-size: 11px; color: #94A3B8; font-style: italic;");
+        tutLayout->addWidget(hint);
 
-        navLay->addWidget(btnTutPrev);
-        navLay->addWidget(lblTutPage, 1);
-        navLay->addWidget(btnTutNext);
-        tutLayout->addWidget(navBar);
+        tutLayout->addStretch();
 
-        // Step definitions (HTML content for each step)
-        QStringList tutSteps;
-
-        // STEP 0: Welcome
-        tutSteps << R"(
-<div style="text-align: center; padding: 10px;">
-  <div style="font-size: 28px; font-weight: 900; color: #1E3A8A; margin-bottom: 6px;">Bem-vindo ao IDE Embedded!</div>
-  <div style="font-size: 14px; color: #64748B; margin-bottom: 24px;">Seu primeiro projeto em <b>4 passos simples</b>. Sem código, 100% visual.</div>
-
-  <div style="background: linear-gradient(135deg, #EFF6FF, #DBEAFE); border: 2px solid #93C5FD; border-radius: 16px; padding: 28px; text-align: left; margin-bottom: 16px;">
-    <div style="font-size: 15px; font-weight: 800; color: #1E40AF; margin-bottom: 14px;">O que você vai aprender:</div>
-    <table cellspacing="0" cellpadding="6" style="width: 100%;">
-      <tr>
-        <td style="vertical-align: top; width: 36px;"><div style="background: #2563EB; color: white; border-radius: 50%; width: 28px; height: 28px; text-align: center; line-height: 28px; font-weight: 900; font-size: 13px;">1</div></td>
-        <td style="font-size: 13px; color: #1E293B;"><b>Colocar componentes</b> na mesa de trabalho</td>
-      </tr>
-      <tr>
-        <td style="vertical-align: top;"><div style="background: #2563EB; color: white; border-radius: 50%; width: 28px; height: 28px; text-align: center; line-height: 28px; font-weight: 900; font-size: 13px;">2</div></td>
-        <td style="font-size: 13px; color: #1E293B;"><b>Programar um evento</b> (sem digitar código!)</td>
-      </tr>
-      <tr>
-        <td style="vertical-align: top;"><div style="background: #2563EB; color: white; border-radius: 50%; width: 28px; height: 28px; text-align: center; line-height: 28px; font-weight: 900; font-size: 13px;">3</div></td>
-        <td style="font-size: 13px; color: #1E293B;"><b>Simular</b> o circuito e ver funcionando</td>
-      </tr>
-      <tr>
-        <td style="vertical-align: top;"><div style="background: #2563EB; color: white; border-radius: 50%; width: 28px; height: 28px; text-align: center; line-height: 28px; font-weight: 900; font-size: 13px;">4</div></td>
-        <td style="font-size: 13px; color: #1E293B;"><b>Melhorar</b> seu projeto com lógica inteligente</td>
-      </tr>
-    </table>
-  </div>
-
-  <div style="background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 10px; padding: 14px; text-align: left;">
-    <span style="font-size: 12px; color: #92400E; font-weight: 700;">DICA:</span>
-    <span style="font-size: 12px; color: #78350F;"> Feche essa janela e siga as instruções de cada passo diretamente no workspace. Volte aqui sempre que precisar!</span>
-  </div>
-</div>
-)";
-
-        // STEP 1: Adding components
-        tutSteps << R"(
-<div style="padding: 6px;">
-  <div style="background: #2563EB; color: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 18px;">
-    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; opacity: 0.8;">Passo 1 de 4</div>
-    <div style="font-size: 20px; font-weight: 900; margin-top: 4px;">Colocando os Componentes na Mesa</div>
-  </div>
-
-  <div style="background: #FFF7ED; border-left: 4px solid #FB923C; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;">
-    <span style="font-size: 12px; color: #9A3412; font-weight: 700;">POR QUE NÃO TEM MENU LATERAL?</span>
-    <div style="font-size: 12px; color: #7C2D12; margin-top: 4px;">Para manter a tela limpa! Os componentes aparecem ao dar <b>dois cliques</b> no workspace.</div>
-  </div>
-
-  <div style="margin-bottom: 12px;">
-    <div style="display: flex; margin-bottom: 14px;">
-      <div style="background: #DBEAFE; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #1D4ED8; font-size: 15px; margin-right: 14px;">1</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Dê <u>dois cliques</u> no workspace vazio</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">A barra de busca de componentes vai aparecer.</div>
-        <div style="background: #F0FDF4; border: 1px solid #86EFAC; border-radius: 6px; padding: 6px 10px; margin-top: 6px; font-size: 11px; color: #166534;">
-          <b>Clique duplo na área cinza</b> do workspace
-        </div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 14px;">
-      <div style="background: #DBEAFE; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #1D4ED8; font-size: 15px; margin-right: 14px;">2</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Pesquise por "botão" e dê dois cliques nele</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">O botão vai aparecer na mesa de trabalho.</div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 14px;">
-      <div style="background: #DBEAFE; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #1D4ED8; font-size: 15px; margin-right: 14px;">3</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Repita: pesquise "LED" e depois "resistor"</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Ligar LED direto queima, até na simulação! O resistor protege.</div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 14px;">
-      <div style="background: #DBEAFE; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #1D4ED8; font-size: 15px; margin-right: 14px;">4</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Ligue os fios até a placa ESP</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Clique em um pino e depois no pino de destino para criar a trilha.</div>
-        <div style="background: #F0FDF4; border: 1px solid #86EFAC; border-radius: 6px; padding: 6px 10px; margin-top: 6px; font-size: 11px; color: #166534;">
-          <b>Botão direito</b> em peças para girar 90º. <b>Botão direito</b> nas trilhas para mudar a cor!
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-)";
-
-        // STEP 2: Programming the event
-        tutSteps << R"(
-<div style="padding: 6px;">
-  <div style="background: #7C3AED; color: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 18px;">
-    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; opacity: 0.8;">Passo 2 de 4</div>
-    <div style="font-size: 20px; font-weight: 900; margin-top: 4px;">Programando o Evento</div>
-    <div style="font-size: 12px; opacity: 0.85; margin-top: 4px;">Paradigma Orientado a Eventos — sem digitar código!</div>
-  </div>
-
-  <div style="margin-bottom: 12px;">
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #EDE9FE; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #6D28D9; font-size: 15px; margin-right: 14px;">1</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Clique com o <u>botão direito</u> no Botão</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Selecione o evento <b>"Ao clicar"</b>.</div>
-        <div style="background: #F5F3FF; border: 1px solid #C4B5FD; border-radius: 6px; padding: 8px 10px; margin-top: 6px;">
-          <div style="font-size: 11px; color: #5B21B6;"><b>Botão direito</b> no componente Botão ➜ <b>"Ao clicar"</b></div>
-        </div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #EDE9FE; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #6D28D9; font-size: 15px; margin-right: 14px;">2</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Dê <u>dois cliques</u> na área vazia de eventos</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Busque pelo bloco <b>"Ação"</b> e insira ele.</div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #EDE9FE; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #6D28D9; font-size: 15px; margin-right: 14px;">3</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Arraste a variável do LED para dentro do bloco "Ação"</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">No menu da esquerda, aba de <b>Variáveis</b>, a variável do LED vai estar lá.</div>
-        <div style="background: #F5F3FF; border: 1px solid #C4B5FD; border-radius: 6px; padding: 8px 10px; margin-top: 6px;">
-          <div style="font-size: 11px; color: #5B21B6;">Mantenha o estado como <b>HIGH</b> (ligar o LED)</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div style="background: #EFF6FF; border: 1px solid #93C5FD; border-radius: 10px; padding: 14px; text-align: center;">
-    <span style="font-size: 12px; color: #1E40AF; font-weight: 700;">O bloco "Ação" é um faz-tudo! Ele liga, desliga, gira motores, tudo sem digitar código.</span>
-  </div>
-</div>
-)";
-
-        // STEP 3: Simulation
-        tutSteps << R"(
-<div style="padding: 6px;">
-  <div style="background: #059669; color: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 18px;">
-    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; opacity: 0.8;">Passo 3 de 4</div>
-    <div style="font-size: 20px; font-weight: 900; margin-top: 4px;">A Hora da Verdade (Simulação)</div>
-  </div>
-
-  <div style="margin-bottom: 12px;">
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #D1FAE5; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #065F46; font-size: 15px; margin-right: 14px;">1</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Feche o evento e clique no ícone de Build</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">É o ícone das <b>duas ferramentas</b> lá em cima na barra.</div>
-        <div style="background: #ECFDF5; border: 1px solid #6EE7B7; border-radius: 6px; padding: 8px 10px; margin-top: 6px;">
-          <div style="font-size: 11px; color: #065F46;"><b>Barra de ferramentas</b> ➜ Ícone de Build (duas ferramentas cruzadas)</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #D1FAE5; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #065F46; font-size: 15px; margin-right: 14px;">2</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Clique no Play (Simular)</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">O osciloscópio vai aparecer na tela.</div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #D1FAE5; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #065F46; font-size: 15px; margin-right: 14px;">3</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Clique no botão virtual do seu circuito</div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">O LED vai ligar!</div>
-      </div>
-    </div>
-  </div>
-
-  <div style="background: #FEF2F2; border: 2px solid #FECACA; border-radius: 10px; padding: 16px;">
-    <div style="font-size: 13px; font-weight: 800; color: #991B1B; margin-bottom: 6px;">Mas espere... notou algo?</div>
-    <div style="font-size: 12px; color: #7F1D1D;">O LED ligou, mas <b>não desliga mais</b>! Isso aconteceu porque nós programamos a ação de ligar, mas <u>não ensinamos o sistema a desligar</u>. Vamos resolver no próximo passo!</div>
-  </div>
-</div>
-)";
-
-        // STEP 4: The smart fix
-        tutSteps << R"(
-<div style="padding: 6px;">
-  <div style="background: #DC2626; color: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 18px;">
-    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; opacity: 0.8;">Passo 4 de 4</div>
-    <div style="font-size: 20px; font-weight: 900; margin-top: 4px;">O Desafio do Desligamento</div>
-    <div style="font-size: 12px; opacity: 0.85; margin-top: 4px;">Usando a inteligência dos componentes</div>
-  </div>
-
-  <div style="background: #FEF3C7; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;">
-    <span style="font-size: 12px; color: #92400E; font-weight: 700;">PARE A SIMULAÇÃO ANTES!</span>
-    <div style="font-size: 11px; color: #78350F; margin-top: 2px;">Clique em Parar (Stop) na barra de ferramentas.</div>
-  </div>
-
-  <div style="margin-bottom: 12px;">
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #FEE2E2; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #991B1B; font-size: 15px; margin-right: 14px;">1</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Clique com o <u>botão direito</u> no <b>próprio LED</b></div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Abra o evento <b>"AoLigar"</b>.</div>
-        <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 6px; padding: 8px 10px; margin-top: 6px;">
-          <div style="font-size: 11px; color: #991B1B;"><b>Botão direito</b> no LED ➜ <b>"AoLigar"</b></div>
-        </div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #FEE2E2; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #991B1B; font-size: 15px; margin-right: 14px;">2</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Adicione o bloco "Aguardar" e digite <b>100</b></div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">100 = 100 milissegundos (um piscar de olhos).</div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #FEE2E2; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #991B1B; font-size: 15px; margin-right: 14px;">3</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Adicione outro bloco "Ação" com o LED em <b>LOW</b></div>
-        <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Clique na palavra HIGH para mudar para LOW (desligar).</div>
-      </div>
-    </div>
-
-    <div style="display: flex; margin-bottom: 16px;">
-      <div style="background: #FEE2E2; border-radius: 50%; min-width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: 900; color: #991B1B; font-size: 15px; margin-right: 14px;">4</div>
-      <div style="padding-top: 6px;">
-        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Faça Build novamente e dê Play!</div>
-      </div>
-    </div>
-  </div>
-
-  <div style="background: linear-gradient(135deg, #ECFDF5, #D1FAE5); border: 2px solid #6EE7B7; border-radius: 12px; padding: 18px; text-align: center;">
-    <div style="font-size: 15px; font-weight: 900; color: #065F46; margin-bottom: 6px;">Parabéns!</div>
-    <div style="font-size: 12px; color: #047857;">Agora, toda vez que clicar no botão, o LED liga, percebe que foi ligado, espera 100ms e desliga automaticamente.</div>
-    <div style="font-size: 12px; color: #059669; font-weight: 700; margin-top: 8px;">Você criou seu primeiro código assíncrono de hardware de forma inteiramente visual!</div>
-  </div>
-</div>
-)";
-
-        int totalSteps = tutSteps.size();
-        auto stepTracker = std::make_shared<int>(0);
-
-        auto renderStep = [tutContent, lblTutPage, btnTutPrev, btnTutNext, tutSteps, totalSteps, stepTracker]() {
-            int idx = *stepTracker;
-            if (idx < 0) idx = 0;
-            if (idx >= totalSteps) idx = totalSteps - 1;
-            *stepTracker = idx;
-
-            tutContent->setText(tutSteps[idx]);
-            lblTutPage->setText(QString("%1 / %2").arg(idx + 1).arg(totalSteps));
-            btnTutPrev->setEnabled(idx > 0);
-            btnTutNext->setEnabled(idx < totalSteps - 1);
-        };
-
-        renderStep();
-
-        connect(btnTutPrev, &QPushButton::clicked, tutWidget, [stepTracker, renderStep]() {
-            (*stepTracker)--;
-            renderStep();
+        QDialog* dlg = &dialog;
+        connect(btnStart, &QPushButton::clicked, this, [this, dlg]() {
+            dlg->accept();
+            QTimer::singleShot(300, this, &MainWindow::startInteractiveTutorial);
         });
 
-        connect(btnTutNext, &QPushButton::clicked, tutWidget, [stepTracker, renderStep]() {
-            (*stepTracker)++;
-            renderStep();
-        });
-
-        tabs->addTab(tutWidget, "Mini Tutorial");
+        tabs->addTab(tutWidget, "Tutorial Interativo");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -5427,6 +5165,105 @@ void MainWindow::showFirmwareInfo() {
     connect(btnClose, &QPushButton::clicked, &dialog, &QDialog::accept);
 
     dialog.exec();
+}
+
+void MainWindow::startInteractiveTutorial() {
+    if (!m_tutorialOverlay) {
+        m_tutorialOverlay = new TutorialOverlay(this);
+    }
+
+    // Find toolbar widget for build/play actions
+    QWidget* buildWidget = nullptr;
+    QWidget* playWidget = nullptr;
+    for (auto* toolbar : findChildren<QToolBar*>()) {
+        if (m_buildAction) buildWidget = toolbar->widgetForAction(m_buildAction);
+        if (m_playAction) playWidget = toolbar->widgetForAction(m_playAction);
+    }
+
+    QVector<TutorialStep> steps;
+
+    // Step 1: Welcome (no target, center)
+    steps.append({
+        "Bem-vindo ao IDE Embedded!",
+        "Este tutorial vai te guiar passo a passo pela interface real da IDE.\n\n"
+        "A cada passo, a tela vai escurecer e destacar exatamente o elemento\n"
+        "com que você precisa interagir. Siga as instruções do card e clique em 'Próximo'.",
+        "Relaxe e aproveite — não tem como errar!",
+        nullptr, QRect(), TutorialStep::None
+    });
+
+    // Step 2: Workspace (double-click to add)
+    steps.append({
+        "Colocando Componentes na Mesa",
+        "Dê DOIS CLIQUES nessa área (o workspace) para abrir\n"
+        "a barra de busca de componentes.\n\n"
+        "Pesquise por \"botão\", \"LED\" ou \"resistor\" e dê\n"
+        "dois cliques no componente desejado para adicioná-lo.",
+        "Clique duplo na área destacada para abrir a busca!",
+        m_view, QRect(), TutorialStep::Up
+    });
+
+    // Step 3: Build
+    steps.append({
+        "Compilando o Projeto (Build)",
+        "Depois de montar o circuito e programar os eventos,\n"
+        "clique neste botão de Build (duas ferramentas) para\n"
+        "compilar o código do seu projeto.\n\n"
+        "O resultado aparecerá no console abaixo.",
+        "Clique aqui para compilar!",
+        buildWidget, QRect(), TutorialStep::Down
+    });
+
+    // Step 4: Play
+    steps.append({
+        "Simulando o Circuito (Play)",
+        "Depois do Build ter sucesso, clique neste botão de Play\n"
+        "para iniciar a simulação em tempo real.\n\n"
+        "O osciloscópio aparecerá e você poderá interagir\n"
+        "com os componentes (clicar em botões, girar potenciômetros).",
+        "Clique aqui para simular!",
+        playWidget, QRect(), TutorialStep::Down
+    });
+
+    // Step 5: Right-click components
+    steps.append({
+        "Programando Eventos (Botão Direito)",
+        "Para programar o comportamento dos componentes, clique\n"
+        "com o BOTÃO DIREITO em qualquer componente no workspace.\n\n"
+        "Um menu de eventos vai aparecer (ex: \"Ao clicar\",\n"
+        "\"AoLigar\", \"AoDesligar\"). Selecione o evento desejado\n"
+        "para abrir o editor de blocos.",
+        "Botão direito em componentes para ver os eventos!",
+        m_view, QRect(), TutorialStep::Up
+    });
+
+    // Step 6: Block editor
+    steps.append({
+        "Editor de Blocos (Área de Eventos)",
+        "Dentro do editor de eventos, dê DOIS CLIQUES na área\n"
+        "vazia para adicionar novos blocos de código.\n\n"
+        "Use blocos como \"Ação\" (ligar/desligar), \"Aguardar\" (delay),\n"
+        "\"Se\" (condição), e arraste variáveis do painel lateral.",
+        "Dois cliques na área vazia para buscar blocos!",
+        m_blockEditor, QRect(), TutorialStep::Left
+    });
+
+    // Step 7: Congratulations
+    steps.append({
+        "Parabéns! Você completou o tutorial!",
+        "Agora você já sabe o básico:\n\n"
+        "• Duplo clique no workspace → adicionar componentes\n"
+        "• Botão direito no componente → programar eventos\n"
+        "• Duplo clique no editor → adicionar blocos\n"
+        "• Build → Compilar o código\n"
+        "• Play → Simular o circuito\n\n"
+        "Explore, crie e divirta-se! A IDE é toda sua.",
+        "Clique em 'Concluir' para fechar o tutorial.",
+        nullptr, QRect(), TutorialStep::None
+    });
+
+    m_tutorialOverlay->setSteps(steps);
+    m_tutorialOverlay->start();
 }
 
 void MainWindow::synchronizeLoopBlocks() {
