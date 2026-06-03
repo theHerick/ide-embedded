@@ -41,6 +41,7 @@ signals:
     void rightClickedComponent(ComponentItem* comp, const QPointF& globalPos);
     void doubleClickedComponent(ComponentItem* comp, const QPointF& globalPos);
     void componentAdded(ComponentItem* comp);
+    void cableAdded(ConnectionCable* cable);
 
 protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;

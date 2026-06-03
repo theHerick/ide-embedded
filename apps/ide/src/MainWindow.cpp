@@ -498,20 +498,26 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         }
     });
 
-    connect(m_buildAction, &QAction::triggered, this, [this]() {
+    connect(m_scene, &WorkspaceScene::cableAdded, this, [this]() {
         if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 2) {
             m_tutorialOverlay->advance();
         }
     });
 
+    connect(m_buildAction, &QAction::triggered, this, [this]() {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 5) {
+            m_tutorialOverlay->advance();
+        }
+    });
+
     connect(m_playAction, &QAction::triggered, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 3) {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 6) {
             m_tutorialOverlay->advance();
         }
     });
 
     connect(m_blockEditor, &BlockEditor::blocksChanged, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 5) {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 4) {
             m_tutorialOverlay->advance();
         }
     });
@@ -1142,7 +1148,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
 
-    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 4) {
+    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 3) {
         m_tutorialOverlay->advance();
     }
 }
@@ -1183,7 +1189,7 @@ void MainWindow::openWebEventEditor(const QString& compId, const QString& eventN
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
 
-    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 4) {
+    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 3) {
         m_tutorialOverlay->advance();
     }
 }
@@ -5221,76 +5227,73 @@ void MainWindow::startInteractiveTutorial() {
         "Este tutorial vai te guiar passo a passo pela interface real da IDE.\n\n"
         "A cada passo, a tela vai escurecer e destacar exatamente o elemento\n"
         "com que você precisa interagir. Siga as instruções do card e clique em 'Próximo'.",
-        "Relaxe e aproveite — não tem como errar!",
+        "Clique em 'Próximo' para começar!",
         nullptr, QRect(), TutorialStep::None
     });
 
     // Step 2: Workspace (double-click to add)
     steps.append({
-        "Colocando Componentes na Mesa",
-        "Dê DOIS CLIQUES nessa área (o workspace) para abrir\n"
-        "a barra de busca de componentes.\n\n"
-        "Pesquise por \"botão\", \"LED\" ou \"resistor\" e dê\n"
-        "dois cliques no componente desejado para adicioná-lo.",
-        "Clique duplo na área destacada para abrir a busca!",
+        "1. Adicionando Componentes",
+        "Dê DOIS CLIQUES no workspace (área quadriculada) para abrir a barra de busca.\n\n"
+        "Digite \"led\" ou \"botão\" e aperte Enter para colocá-lo na tela.",
+        "Dê duplo clique no workspace e adicione um componente!",
         m_view, QRect(), TutorialStep::Up
     });
 
-    // Step 3: Build
+    // Step 3: Connecting cables
     steps.append({
-        "Compilando o Projeto (Build)",
-        "Depois de montar o circuito e programar os eventos,\n"
-        "clique neste botão de Build (duas ferramentas) para\n"
-        "compilar o código do seu projeto.\n\n"
-        "O resultado aparecerá no console abaixo.",
-        "Clique aqui para compilar!",
-        buildWidget, QRect(), TutorialStep::Up
-    });
-
-    // Step 4: Play
-    steps.append({
-        "Simulando o Circuito (Play)",
-        "Depois do Build ter sucesso, clique neste botão de Play\n"
-        "para iniciar a simulação em tempo real.\n\n"
-        "O osciloscópio aparecerá e você poderá interagir\n"
-        "com os componentes (clicar em botões, girar potenciômetros).",
-        "Clique aqui para simular!",
-        playWidget, QRect(), TutorialStep::Up
-    });
-
-    // Step 5: Right-click components
-    steps.append({
-        "Programando Eventos (Botão Direito)",
-        "Para programar o comportamento dos componentes, clique\n"
-        "com o BOTÃO DIREITO em qualquer componente no workspace.\n\n"
-        "Um menu de eventos vai aparecer (ex: \"Ao clicar\",\n"
-        "\"AoLigar\", \"AoDesligar\"). Selecione o evento desejado\n"
-        "para abrir o editor de blocos.",
-        "Botão direito em componentes para ver os eventos!",
+        "2. Conectando as Trilhas (Fios)",
+        "Agora conecte os pinos dos componentes na placa ESP32.\n\n"
+        "Clique com o botão esquerdo em um pino do componente e arraste o fio até o pino correspondente na placa ESP32.",
+        "Clique e arraste um fio até o pino da ESP32!",
         m_view, QRect(), TutorialStep::Up
     });
 
-    // Step 6: Block editor
+    // Step 4: Right-click component
     steps.append({
-        "Editor de Blocos (Área de Eventos)",
-        "Dentro do editor de eventos, dê DOIS CLIQUES na área\n"
-        "vazia para adicionar novos blocos de código.\n\n"
-        "Use blocos como \"Ação\" (ligar/desligar), \"Aguardar\" (delay),\n"
-        "\"Se\" (condição), e arraste variáveis do painel lateral.",
-        "Dois cliques na área vazia para buscar blocos!",
+        "3. Programando Eventos",
+        "Clique com o BOTÃO DIREITO em um componente (como o LED ou Botão) para ver os eventos disponíveis.\n\n"
+        "Selecione um evento (como \"Ao Ligar\" ou \"Ao Clicar\") para abrir o editor de blocos.",
+        "Botão direito no componente e selecione um evento!",
+        m_view, QRect(), TutorialStep::Up
+    });
+
+    // Step 5: Block Editor
+    steps.append({
+        "4. Editor de Blocos (Área de Eventos)",
+        "Dentro do editor de eventos, dê DOIS CLIQUES na área vazia para adicionar novos blocos de código.\n\n"
+        "Use blocos como \"Ação\" (para ligar/desligar portas), \"Aguardar\" (delay) ou \"Se\" (condições).",
+        "Dois cliques no editor e adicione um bloco!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Step 7: Congratulations
+    // Step 6: Build
     steps.append({
-        "Parabéns! Você completou o tutorial!",
-        "Agora você já sabe o básico:\n\n"
+        "5. Compilando o Projeto (Build)",
+        "Com a lógica criada, clique no botão de Build (duas ferramentas no topo) para compilar o código do seu circuito.",
+        "Clique no botão de Build para compilar!",
+        buildWidget, QRect(), TutorialStep::Up
+    });
+
+    // Step 7: Play
+    steps.append({
+        "6. Simulando o Circuito (Play)",
+        "Com o código compilado, clique no botão de Play no topo para iniciar a simulação em tempo real!\n\n"
+        "O painel do osciloscópio se abrirá e você poderá interagir com o circuito.",
+        "Clique no botão de Play para simular!",
+        playWidget, QRect(), TutorialStep::Up
+    });
+
+    // Step 8: Congratulations
+    steps.append({
+        "Parabéns! Você concluiu o tutorial!",
+        "Agora você já sabe o básico para ser criativo na IDE:\n\n"
         "• Duplo clique no workspace → adicionar componentes\n"
+        "• Conectar cabos entre pinos → montar o circuito\n"
         "• Botão direito no componente → programar eventos\n"
-        "• Duplo clique no editor → adicionar blocos\n"
-        "• Build → Compilar o código\n"
-        "• Play → Simular o circuito\n\n"
-        "Explore, crie e divirta-se! A IDE é toda sua.",
+        "• Adicionar blocos de lógica → programar comportamento\n"
+        "• Build & Play → testar em tempo real!\n\n"
+        "Divirta-se criando!",
         "Clique em 'Concluir' para fechar o tutorial.",
         nullptr, QRect(), TutorialStep::None
     });

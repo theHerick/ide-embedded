@@ -93,6 +93,7 @@ void WorkspaceScene::addCable(ConnectionCable* cable) {
                 p2->connectedToPin = p1->name;
             }
         }
+        emit cableAdded(cable);
     }
 }
 
