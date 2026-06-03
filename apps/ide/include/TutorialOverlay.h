@@ -41,7 +41,7 @@ public:
         setAttribute(Qt::WA_TransparentForMouseEvents, false);
         setAttribute(Qt::WA_TranslucentBackground, true);
         setMouseTracking(true);
-        setAcceptDrops(true);
+        qApp->installEventFilter(this);
 
         // Card widget
         m_card = new QWidget(this);
@@ -150,6 +150,12 @@ public:
         connect(m_btnSkip, &QPushButton::clicked, this, [this]() {
             close();
         });
+    }
+
+    ~TutorialOverlay() override {
+        if (qApp) {
+            qApp->removeEventFilter(this);
+        }
     }
 
     void setSteps(const QVector<TutorialStep>& steps) {
@@ -325,35 +331,16 @@ protected:
         return false;
     }
 
-    void dragEnterEvent(QDragEnterEvent* event) override {
-        if (event->mimeData()->hasText()) {
-            event->acceptProposedAction();
+    bool eventFilter(QObject* watched, QEvent* event) override {
+        if (event->type() == QEvent::DragEnter) {
+            setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        } else if (event->type() == QEvent::Drop || event->type() == QEvent::DragLeave) {
+            // Restore mouse event interception after the drag finishes (give it a small delay)
+            QTimer::singleShot(100, this, [this]() {
+                setAttribute(Qt::WA_TransparentForMouseEvents, false);
+            });
         }
-    }
-
-    void dragMoveEvent(QDragMoveEvent* event) override {
-        if (event->mimeData()->hasText()) {
-            event->acceptProposedAction();
-        }
-    }
-
-    void dropEvent(QDropEvent* event) override {
-        QPoint globalPos = QCursor::pos();
-        QWidget* target = getWidgetUnderneath(globalPos);
-        if (target && target != this && !isAncestorOf(target)) {
-            QPoint localPos = target->mapFromGlobal(globalPos);
-            QDropEvent newEvent(
-                localPos,
-                event->possibleActions(),
-                event->mimeData(),
-                event->buttons(),
-                event->modifiers()
-            );
-            QApplication::sendEvent(target, &newEvent);
-            if (newEvent.isAccepted()) {
-                event->acceptProposedAction();
-            }
-        }
+        return QWidget::eventFilter(watched, event);
     }
 
     QWidget* getWidgetUnderneath(const QPoint& globalPos) {
