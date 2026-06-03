@@ -1640,7 +1640,7 @@ void PotentiometerItem::wheelEvent(QGraphicsSceneWheelEvent* event) {
 }
 
 QRectF PotentiometerItem::boundingRect() const {
-    return QRectF(-25, -25, 50, 60);
+    return QRectF(-25, -35, 50, 70);
 }
 
 void PotentiometerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
@@ -1688,13 +1688,23 @@ void PotentiometerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     painter->setPen(QPen(QColor(71, 85, 105), 2));
     painter->drawLine(QPointF(0, -5), QPointF(dx, -5 + dy));
 
-    // Name Label
+    // Pin labels (+, S, -)
+    painter->setPen(QColor(100, 116, 139));
+    QFont fPinLabel = painter->font();
+    fPinLabel.setPointSize(5);
+    fPinLabel.setBold(true);
+    painter->setFont(fPinLabel);
+    painter->drawText(QRectF(-25, 12, 10, 10), Qt::AlignCenter, "+");
+    painter->drawText(QRectF(-5,  12, 10, 10), Qt::AlignCenter, "S");
+    painter->drawText(QRectF( 15, 12, 10, 10), Qt::AlignCenter, "-");
+
+    // Name Label (moved above the potentiometer)
     painter->setPen(QColor(148, 163, 184));
     QFont fLabelIdx = painter->font();
     fLabelIdx.setPointSize(5);
     fLabelIdx.setBold(true);
     painter->setFont(fLabelIdx);
-    painter->drawText(QRectF(-25, 22, 50, 10), Qt::AlignCenter, m_name.toUpper());
+    painter->drawText(QRectF(-25, -32, 50, 10), Qt::AlignCenter, m_name.toUpper());
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
