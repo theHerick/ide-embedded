@@ -71,3 +71,15 @@ private:
     ConnectionCable* m_cable;
     bool m_ownsCable = false;
 };
+
+class RenameComponentCommand : public QUndoCommand {
+public:
+    RenameComponentCommand(ComponentItem* item, const QString& oldName, const QString& newName, QUndoCommand* parent = nullptr);
+    void undo() override;
+    void redo() override;
+
+private:
+    ComponentItem* m_item;
+    QString m_oldName;
+    QString m_newName;
+};

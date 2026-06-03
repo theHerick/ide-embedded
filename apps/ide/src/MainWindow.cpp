@@ -16,7 +16,9 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QMessageBox>
+#include <QInputDialog>
 #include <QFileDialog>
+#include "UndoCommands.h"
 #include <QMenu>
 #include <QAction>
 #include <QStatusBar>
@@ -1484,6 +1486,18 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
         menu.addSeparator();
     }
     
+    QAction* renameAct = menu.addAction("Renomear Componente");
+    connect(renameAct, &QAction::triggered, this, [this, comp]() {
+        bool ok;
+        QString newName = QInputDialog::getText(this, "Renomear Componente",
+                                                "Novo nome:", QLineEdit::Normal,
+                                                comp->name(), &ok);
+        if (ok && !newName.isEmpty() && newName != comp->name()) {
+            m_scene->undoStack()->push(new RenameComponentCommand(comp, comp->name(), newName));
+            logMessage(QString("Componente renomeado para: %1").arg(newName), "INFO");
+        }
+    });
+
     QAction* rotateAct = menu.addAction("Girar 90 graus");
     connect(rotateAct, &QAction::triggered, this, [this, comp]() {
         comp->setRotation(comp->rotation() + 90.0);
@@ -4163,6 +4177,14 @@ static void _simInputThread() {
     if (iniFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         QString ini = QString("[env:%1]\nplatform = %2\nboard = %3\nframework = %4\n")
                       .arg(board, platform, board, framework);
+        
+        // Otimizações para a ESP: 
+        // -Os: foca em reduzir o tamanho do binário (enxuto)
+        // LTO e garbage collection: remove irredundâncias
+        // Isso diminui o uso de RAM e reduz os blocos gravados no Flash, poupando desgaste da memória.
+        ini += "build_unflags = -Os\n";
+        ini += "build_flags = -Oz -ffunction-sections -fdata-sections -DCORE_DEBUG_LEVEL=0\n";
+
         if (uploadPort != "Auto-Detect" && !uploadPort.trimmed().isEmpty()) {
             ini += QString("upload_port = %1\n").arg(uploadPort);
             ini += QString("monitor_port = %1\n").arg(uploadPort);

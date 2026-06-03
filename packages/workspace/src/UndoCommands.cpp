@@ -109,3 +109,17 @@ void RemoveCableCommand::redo() {
     m_scene->removeCable(m_cable);
     m_ownsCable = true;
 }
+
+// --- RenameComponentCommand ---
+RenameComponentCommand::RenameComponentCommand(ComponentItem* item, const QString& oldName, const QString& newName, QUndoCommand* parent)
+    : QUndoCommand(parent), m_item(item), m_oldName(oldName), m_newName(newName) {
+    setText(QString("Renomear %1").arg(newName));
+}
+
+void RenameComponentCommand::undo() {
+    m_item->setName(m_oldName);
+}
+
+void RenameComponentCommand::redo() {
+    m_item->setName(m_newName);
+}

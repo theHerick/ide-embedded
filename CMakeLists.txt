@@ -17,12 +17,13 @@ set(CMAKE_AUTORCC ON)
 
 # Optimization compiler and linker options (LTO, dead code elimination, max optimization)
 if(MSVC)
-    add_compile_options(/O2 /GL /Gw)
+    add_compile_options(/O1 /GL /Gw)
     add_link_options(/LTCG /OPT:REF /OPT:ICF)
 else()
-    # For MinGW/GCC C++ (using -O3, Link-Time Optimization, and section garbage collection)
-    add_compile_options(-O3 -flto -ffunction-sections -fdata-sections)
-    add_link_options(-flto -Wl,--gc-sections)
+    # For MinGW/GCC C++ (using -Os for size, Link-Time Optimization, and section garbage collection)
+    # -pipe is used to avoid temporary files and prevent SSD memory wear
+    add_compile_options(-Os -ffunction-sections -fdata-sections -pipe)
+    add_link_options(-Wl,--gc-sections)
 endif()
 
 # Find Qt6 components

@@ -26,6 +26,7 @@ public:
 
     QString id() const { return m_id; }
     QString name() const { return m_name; }
+    void setName(const QString& name) { m_name = name; update(); }
     QString componentType() const { return m_type; }
     virtual void updateLayoutForSMD(const QString& smdSize) {}
     QVector<Pin>& pins() { return m_pins; }
