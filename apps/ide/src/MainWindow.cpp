@@ -5358,7 +5358,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Clique e segure o bloco rosa 'LED_2 [GPIO2]' na paleta de 'PINOS E ATUADORES'.\n"
         "2. Arraste e solte-o no campo 'Alvo (Pino / Var)' do seu bloco de Ação.",
         "Arraste o pino LED_2 para o campo Alvo!",
-        nullptr, QRect(), TutorialStep::Left
+        nullptr, QRect(), TutorialStep::Right
     });
 
     // Step 12: Build

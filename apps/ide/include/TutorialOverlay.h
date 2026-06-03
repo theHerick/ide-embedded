@@ -13,6 +13,7 @@
 #include <QTimer>
 #include <QApplication>
 #include <QPointer>
+#include <QLineEdit>
 #include "VariableSystem.h"
 
 struct TutorialStep {
@@ -186,7 +187,7 @@ protected:
         if (m_currentStep == 11) {
             QWidget* varW = resolveTargetWidget(m_steps[11]);
             QWidget* targetW = resolveActionTargetWidget();
-            if (varW && targetW && varW->isVisible() && targetW->isVisible()) {
+            if (varW && targetW && varW->isVisible()) {
                 QPoint topLeftVar = varW->mapTo(parentWidget(), QPoint(0, 0));
                 QRect rectVar(topLeftVar, varW->size());
                 QRect expandedVar = rectVar.adjusted(-12, -12, 12, 12);
@@ -300,7 +301,7 @@ protected:
                 // Allow interaction with both the variable block and the action block target
                 QWidget* varW = resolveTargetWidget(m_steps[11]);
                 QWidget* targetW = resolveActionTargetWidget();
-                if (varW && targetW && varW->isVisible() && targetW->isVisible()) {
+                if (varW && targetW && varW->isVisible()) {
                     QPoint topLeftVar = varW->mapTo(parentWidget(), QPoint(0, 0));
                     QRect expandedVar = QRect(topLeftVar, varW->size()).adjusted(-12, -12, 12, 12);
 
@@ -568,8 +569,13 @@ private:
 
     QWidget* resolveActionTargetWidget() const {
         if (parentWidget()) {
+            for (auto* item : parentWidget()->findChildren<QLineEdit*>()) {
+                if (item->objectName() == "actionTargetEdit") {
+                    return item;
+                }
+            }
             for (auto* item : parentWidget()->findChildren<QWidget*>()) {
-                if (item->objectName() == "actionTargetEdit" && item->isVisible()) {
+                if (item->objectName() == "actionTargetEdit") {
                     return item;
                 }
             }
