@@ -5221,83 +5221,137 @@ void MainWindow::startInteractiveTutorial() {
 
     QVector<TutorialStep> steps;
 
-    // Step 1: Welcome (no target, center)
+    // Step 0: Welcome (no target, center)
     steps.append({
         "Bem-vindo ao IDE Embedded!",
-        "Este tutorial vai te guiar passo a passo pela interface real da IDE.\n\n"
-        "A cada passo, a tela vai escurecer e destacar exatamente o elemento\n"
-        "com que você precisa interagir. Siga as instruções do card e clique em 'Próximo'.",
+        "Este tutorial vai te guiar passo a passo na criação, conexão e programação de um circuito interativo com LED e Botão!\n\n"
+        "A tela vai escurecer e destacar os elementos necessários a cada passo. Siga as orientações e veja a mágica acontecer.",
         "Clique em 'Próximo' para começar!",
         nullptr, QRect(), TutorialStep::None
     });
 
-    // Step 2: Workspace (double-click to add)
+    // Step 1: Add LED
     steps.append({
-        "1. Colocando os Componentes na Mesa",
-        "Você percebeu que não tem nenhuma aba lateral cheia de componentes, né? Isso é para a tela ficar limpa!\n\n"
-        "1. Dê DOIS CLIQUES no workspace para abrir a barra de busca.\n"
-        "2. Escreva \"botão\" e dê dois cliques nele para adicioná-lo.\n"
-        "3. Repita o processo: pesquise por \"LED\" e depois por \"resistor\" (porque ligar LED direto queima!).",
-        "Dê duplo clique no workspace, pesquise e adicione as peças!",
+        "1. Adicionar o LED",
+        "Vamos começar adicionando a nossa fonte de luz.\n\n"
+        "1. Dê DOIS CLIQUES no workspace (mesa de trabalho).\n"
+        "2. Digite \"LED\" no campo de busca e adicione um LED à mesa.",
+        "Dê duplo clique no workspace e adicione um LED!",
         m_view, QRect(), TutorialStep::Up
     });
 
-    // Step 3: Connecting cables
+    // Step 2: Add Resistor
     steps.append({
-        "2. Conectando as Trilhas (Fios)",
-        "Ligue os fios dos componentes até a placa ESP32.\n\n"
-        "1. Clique com o botão esquerdo em um pino e arraste o fio até o pino da placa.\n"
-        "2. Se precisar girar alguma peça para encaixar melhor, clique nela com o BOTÃO DIREITO e escolha \"Girar 90º\".\n"
-        "3. Dica de ouro: clique com o botão direito nas trilhas para mudar a cor dos fios e organizar tudo!",
-        "Ligue os fios até a placa ESP! (Botão direito para girar ou colorir)",
+        "2. Adicionar o Resistor",
+        "Agora precisamos de um resistor para proteger o LED (ligar direto queima!).\n\n"
+        "1. Dê DOIS CLIQUES no workspace.\n"
+        "2. Digite \"resistor\" na busca e adicione-o.",
+        "Dê duplo clique no workspace e adicione um Resistor!",
         m_view, QRect(), TutorialStep::Up
     });
 
-    // Step 4: Right-click component
+    // Step 3: Connect LED to Resistor
     steps.append({
-        "3. Programando Eventos",
-        "Clique com o BOTÃO DIREITO em um componente (como o LED ou Botão) para ver os eventos disponíveis.\n\n"
-        "Selecione um evento (como \"Ao Ligar\" ou \"Ao Clicar\") para abrir o editor de blocos.",
-        "Botão direito no componente e selecione um evento!",
+        "3. Conectar o LED ao Resistor",
+        "Conecte a perna do LED ao resistor.\n\n"
+        "1. Clique com o botão esquerdo na perna positiva do LED (anodo - pino vermelho).\n"
+        "2. Arraste e solte o cabo em uma das pernas do Resistor.",
+        "Conecte a perna vermelha do LED ao Resistor!",
         m_view, QRect(), TutorialStep::Up
     });
 
-    // Step 5: Block Editor
+    // Step 4: Connect Resistor to GPIO2
     steps.append({
-        "4. Editor de Blocos (Área de Eventos)",
-        "Dentro do editor de eventos, dê DOIS CLIQUES na área vazia para adicionar novos blocos de código.\n\n"
-        "Use blocos como \"Ação\" (para ligar/desligar portas), \"Aguardar\" (delay) ou \"Se\" (condições).",
-        "Dois cliques no editor e adicione um bloco!",
+        "4. Conectar Resistor ao GPIO2",
+        "Ligue o resistor na porta de controle da placa.\n\n"
+        "1. Clique na outra perna livre do Resistor.\n"
+        "2. Arraste o cabo até o pino GPIO2 da placa ESP32.",
+        "Conecte a outra perna do Resistor ao pino GPIO2 da ESP32!",
+        m_view, QRect(), TutorialStep::Up
+    });
+
+    // Step 5: Connect LED to GND
+    steps.append({
+        "5. Conectar o LED ao GND",
+        "Feche o circuito de alimentação do LED.\n\n"
+        "1. Clique na perna negativa do LED (catodo - pino cinza).\n"
+        "2. Arraste o cabo até um dos pinos GND da placa ESP32.",
+        "Conecte a perna cinza do LED ao pino GND da ESP32!",
+        m_view, QRect(), TutorialStep::Up
+    });
+
+    // Step 6: Add Button
+    steps.append({
+        "6. Adicionar o Botão",
+        "Agora que o LED está conectado, vamos adicionar um componente de entrada: um botão interativo.\n\n"
+        "1. Dê DOIS CLIQUES no workspace.\n"
+        "2. Busque por \"botão\" e adicione-o.",
+        "Dê duplo clique no workspace e adicione um Botão!",
+        m_view, QRect(), TutorialStep::Up
+    });
+
+    // Step 7: Connect Button to GPIO3
+    steps.append({
+        "7. Conectar o Botão ao GPIO3",
+        "Ligue a entrada digital do botão à placa.\n\n"
+        "1. Clique em uma das pernas do Botão.\n"
+        "2. Arraste e conecte o cabo ao pino GPIO3 da placa ESP32.",
+        "Conecte uma das pernas do Botão ao pino GPIO3 da ESP32!",
+        m_view, QRect(), TutorialStep::Up
+    });
+
+    // Step 8: Connect Button to GND
+    steps.append({
+        "8. Conectar o Botão ao GND",
+        "Complete a conexão do botão com o terra do circuito.\n\n"
+        "1. Clique na outra perna do Botão.\n"
+        "2. Arraste e conecte o cabo a um pino GND livre da placa ESP32.",
+        "Conecte a outra perna do Botão ao pino GND da ESP32!",
+        m_view, QRect(), TutorialStep::Up
+    });
+
+    // Step 9: Right Click Button
+    steps.append({
+        "9. Programar Eventos do Botão",
+        "Vamos abrir a área de programação para dar comportamento ao botão.\n\n"
+        "1. Clique com o BOTÃO DIREITO sobre o Botão no workspace.\n"
+        "2. Selecione o evento \"Ao Clicar\" no menu flutuante.",
+        "Clique com o botão direito no Botão e selecione 'Ao Clicar'!",
+        m_view, QRect(), TutorialStep::Up
+    });
+
+    // Step 10: Block Editor logic
+    steps.append({
+        "10. Editor de Blocos (Lógica)",
+        "Agora vamos programar a ação do clique no botão.\n\n"
+        "1. Dê DOIS CLIQUES no editor de blocos à direita.\n"
+        "2. Adicione uma Ação para definir o estado do pino GPIO2 (LED) como LIGADO ou INVERTER.",
+        "Adicione os blocos de lógica no editor de eventos!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Step 6: Build
+    // Step 11: Build
     steps.append({
-        "5. Compilando o Projeto (Build)",
-        "Com a lógica criada, clique no botão de Build (duas ferramentas no topo) para compilar o código do seu circuito.",
-        "Clique no botão de Build para compilar!",
+        "11. Compilar o Projeto",
+        "Clique no botão de Build (ícone de ferramentas na barra superior) para compilar a lógica e o hardware do seu circuito.",
+        "Clique no botão de Build no topo para compilar!",
         buildWidget, QRect(), TutorialStep::Up
     });
 
-    // Step 7: Play
+    // Step 12: Play Simulation
     steps.append({
-        "6. Simulando o Circuito (Play)",
-        "Com o código compilado, clique no botão de Play no topo para iniciar a simulação em tempo real!\n\n"
-        "O painel do osciloscópio se abrirá e você poderá interagir com o circuito.",
-        "Clique no botão de Play para simular!",
+        "12. Iniciar Simulação",
+        "Com o código compilado com sucesso, clique no botão de Play no topo para rodar a simulação interativa!",
+        "Clique no botão de Play no topo para iniciar a simulação!",
         playWidget, QRect(), TutorialStep::Up
     });
 
-    // Step 8: Congratulations
+    // Step 13: Done
     steps.append({
-        "Parabéns! Você concluiu o tutorial!",
-        "Agora você já sabe o básico para ser criativo na IDE:\n\n"
-        "• Duplo clique no workspace → adicionar componentes\n"
-        "• Conectar cabos entre pinos → montar o circuito\n"
-        "• Botão direito no componente → programar eventos\n"
-        "• Adicionar blocos de lógica → programar comportamento\n"
-        "• Build & Play → testar em tempo real!\n\n"
-        "Divirta-se criando!",
+        "Parabéns! Circuito pronto e rodando!",
+        "Você acabou de montar e programar seu circuito!\n\n"
+        "Experimente clicar no Botão no workspace para ver o LED acendendo em tempo real.\n\n"
+        "Divirta-se criando novos projetos eletrônicos!",
         "Clique em 'Concluir' para fechar o tutorial.",
         nullptr, QRect(), TutorialStep::None
     });
