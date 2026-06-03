@@ -1378,6 +1378,7 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
 
     } else if (block.type == LogicBlockType::ACTION) {
         auto* targetEdit = new VariableSlotEdit(w);
+        targetEdit->setObjectName("actionTargetEdit");
         targetEdit->installEventFilter(this);
         targetEdit->setText(block.actionTarget);
 

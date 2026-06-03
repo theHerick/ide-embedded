@@ -538,28 +538,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     });
 
     connect(m_blockEditor, &BlockEditor::blocksChanged, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
-            int step = m_tutorialOverlay->currentStep();
-            logMessage(QString("Tutorial: Blocos modificados no Passo %1").arg(step), "SYSTEM");
-
-            QVector<EventLogicBlock> active = m_blockEditor->getActiveBlocks();
-            bool hasActionBlock = false;
-            bool hasTargetFilled = false;
-            for (const auto& b : active) {
-                if (b.type == LogicBlockType::ACTION) {
-                    hasActionBlock = true;
-                    if (!b.actionTarget.trimmed().isEmpty()) {
-                        hasTargetFilled = true;
-                    }
-                }
-            }
-
-            if (step == 10 && hasActionBlock) {
-                m_tutorialOverlay->advance();
-            } else if (step == 11 && hasTargetFilled) {
-                m_tutorialOverlay->advance();
-            }
-        }
+        checkBlockEditorTutorialSteps();
     });
 
     logMessage("IDE Embedded inicializada com sucesso.", "SYSTEM");
@@ -1190,6 +1169,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
 
     if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 9) {
         m_tutorialOverlay->advance();
+        checkBlockEditorTutorialSteps();
     }
 }
 
@@ -1231,6 +1211,7 @@ void MainWindow::openWebEventEditor(const QString& compId, const QString& eventN
 
     if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 9) {
         m_tutorialOverlay->advance();
+        checkBlockEditorTutorialSteps();
     }
 }
 
@@ -5408,6 +5389,37 @@ void MainWindow::startInteractiveTutorial() {
 
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
+}
+
+void MainWindow::checkBlockEditorTutorialSteps() {
+    if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
+
+    bool advanced = true;
+    while (advanced) {
+        advanced = false;
+        int step = m_tutorialOverlay->currentStep();
+        if (step != 10 && step != 11) break;
+
+        QVector<EventLogicBlock> active = m_blockEditor->getActiveBlocks();
+        bool hasActionBlock = false;
+        bool hasTargetFilled = false;
+        for (const auto& b : active) {
+            if (b.type == LogicBlockType::ACTION) {
+                hasActionBlock = true;
+                if (!b.actionTarget.trimmed().isEmpty()) {
+                    hasTargetFilled = true;
+                }
+            }
+        }
+
+        if (step == 10 && hasActionBlock) {
+            m_tutorialOverlay->advance();
+            advanced = true;
+        } else if (step == 11 && hasTargetFilled) {
+            m_tutorialOverlay->advance();
+            advanced = true;
+        }
+    }
 }
 
 void MainWindow::synchronizeLoopBlocks() {

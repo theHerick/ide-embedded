@@ -183,6 +183,73 @@ protected:
         QPainterPath path;
         path.addRect(rect());
 
+        if (m_currentStep == 11) {
+            QWidget* varW = resolveTargetWidget(m_steps[11]);
+            QWidget* targetW = resolveActionTargetWidget();
+            if (varW && targetW && varW->isVisible() && targetW->isVisible()) {
+                QPoint topLeftVar = varW->mapTo(parentWidget(), QPoint(0, 0));
+                QRect rectVar(topLeftVar, varW->size());
+                QRect expandedVar = rectVar.adjusted(-12, -12, 12, 12);
+
+                QPoint topLeftTgt = targetW->mapTo(parentWidget(), QPoint(0, 0));
+                QRect rectTgt(topLeftTgt, targetW->size());
+                QRect expandedTgt = rectTgt.adjusted(-12, -12, 12, 12);
+
+                QPainterPath holePath1;
+                holePath1.addRoundedRect(expandedVar, 12, 12);
+                path = path.subtracted(holePath1);
+
+                QPainterPath holePath2;
+                holePath2.addRoundedRect(expandedTgt, 12, 12);
+                path = path.subtracted(holePath2);
+
+                // Draw dark overlay with BOTH cutouts
+                p.setPen(Qt::NoPen);
+                p.setBrush(QColor(15, 23, 42, 160));
+                p.drawPath(path);
+
+                // Draw glow rings around both
+                QPen glowPen(QColor(59, 130, 246, 120), 3 + m_pulse * 0.3);
+                p.setPen(glowPen);
+                p.setBrush(Qt::NoBrush);
+                p.drawRoundedRect(expandedVar.adjusted(-(int)m_pulse, -(int)m_pulse, (int)m_pulse, (int)m_pulse), 14, 14);
+                p.drawRoundedRect(expandedTgt.adjusted(-(int)m_pulse, -(int)m_pulse, (int)m_pulse, (int)m_pulse), 14, 14);
+
+                // Draw white borders around both
+                QPen borderPen(QColor(255, 255, 255, 200), 2.5);
+                p.setPen(borderPen);
+                p.drawRoundedRect(expandedVar, 12, 12);
+                p.drawRoundedRect(expandedTgt, 12, 12);
+
+                // Draw dashed arrow pointing from variable to target slot
+                QPoint startPt(expandedVar.right(), expandedVar.center().y());
+                QPoint endPt(expandedTgt.left(), expandedTgt.center().y());
+
+                QPen dashPen(QColor(59, 130, 246, 200), 2.5, Qt::DashLine);
+                p.setPen(dashPen);
+                p.drawLine(startPt, endPt);
+
+                // Draw arrowhead
+                double angle = std::atan2(endPt.y() - startPt.y(), endPt.x() - startPt.x());
+                int arrowSize = 12;
+                QPointF p1 = endPt - QPointF(arrowSize * std::cos(angle - 0.4), arrowSize * std::sin(angle - 0.4));
+                QPointF p2 = endPt - QPointF(arrowSize * std::cos(angle + 0.4), arrowSize * std::sin(angle + 0.4));
+
+                QPainterPath arrowHead;
+                arrowHead.moveTo(endPt);
+                arrowHead.lineTo(p1);
+                arrowHead.lineTo(p2);
+                arrowHead.closeSubpath();
+                p.setPen(Qt::NoPen);
+                p.setBrush(QColor(59, 130, 246, 220));
+                p.drawPath(arrowHead);
+
+                // Draw arrow from instruction card to variable block
+                drawArrow(p, rectVar);
+                return;
+            }
+        }
+
         QRect expanded;
         QRect spotRect;
         bool hasSpot = false;
@@ -229,6 +296,20 @@ protected:
 
     bool shouldIgnoreEvent(const QPoint& pos) const {
         if (m_currentStep < m_steps.size()) {
+            if (m_currentStep == 11) {
+                // Allow interaction with both the variable block and the action block target
+                QWidget* varW = resolveTargetWidget(m_steps[11]);
+                QWidget* targetW = resolveActionTargetWidget();
+                if (varW && targetW && varW->isVisible() && targetW->isVisible()) {
+                    QPoint topLeftVar = varW->mapTo(parentWidget(), QPoint(0, 0));
+                    QRect expandedVar = QRect(topLeftVar, varW->size()).adjusted(-12, -12, 12, 12);
+
+                    QPoint topLeftTgt = targetW->mapTo(parentWidget(), QPoint(0, 0));
+                    QRect expandedTgt = QRect(topLeftTgt, targetW->size()).adjusted(-12, -12, 12, 12);
+
+                    return expandedVar.contains(pos) || expandedTgt.contains(pos);
+                }
+            }
             QRect spotRect = getTargetRect(m_steps[m_currentStep]);
             if (!spotRect.isNull()) {
                 QRect expanded = spotRect.adjusted(-12, -12, 12, 12);
@@ -483,6 +564,17 @@ private:
         p.setPen(Qt::NoPen);
         p.setBrush(QColor(59, 130, 246, 220));
         p.drawPath(arrowHead);
+    }
+
+    QWidget* resolveActionTargetWidget() const {
+        if (parentWidget()) {
+            for (auto* item : parentWidget()->findChildren<QWidget*>()) {
+                if (item->objectName() == "actionTargetEdit" && item->isVisible()) {
+                    return item;
+                }
+            }
+        }
+        return nullptr;
     }
 
     QVector<TutorialStep> m_steps;

@@ -113,6 +113,7 @@ private:
     void parseResourceUsage(const QString& line);
     void openEventEditor(ComponentItem* comp, const QString& eventName);
     void openWebEventEditor(const QString& compId, const QString& eventName);
+    void checkBlockEditorTutorialSteps();
     void synchronizeLoopBlocks();
     void readNativeSimOutput();
     void openComponentCreator();
