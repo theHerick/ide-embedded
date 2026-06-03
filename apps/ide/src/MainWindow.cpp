@@ -1030,7 +1030,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
     }
 
     auto getConnectedGPIO = [&](ComponentItem* target) -> QString {
-        QSet<QString> visited;
+        QSet<ComponentItem*> visited;
         QList<ComponentItem*> queue;
         queue.append(target);
 
@@ -1041,31 +1041,29 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
 
         while (!queue.isEmpty()) {
             ComponentItem* curr = queue.takeFirst();
-            if (visited.contains(curr->id())) continue;
-            visited.insert(curr->id());
+            if (visited.contains(curr)) continue;
+            visited.insert(curr);
 
-            for (const auto& pin : curr->pins()) {
-                QString connId = pin.connectedToComponent;
-                if (connId.isEmpty()) continue;
+            for (auto* cable : m_scene->cables()) {
+                ComponentItem* neighbor = nullptr;
+                QString espPinName;
 
-                // Find the connected component object
-                ComponentItem* connComp = nullptr;
-                for (auto* c : m_scene->components()) {
-                    if (c->id() == connId) {
-                        connComp = c;
-                        break;
-                    }
+                if (cable->sourceComponent() == curr) {
+                    neighbor = cable->targetComponent();
+                    espPinName = cable->targetPinName();
+                } else if (cable->targetComponent() == curr) {
+                    neighbor = cable->sourceComponent();
+                    espPinName = cable->sourcePinName();
                 }
 
-                if (connComp) {
-                    if (isMCU(connComp)) {
-                        QString espPin = pin.connectedToPin;
+                if (neighbor) {
+                    if (isMCU(neighbor)) {
                         // Exclude power pins
-                        if (!espPin.contains("5V") && !espPin.contains("3V3") && !espPin.contains("GND") && !espPin.contains("VIN")) {
-                            return espPin;
+                        if (!espPinName.contains("5V") && !espPinName.contains("3V3") && !espPinName.contains("GND") && !espPinName.contains("VIN")) {
+                            return espPinName;
                         }
                     } else {
-                        queue.append(connComp);
+                        queue.append(neighbor);
                     }
                 }
             }
