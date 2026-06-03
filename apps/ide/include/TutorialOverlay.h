@@ -198,33 +198,24 @@ protected:
 
         // Draw dark overlay with the spotlight hole cutout
         p.setPen(Qt::NoPen);
-        QColor overlayColor(15, 23, 42, 160);
-        if (m_currentStep < m_steps.size()) {
-            if (!m_steps[m_currentStep].showHighlight) {
-                overlayColor = QColor(0, 0, 0, 0);
-            }
-        }
-        p.setBrush(overlayColor);
+        p.setBrush(QColor(15, 23, 42, 160));
         p.drawPath(path);
 
         if (hasSpot) {
-            const auto& step = m_steps[m_currentStep];
-            if (step.showHighlight) {
-                // Glow ring (pulse)
-                QPen glowPen(QColor(59, 130, 246, 120), 3 + m_pulse * 0.3);
-                p.setPen(glowPen);
-                p.setBrush(Qt::NoBrush);
-                p.drawRoundedRect(expanded.adjusted(-(int)m_pulse, -(int)m_pulse, (int)m_pulse, (int)m_pulse), 14, 14);
+            // Glow ring (pulse)
+            QPen glowPen(QColor(59, 130, 246, 120), 3 + m_pulse * 0.3);
+            p.setPen(glowPen);
+            p.setBrush(Qt::NoBrush);
+            p.drawRoundedRect(expanded.adjusted(-(int)m_pulse, -(int)m_pulse, (int)m_pulse, (int)m_pulse), 14, 14);
 
-                // White border around spotlight
-                QPen borderPen(QColor(255, 255, 255, 200), 2.5);
-                p.setPen(borderPen);
-                p.setBrush(Qt::NoBrush);
-                p.drawRoundedRect(expanded, 12, 12);
+            // White border around spotlight
+            QPen borderPen(QColor(255, 255, 255, 200), 2.5);
+            p.setPen(borderPen);
+            p.setBrush(Qt::NoBrush);
+            p.drawRoundedRect(expanded, 12, 12);
 
-                // Draw arrow from card to spotlight
-                drawArrow(p, spotRect);
-            }
+            // Draw arrow from card to spotlight
+            drawArrow(p, spotRect);
         }
     }
 
