@@ -1223,7 +1223,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 QString lowExpr = expr.toLower();
                 bool isElse = (lowExpr == "senao" || lowExpr == "else" || block.id.startsWith("else_") || block.id == "else");
                 bool isElseIf = (lowExpr.startsWith("senao se") || lowExpr.startsWith("else if") || block.id.startsWith("elseif") || block.id.startsWith("else if"));
-                bool isFor = lowExpr.startsWith("int ") && expr.contains(";") && expr.count(";") == 2;
+                bool isFor = block.id.startsWith("for") || (lowExpr.startsWith("int ") && expr.contains(";") && expr.count(";") == 2);
                 bool isWhile = lowExpr.startsWith("while") || block.id.startsWith("while_") || block.id == "while";
                 bool isQuando = block.id.startsWith("quando");
 
@@ -1252,46 +1252,62 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                         }
                     }
                 } else if (isFor) {
-                    // This is a for loop! e.g., int i = 1; i < 4; i++
+                    // This is a for loop! e.g., int i = 1; i < 4; i++ (or visual var:start:end:step)
                     execStack.last().lastIfTaken = false;
-                    QStringList parts = expr.split(";");
-                    if (parts.size() == 3) {
-                        QString initPart = parts[0].trimmed(); // "int i = 1" or "int i=1"
-                        QString condPart = parts[1].trimmed(); // "i < 4"
-                        QString incPart = parts[2].trimmed();  // "i++"
+                    if (expr.count(':') == 3) {
+                        QStringList parts = expr.split(':');
+                        loopVar = parts[0].trimmed();
+                        if (loopVar.isEmpty()) loopVar = "i";
+                        int startVal = parts[1].trimmed().toInt();
+                        loopEnd = parts[2].trimmed().toInt();
+                        loopStep = parts[3].trimmed().toInt();
+                        if (loopStep == 0) loopStep = 1;
+                        loopConditionOp = "<";
 
-                        if (initPart.startsWith("int ")) {
-                            initPart = initPart.mid(4).trimmed(); // "i = 1"
-                        }
-                        QStringList initTokens = initPart.split("=");
-                        if (initTokens.size() == 2) {
-                            loopVar = initTokens[0].trimmed();
-                            int startVal = initTokens[1].trimmed().toInt();
-                            
-                            // Initialize variable if not looping yet
-                            // Wait, if we are entering this block for the first time
-                            m_simVariables[loopVar] = startVal;
-                        }
-
-                        // condPart like "i < 4" or "i <= 4"
-                        if (condPart.contains("<=")) { loopConditionOp = "<="; loopEnd = condPart.split("<=").last().trimmed().toInt(); }
-                        else if (condPart.contains(">=")) { loopConditionOp = ">="; loopEnd = condPart.split(">=").last().trimmed().toInt(); }
-                        else if (condPart.contains("<")) { loopConditionOp = "<"; loopEnd = condPart.split("<").last().trimmed().toInt(); }
-                        else if (condPart.contains(">")) { loopConditionOp = ">"; loopEnd = condPart.split(">").last().trimmed().toInt(); }
-
-                        // incPart like "i++" or "i--"
-                        if (incPart.contains("++")) loopStep = 1;
-                        else if (incPart.contains("--")) loopStep = -1;
-                        
+                        m_simVariables[loopVar] = startVal;
                         loopStartPc = pc;
-                        
-                        // evaluate condition initially
+
                         int curVal = m_simVariables[loopVar].toInt();
-                        if (loopConditionOp == "<") cond = curVal < loopEnd;
-                        else if (loopConditionOp == "<=") cond = curVal <= loopEnd;
-                        else if (loopConditionOp == ">") cond = curVal > loopEnd;
-                        else if (loopConditionOp == ">=") cond = curVal >= loopEnd;
-                        else cond = false;
+                        cond = curVal < loopEnd;
+                    } else {
+                        QStringList parts = expr.split(";");
+                        if (parts.size() == 3) {
+                            QString initPart = parts[0].trimmed(); // "int i = 1" or "int i=1"
+                            QString condPart = parts[1].trimmed(); // "i < 4"
+                            QString incPart = parts[2].trimmed();  // "i++"
+
+                            if (initPart.startsWith("int ")) {
+                                initPart = initPart.mid(4).trimmed(); // "i = 1"
+                            }
+                            QStringList initTokens = initPart.split("=");
+                            if (initTokens.size() == 2) {
+                                loopVar = initTokens[0].trimmed();
+                                int startVal = initTokens[1].trimmed().toInt();
+                                
+                                // Initialize variable if not looping yet
+                                m_simVariables[loopVar] = startVal;
+                            }
+
+                            // condPart like "i < 4" or "i <= 4"
+                            if (condPart.contains("<=")) { loopConditionOp = "<="; loopEnd = condPart.split("<=").last().trimmed().toInt(); }
+                            else if (condPart.contains(">=")) { loopConditionOp = ">="; loopEnd = condPart.split(">=").last().trimmed().toInt(); }
+                            else if (condPart.contains("<")) { loopConditionOp = "<"; loopEnd = condPart.split("<").last().trimmed().toInt(); }
+                            else if (condPart.contains(">")) { loopConditionOp = ">"; loopEnd = condPart.split(">").last().trimmed().toInt(); }
+
+                            // incPart like "i++" or "i--"
+                            if (incPart.contains("++")) loopStep = 1;
+                            else if (incPart.contains("--")) loopStep = -1;
+                            
+                            loopStartPc = pc;
+                            
+                            // evaluate condition initially
+                            int curVal = m_simVariables[loopVar].toInt();
+                            if (loopConditionOp == "<") cond = curVal < loopEnd;
+                            else if (loopConditionOp == "<=") cond = curVal <= loopEnd;
+                            else if (loopConditionOp == ">") cond = curVal > loopEnd;
+                            else if (loopConditionOp == ">=") cond = curVal >= loopEnd;
+                            else cond = false;
+                        }
                     }
                 } else if (isWhile) {
                     // This is a while loop!
