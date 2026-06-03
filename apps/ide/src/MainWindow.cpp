@@ -5253,7 +5253,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 1: Add LED
     steps.append({
-        "1. Adicionar o LED",
+        "1. Dê dois cliques no workspace e adicione um LED",
         "Vamos começar adicionando a nossa fonte de luz.\n\n"
         "1. Dê DOIS CLIQUES no workspace (mesa de trabalho).\n"
         "2. Digite \"LED\" no campo de busca e adicione um LED à mesa.",
@@ -5263,7 +5263,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 2: Add Resistor
     steps.append({
-        "2. Adicionar o Resistor",
+        "2. Dê dois cliques no workspace e adicione um Resistor",
         "Agora precisamos de um resistor para proteger o LED (ligar direto queima!).\n\n"
         "1. Dê DOIS CLIQUES no workspace.\n"
         "2. Digite \"resistor\" na busca e adicione-o.",
@@ -5273,7 +5273,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 3: Connect LED to Resistor
     steps.append({
-        "3. Conectar o LED ao Resistor",
+        "3. Conecte a perna vermelha (anodo) do LED ao Resistor",
         "Conecte a perna do LED ao resistor.\n\n"
         "1. Dê um único clique com o botão esquerdo na perna vermelha do LED (anodo).\n"
         "2. Mova o mouse (sem arrastar) e dê outro clique em uma das pernas do Resistor.",
@@ -5283,7 +5283,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 4: Connect Resistor to GPIO2
     steps.append({
-        "4. Conectar Resistor ao GPIO2",
+        "4. Conecte a outra perna do Resistor ao pino GPIO2 da ESP32",
         "Ligue o resistor na porta de controle da placa.\n\n"
         "1. Dê um clique na outra perna livre do Resistor.\n"
         "2. Mova o mouse e clique no pino GPIO2 da placa ESP32 para fazer a ligação.",
@@ -5293,7 +5293,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 5: Connect LED to GND
     steps.append({
-        "5. Conectar o LED ao GND",
+        "5. Conecte a perna cinza (catodo) do LED ao pino GND da ESP32",
         "Feche o circuito de alimentação do LED.\n\n"
         "1. Dê um clique na perna cinza do LED (catodo).\n"
         "2. Mova o mouse e clique em um dos pinos GND da placa ESP32.",
@@ -5303,7 +5303,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 6: Add Button
     steps.append({
-        "6. Adicionar o Botão",
+        "6. Dê dois cliques no workspace e adicione um Botão",
         "Agora que o LED está conectado, vamos adicionar um componente de entrada: um botão interativo.\n\n"
         "1. Dê DOIS CLIQUES no workspace.\n"
         "2. Busque por \"botão\" e adicione-o.",
@@ -5313,7 +5313,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 7: Connect Button to GPIO3
     steps.append({
-        "7. Conectar o Botão ao GPIO3",
+        "7. Conecte uma das pernas do Botão ao pino GPIO3 da ESP32",
         "Ligue a entrada digital do botão à placa.\n\n"
         "1. Dê um clique em uma das pernas do Botão.\n"
         "2. Mova o mouse e clique no pino GPIO3 da placa ESP32.",
@@ -5323,7 +5323,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 8: Connect Button to GND
     steps.append({
-        "8. Conectar o Botão ao GND",
+        "8. Conecte a outra perna do Botão a um pino GND livre da ESP32",
         "Complete a conexão do botão com o terra do circuito.\n\n"
         "1. Dê um clique na outra perna livre do Botão.\n"
         "2. Mova o mouse e clique em um pino GND livre da placa ESP32.",
@@ -5333,7 +5333,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 9: Right Click Button
     steps.append({
-        "9. Programar Eventos do Botão",
+        "9. Clique com botão direito no Botão e escolha 'Ao Clicar'",
         "Vamos abrir a área de programação para dar comportamento ao botão.\n\n"
         "1. Clique com o BOTÃO DIREITO sobre o Botão no workspace.\n"
         "2. Selecione o evento \"Ao Clicar\" no menu flutuante.",
@@ -5343,7 +5343,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 10: Block Editor logic
     steps.append({
-        "10. Editor de Blocos (Lógica)",
+        "10. Dê dois cliques no editor à direita e adicione uma Ação",
         "Agora vamos programar a ação do clique no botão.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos à direita.\n"
         "2. Adicione uma Ação para definir o estado do pino GPIO2 (LED) como LIGADO ou INVERTER.",
@@ -5353,7 +5353,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 11: Drag LED to Action
     steps.append({
-        "11. Associar o LED à Ação",
+        "11. Arraste a variável LED_2 da paleta ao campo Alvo da Ação",
         "Para definir que o LED é o alvo desta ação, arraste-o da paleta à esquerda:\n\n"
         "1. Clique e segure o bloco rosa 'LED_2 [GPIO2]' na paleta de 'PINOS E ATUADORES'.\n"
         "2. Arraste e solte-o no campo 'Alvo (Pino / Var)' do seu bloco de Ação.",
@@ -5363,7 +5363,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 12: Build
     steps.append({
-        "12. Compilar o Projeto",
+        "12. Clique no botão de Build no topo para compilar",
         "Clique no botão de Build (ícone de ferramentas na barra superior) para compilar a lógica e o hardware do seu circuito.",
         "Clique no botão de Build no topo para compilar!",
         buildWidget, QRect(), TutorialStep::Up
@@ -5371,7 +5371,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 13: Play Simulation
     steps.append({
-        "13. Iniciar Simulação",
+        "13. Clique no botão de Play no topo para iniciar a simulação",
         "Com o código compilado com sucesso, clique no botão de Play no topo para rodar a simulação interativa!",
         "Clique no botão de Play no topo para iniciar a simulação!",
         playWidget, QRect(), TutorialStep::Up
@@ -5379,7 +5379,7 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 14: Done
     steps.append({
-        "Parabéns! Circuito pronto e rodando!",
+        "Parabéns! O circuito está pronto e rodando!",
         "Você acabou de montar e programar seu circuito!\n\n"
         "Experimente clicar no Botão no workspace para ver o LED acendendo em tempo real.\n\n"
         "Divirta-se criando novos projetos eletrônicos!",

@@ -14,6 +14,10 @@
 #include <QApplication>
 #include <QPointer>
 #include <QLineEdit>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QMimeData>
 #include "VariableSystem.h"
 
 struct TutorialStep {
@@ -37,6 +41,7 @@ public:
         setAttribute(Qt::WA_TransparentForMouseEvents, false);
         setAttribute(Qt::WA_TranslucentBackground, true);
         setMouseTracking(true);
+        setAcceptDrops(true);
 
         // Card widget
         m_card = new QWidget(this);
@@ -320,6 +325,63 @@ protected:
         return false;
     }
 
+    void dragEnterEvent(QDragEnterEvent* event) override {
+        QPoint globalPos = QCursor::pos();
+        QWidget* target = getWidgetUnderneath(globalPos);
+        if (target && target != this && !isAncestorOf(target)) {
+            QPoint localPos = target->mapFromGlobal(globalPos);
+            QDragEnterEvent newEvent(
+                localPos,
+                event->possibleActions(),
+                event->mimeData(),
+                event->buttons(),
+                event->modifiers()
+            );
+            QApplication::sendEvent(target, &newEvent);
+            if (newEvent.isAccepted()) {
+                event->acceptProposedAction();
+            }
+        }
+    }
+
+    void dragMoveEvent(QDragMoveEvent* event) override {
+        QPoint globalPos = QCursor::pos();
+        QWidget* target = getWidgetUnderneath(globalPos);
+        if (target && target != this && !isAncestorOf(target)) {
+            QPoint localPos = target->mapFromGlobal(globalPos);
+            QDragMoveEvent newEvent(
+                localPos,
+                event->possibleActions(),
+                event->mimeData(),
+                event->buttons(),
+                event->modifiers()
+            );
+            QApplication::sendEvent(target, &newEvent);
+            if (newEvent.isAccepted()) {
+                event->acceptProposedAction();
+            }
+        }
+    }
+
+    void dropEvent(QDropEvent* event) override {
+        QPoint globalPos = QCursor::pos();
+        QWidget* target = getWidgetUnderneath(globalPos);
+        if (target && target != this && !isAncestorOf(target)) {
+            QPoint localPos = target->mapFromGlobal(globalPos);
+            QDropEvent newEvent(
+                localPos,
+                event->possibleActions(),
+                event->mimeData(),
+                event->buttons(),
+                event->modifiers()
+            );
+            QApplication::sendEvent(target, &newEvent);
+            if (newEvent.isAccepted()) {
+                event->acceptProposedAction();
+            }
+        }
+    }
+
     QWidget* getWidgetUnderneath(const QPoint& globalPos) {
         bool wasTransparent = testAttribute(Qt::WA_TransparentForMouseEvents);
         setAttribute(Qt::WA_TransparentForMouseEvents, true);
@@ -408,23 +470,9 @@ private:
 
         m_stepLabel->setText(QString("PASSO %1 DE %2").arg(idx + 1).arg(m_steps.size()));
         m_titleLabel->setText(step.title);
-        m_descLabel->setText(step.description);
 
-        if (step.hint.isEmpty()) {
-            m_hintBox->hide();
-        } else {
-            m_hintLabel->setText(step.hint);
-            m_hintBox->show();
-
-            // Arrow emoji based on direction
-            switch (step.arrowDir) {
-                case TutorialStep::Up:    m_hintArrow->setText("👆"); break;
-                case TutorialStep::Down:  m_hintArrow->setText("👇"); break;
-                case TutorialStep::Left:  m_hintArrow->setText("👈"); break;
-                case TutorialStep::Right: m_hintArrow->setText("👉"); break;
-                default: m_hintArrow->setText("💡"); break;
-            }
-        }
+        m_descLabel->hide();
+        m_hintBox->hide();
 
         m_btnPrev->setEnabled(idx > 0);
         m_btnNext->setText(idx == m_steps.size() - 1 ? "Concluir!" : "Próximo");
