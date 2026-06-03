@@ -197,7 +197,13 @@ protected:
 
         // Draw dark overlay with the spotlight hole cutout
         p.setPen(Qt::NoPen);
-        p.setBrush(QColor(15, 23, 42, 160));
+        QColor overlayColor(15, 23, 42, 160);
+        if (m_currentStep < m_steps.size()) {
+            if (!m_steps[m_currentStep].showHighlight) {
+                overlayColor = QColor(0, 0, 0, 0);
+            }
+        }
+        p.setBrush(overlayColor);
         p.drawPath(path);
 
         if (hasSpot) {
