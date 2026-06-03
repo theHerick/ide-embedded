@@ -5279,9 +5279,9 @@ void MainWindow::startInteractiveTutorial() {
     steps.append({
         "3. Conectar o LED ao Resistor",
         "Conecte a perna do LED ao resistor.\n\n"
-        "1. Clique com o botão esquerdo na perna positiva do LED (anodo - pino vermelho).\n"
-        "2. Arraste e solte o cabo em uma das pernas do Resistor.",
-        "Conecte a perna vermelha do LED ao Resistor!",
+        "1. Dê um único clique com o botão esquerdo na perna vermelha do LED (anodo).\n"
+        "2. Mova o mouse (sem arrastar) e dê outro clique em uma das pernas do Resistor.",
+        "Clique no anodo do LED, mova o mouse e clique no Resistor!",
         m_view, QRect(), TutorialStep::Up
     });
 
@@ -5289,9 +5289,9 @@ void MainWindow::startInteractiveTutorial() {
     steps.append({
         "4. Conectar Resistor ao GPIO2",
         "Ligue o resistor na porta de controle da placa.\n\n"
-        "1. Clique na outra perna livre do Resistor.\n"
-        "2. Arraste o cabo até o pino GPIO2 da placa ESP32.",
-        "Conecte a outra perna do Resistor ao pino GPIO2 da ESP32!",
+        "1. Dê um clique na outra perna livre do Resistor.\n"
+        "2. Mova o mouse e clique no pino GPIO2 da placa ESP32 para fazer a ligação.",
+        "Clique na perna do Resistor, mova o mouse e clique no GPIO2!",
         m_view, QRect(), TutorialStep::Up
     });
 
@@ -5299,9 +5299,9 @@ void MainWindow::startInteractiveTutorial() {
     steps.append({
         "5. Conectar o LED ao GND",
         "Feche o circuito de alimentação do LED.\n\n"
-        "1. Clique na perna negativa do LED (catodo - pino cinza).\n"
-        "2. Arraste o cabo até um dos pinos GND da placa ESP32.",
-        "Conecte a perna cinza do LED ao pino GND da ESP32!",
+        "1. Dê um clique na perna cinza do LED (catodo).\n"
+        "2. Mova o mouse e clique em um dos pinos GND da placa ESP32.",
+        "Clique no catodo do LED, mova o mouse e clique no GND!",
         m_view, QRect(), TutorialStep::Up
     });
 
@@ -5319,8 +5319,8 @@ void MainWindow::startInteractiveTutorial() {
     steps.append({
         "7. Conectar o Botão ao GPIO3",
         "Ligue a entrada digital do botão à placa.\n\n"
-        "1. Clique em uma das pernas do Botão.\n"
-        "2. Arraste e conecte o cabo ao pino GPIO3 da placa ESP32.",
+        "1. Dê um clique em uma das pernas do Botão.\n"
+        "2. Mova o mouse e clique no pino GPIO3 da placa ESP32.",
         "Conecte uma das pernas do Botão ao pino GPIO3 da ESP32!",
         m_view, QRect(), TutorialStep::Up
     });
@@ -5329,8 +5329,8 @@ void MainWindow::startInteractiveTutorial() {
     steps.append({
         "8. Conectar o Botão ao GND",
         "Complete a conexão do botão com o terra do circuito.\n\n"
-        "1. Clique na outra perna do Botão.\n"
-        "2. Arraste e conecte o cabo a um pino GND livre da placa ESP32.",
+        "1. Dê um clique na outra perna livre do Botão.\n"
+        "2. Mova o mouse e clique em um pino GND livre da placa ESP32.",
         "Conecte a outra perna do Botão ao pino GND da ESP32!",
         m_view, QRect(), TutorialStep::Up
     });

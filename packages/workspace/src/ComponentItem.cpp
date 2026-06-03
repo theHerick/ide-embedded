@@ -218,10 +218,17 @@ void ComponentItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event) {
             }
         }
         setToolTip(tooltip);
+        QToolTip::showText(QCursor::pos(), tooltip, event->widget());
     } else {
         setToolTip(m_name + " (" + m_type + ")");
+        QToolTip::hideText();
     }
     QGraphicsObject::hoverMoveEvent(event);
+}
+
+void ComponentItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event) {
+    QToolTip::hideText();
+    QGraphicsObject::hoverLeaveEvent(event);
 }
 
 void ComponentItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
