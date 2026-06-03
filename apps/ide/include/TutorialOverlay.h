@@ -326,40 +326,14 @@ protected:
     }
 
     void dragEnterEvent(QDragEnterEvent* event) override {
-        QPoint globalPos = QCursor::pos();
-        QWidget* target = getWidgetUnderneath(globalPos);
-        if (target && target != this && !isAncestorOf(target)) {
-            QPoint localPos = target->mapFromGlobal(globalPos);
-            QDragEnterEvent newEvent(
-                localPos,
-                event->possibleActions(),
-                event->mimeData(),
-                event->buttons(),
-                event->modifiers()
-            );
-            QApplication::sendEvent(target, &newEvent);
-            if (newEvent.isAccepted()) {
-                event->acceptProposedAction();
-            }
+        if (event->mimeData()->hasText()) {
+            event->acceptProposedAction();
         }
     }
 
     void dragMoveEvent(QDragMoveEvent* event) override {
-        QPoint globalPos = QCursor::pos();
-        QWidget* target = getWidgetUnderneath(globalPos);
-        if (target && target != this && !isAncestorOf(target)) {
-            QPoint localPos = target->mapFromGlobal(globalPos);
-            QDragMoveEvent newEvent(
-                localPos,
-                event->possibleActions(),
-                event->mimeData(),
-                event->buttons(),
-                event->modifiers()
-            );
-            QApplication::sendEvent(target, &newEvent);
-            if (newEvent.isAccepted()) {
-                event->acceptProposedAction();
-            }
+        if (event->mimeData()->hasText()) {
+            event->acceptProposedAction();
         }
     }
 
