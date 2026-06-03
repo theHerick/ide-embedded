@@ -4737,15 +4737,73 @@ void MainWindow::showFirmwareInfo() {
     dialog.setWindowTitle("Ajuda e Documentação — IDE Embedded");
     dialog.resize(880, 640);
     dialog.setStyleSheet(
-        "QDialog { background-color: rgba(255,255,255,0.85); border: 1px solid #CBD5E1; border-radius: 12px; }"
-        "QLabel { font-family: 'Inter', sans-serif; color: #1E293B; }"
-        "QTabWidget::pane { border: 1px solid #CBD5E1; background: rgba(255,255,255,0.9); border-radius: 10px; }"
-        "QTabBar::tab { background: linear-gradient(135deg, #E0F2F1, #B2EBF2); border: 1px solid #CBD5E1; border-bottom: none; border-top-left-radius: 8px; border-top-right-radius: 8px; padding: 8px 16px; font-weight: 600; font-size: 12px; color: #0F172A; }"
-        "QTabBar::tab:selected { background: linear-gradient(135deg, #99E9E8, #63D7F5); border-color: #CBD5E1; color: #1E3A8A; font-weight: bold; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: #fff; padding: 10px 18px; font-weight: bold; font-size: 12px; }"
-        "QPushButton:hover { background: #1E40AF; }"
-        "QPushButton#sec { background: #F1F5F9; border: 1px solid #E2E8F0; color: #475569; }"
-        "QPushButton#sec:hover { background: #E2E8F0; color: #0F172A; }"
+        "QDialog { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 #F0FDF4, stop:0.4 #ECFDF5, stop:0.8 #E0F2FE, stop:1 #BAE6FD); "
+        "  border: 2px solid rgba(255, 255, 255, 0.95); "
+        "  border-radius: 20px; "
+        "}"
+        "QLabel { font-family: 'Segoe UI', 'Inter', sans-serif; color: #0F172A; }"
+        "QTabWidget::pane { "
+        "  border: 1.5px solid rgba(255, 255, 255, 0.85); "
+        "  background: rgba(255, 255, 255, 0.93); "
+        "  border-radius: 16px; "
+        "  padding: 8px; "
+        "}"
+        "QTabBar::tab { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 #FFFFFF, stop:0.4 #F1F5F9, stop:0.5 #E2E8F0, stop:1 #CBD5E1); "
+        "  border: 1px solid #CBD5E1; "
+        "  border-bottom: none; "
+        "  border-top-left-radius: 12px; "
+        "  border-top-right-radius: 12px; "
+        "  padding: 8px 18px; "
+        "  font-weight: 700; "
+        "  font-size: 11px; "
+        "  color: #475569; "
+        "}"
+        "QTabBar::tab:selected { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 #93C5FD, stop:0.4 #60A5FA, stop:0.5 #3B82F6, stop:1 #2563EB); "
+        "  border-color: #3B82F6; "
+        "  color: #FFFFFF; "
+        "}"
+        "QTabBar::tab:hover:!selected { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 #FFFFFF, stop:0.4 #F8FAFC, stop:0.5 #F1F5F9, stop:1 #E2E8F0); "
+        "  color: #1E293B; "
+        "}"
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 #60A5FA, stop:0.4 #3B82F6, stop:0.5 #2563EB, stop:1 #1D4ED8); "
+        "  border: 1.5px solid rgba(255, 255, 255, 0.75); "
+        "  border-radius: 12px; "
+        "  color: #FFFFFF; "
+        "  padding: 8px 18px; "
+        "  font-weight: 800; "
+        "  font-size: 11px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 #93C5FD, stop:0.3 #60A5FA, stop:0.6 #3B82F6, stop:1 #1E40AF); "
+        "  border-color: #FFFFFF; "
+        "}"
+        "QPushButton#sec { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 #FFFFFF, stop:0.4 #F1F5F9, stop:0.5 #E2E8F0, stop:1 #CBD5E1); "
+        "  border: 1px solid #94A3B8; "
+        "  border-radius: 12px; "
+        "  color: #334155; "
+        "  padding: 8px 18px; "
+        "  font-weight: bold; "
+        "  font-size: 11px; "
+        "}"
+        "QPushButton#sec:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 #FFFFFF, stop:0.3 #F8FAFC, stop:0.6 #E2E8F0, stop:1 #94A3B8); "
+        "  border-color: #64748B; "
+        "  color: #0F172A; "
+        "}"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -4770,7 +4828,30 @@ void MainWindow::showFirmwareInfo() {
 
         auto* icon = new QLabel(tutWidget);
         icon->setAlignment(Qt::AlignCenter);
-        icon->setText(R"(<div style="font-size: 48px; text-align: center;">🎓</div>)");
+        icon->setText(R"(
+            <div style="
+              width: 96px;
+              height: 96px;
+              margin: 0 auto;
+              border-radius: 50%;
+              background: radial-gradient(circle at 35% 35%, #93C5FD, #2563EB, #1E40AF);
+              box-shadow: 
+                inset -8px -8px 20px rgba(0,0,0,0.35), 
+                inset 10px 10px 20px rgba(255,255,255,0.7),
+                0 12px 24px rgba(37,99,235,0.35);
+              position: relative;
+            ">
+              <div style="
+                position: absolute;
+                top: 6px;
+                left: 16px;
+                width: 64px;
+                height: 32px;
+                background: linear-gradient(to bottom, rgba(255,255,255,0.75), rgba(255,255,255,0));
+                border-radius: 50% 50% 40% 40% / 60% 60% 30% 30%;
+              "></div>
+            </div>
+        )");
         icon->setTextFormat(Qt::RichText);
         tutLayout->addWidget(icon);
 
@@ -4795,9 +4876,22 @@ void MainWindow::showFirmwareInfo() {
         btnStart->setFixedSize(280, 50);
         btnStart->setCursor(Qt::PointingHandCursor);
         btnStart->setStyleSheet(
-            "QPushButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #2563EB,stop:1 #7C3AED); border: none; border-radius: 14px; "
-            "  color: #FFFFFF; padding: 14px; font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }"
-            "QPushButton:hover { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1D4ED8,stop:1 #6D28D9); }"
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+            "    stop:0 #34D399, stop:0.4 #10B981, stop:0.5 #059669, stop:1 #047857); "
+            "  border: 2px solid rgba(255, 255, 255, 0.85); "
+            "  border-radius: 18px; "
+            "  color: #FFFFFF; "
+            "  padding: 14px; "
+            "  font-weight: 900; "
+            "  font-size: 15px; "
+            "  letter-spacing: 0.5px; "
+            "}"
+            "QPushButton:hover { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+            "    stop:0 #6EE7B7, stop:0.3 #34D399, stop:0.6 #10B981, stop:1 #065F46); "
+            "  border-color: #FFFFFF; "
+            "}"
         );
 
         auto* btnCenter = new QHBoxLayout();

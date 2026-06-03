@@ -46,7 +46,15 @@ public:
         m_card = new QWidget(this);
         m_card->setFixedWidth(420);
         m_card->setStyleSheet(
-            "QWidget#tutCard { background: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; }"
+            "QWidget#tutCard { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+            "    stop:0 rgba(255, 255, 255, 0.98), "
+            "    stop:0.4 rgba(224, 242, 254, 0.94), "
+            "    stop:0.8 rgba(186, 230, 253, 0.90), "
+            "    stop:1 rgba(125, 211, 252, 0.96)); "
+            "  border: 1.8px solid rgba(255, 255, 255, 0.95); "
+            "  border-radius: 20px; "
+            "}"
         );
         m_card->setObjectName("tutCard");
 
@@ -99,23 +107,54 @@ public:
 
         m_btnSkip = new QPushButton("Pular Tutorial", m_card);
         m_btnSkip->setStyleSheet(
-            "QPushButton { background: transparent; border: none; color: #94A3B8; font-size: 12px; font-weight: 600; padding: 8px 12px; }"
-            "QPushButton:hover { color: #475569; text-decoration: underline; }"
+            "QPushButton { background: transparent; border: none; color: #0369A1; font-size: 12px; font-weight: bold; padding: 8px 12px; }"
+            "QPushButton:hover { color: #0c4a6e; text-decoration: underline; }"
         );
 
         m_btnPrev = new QPushButton("Anterior", m_card);
         m_btnPrev->setFixedWidth(90);
         m_btnPrev->setStyleSheet(
-            "QPushButton { background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 10px; color: #475569; padding: 10px; font-weight: 700; font-size: 12px; }"
-            "QPushButton:hover { background: #E2E8F0; color: #0F172A; }"
-            "QPushButton:disabled { color: #CBD5E1; border-color: #E2E8F0; }"
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+            "    stop:0 #FFFFFF, stop:0.4 #F1F5F9, stop:0.5 #E2E8F0, stop:1 #CBD5E1); "
+            "  border: 1px solid #94A3B8; "
+            "  border-radius: 12px; "
+            "  color: #334155; "
+            "  padding: 8px; "
+            "  font-weight: bold; "
+            "  font-size: 11px; "
+            "}"
+            "QPushButton:hover { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+            "    stop:0 #FFFFFF, stop:0.3 #F8FAFC, stop:0.6 #E2E8F0, stop:1 #94A3B8); "
+            "  border-color: #64748B; "
+            "  color: #0F172A; "
+            "}"
+            "QPushButton:disabled { "
+            "  background: #F1F5F9; "
+            "  border-color: #E2E8F0; "
+            "  color: #CBD5E1; "
+            "}"
         );
 
         m_btnNext = new QPushButton("Próximo", m_card);
         m_btnNext->setFixedWidth(110);
         m_btnNext->setStyleSheet(
-            "QPushButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #2563EB,stop:1 #1D4ED8); border: none; border-radius: 10px; color: #FFFFFF; padding: 10px; font-weight: 700; font-size: 12px; }"
-            "QPushButton:hover { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1D4ED8,stop:1 #1E40AF); }"
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+            "    stop:0 #60A5FA, stop:0.4 #3B82F6, stop:0.5 #2563EB, stop:1 #1D4ED8); "
+            "  border: 1.5px solid rgba(255, 255, 255, 0.7); "
+            "  border-radius: 12px; "
+            "  color: #FFFFFF; "
+            "  padding: 8px; "
+            "  font-weight: 800; "
+            "  font-size: 11px; "
+            "}"
+            "QPushButton:hover { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+            "    stop:0 #93C5FD, stop:0.3 #60A5FA, stop:0.6 #3B82F6, stop:1 #1E40AF); "
+            "  border-color: #FFFFFF; "
+            "}"
         );
 
         btnRow->addWidget(m_btnSkip);
@@ -373,13 +412,39 @@ private:
         // Change next button color on last step
         if (idx == m_steps.size() - 1) {
             m_btnNext->setStyleSheet(
-                "QPushButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #059669,stop:1 #047857); border: none; border-radius: 10px; color: #FFFFFF; padding: 10px; font-weight: 700; font-size: 12px; }"
-                "QPushButton:hover { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #047857,stop:1 #065F46); }"
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+                "    stop:0 #34D399, stop:0.4 #10B981, stop:0.5 #059669, stop:1 #047857); "
+                "  border: 1.5px solid rgba(255, 255, 255, 0.75); "
+                "  border-radius: 12px; "
+                "  color: #FFFFFF; "
+                "  padding: 8px; "
+                "  font-weight: 800; "
+                "  font-size: 11px; "
+                "}"
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+                "    stop:0 #6EE7B7, stop:0.3 #34D399, stop:0.6 #10B981, stop:1 #065F46); "
+                "  border-color: #FFFFFF; "
+                "}"
             );
         } else {
             m_btnNext->setStyleSheet(
-                "QPushButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #2563EB,stop:1 #1D4ED8); border: none; border-radius: 10px; color: #FFFFFF; padding: 10px; font-weight: 700; font-size: 12px; }"
-                "QPushButton:hover { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1D4ED8,stop:1 #1E40AF); }"
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+                "    stop:0 #60A5FA, stop:0.4 #3B82F6, stop:0.5 #2563EB, stop:1 #1D4ED8); "
+                "  border: 1.5px solid rgba(255, 255, 255, 0.75); "
+                "  border-radius: 12px; "
+                "  color: #FFFFFF; "
+                "  padding: 8px; "
+                "  font-weight: 800; "
+                "  font-size: 11px; "
+                "}"
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+                "    stop:0 #93C5FD, stop:0.3 #60A5FA, stop:0.6 #3B82F6, stop:1 #1E40AF); "
+                "  border-color: #FFFFFF; "
+                "}"
             );
         }
 
