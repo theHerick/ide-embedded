@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
+#include <QContextMenuEvent>
 #include <QPushButton>
 #include <QLabel>
 #include <QVBoxLayout>
@@ -269,6 +270,15 @@ protected:
         }
     }
 
+    void mouseMoveEvent(QMouseEvent* event) override {
+        if (shouldIgnoreEvent(event->pos())) {
+            forwardEvent(event);
+            event->accept();
+        } else {
+            event->accept();
+        }
+    }
+
     void mousePressEvent(QMouseEvent* event) override {
         if (shouldIgnoreEvent(event->pos())) {
             forwardEvent(event);
@@ -294,6 +304,26 @@ protected:
         } else {
             event->accept();
         }
+    }
+
+    void contextMenuEvent(QContextMenuEvent* event) override {
+        if (shouldIgnoreEvent(event->pos())) {
+            QPoint globalPos = QCursor::pos();
+            QWidget* target = getWidgetUnderneath(globalPos);
+            if (target && target != this && !isAncestorOf(target)) {
+                QPoint localPos = target->mapFromGlobal(globalPos);
+                QContextMenuEvent newEvent(
+                    event->reason(),
+                    localPos,
+                    globalPos,
+                    event->modifiers()
+                );
+                QApplication::sendEvent(target, &newEvent);
+                event->accept();
+                return;
+            }
+        }
+        event->accept();
     }
 
 private:
