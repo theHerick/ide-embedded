@@ -491,6 +491,31 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // Check for toolchain at startup
     QTimer::singleShot(2000, this, &MainWindow::checkAndInstallToolchain);
 
+    // Onboarding / Tutorial auto-advance connections
+    connect(m_scene, &WorkspaceScene::componentAdded, this, [this]() {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 1) {
+            m_tutorialOverlay->advance();
+        }
+    });
+
+    connect(m_buildAction, &QAction::triggered, this, [this]() {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 2) {
+            m_tutorialOverlay->advance();
+        }
+    });
+
+    connect(m_playAction, &QAction::triggered, this, [this]() {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 3) {
+            m_tutorialOverlay->advance();
+        }
+    });
+
+    connect(m_blockEditor, &BlockEditor::blocksChanged, this, [this]() {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 5) {
+            m_tutorialOverlay->advance();
+        }
+    });
+
     logMessage("IDE Embedded inicializada com sucesso.", "SYSTEM");
     statusBar()->showMessage("IDE Embedded pronta");
 }
@@ -1116,6 +1141,10 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
     synchronizeLoopBlocks();
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
+
+    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 4) {
+        m_tutorialOverlay->advance();
+    }
 }
 
 void MainWindow::openWebEventEditor(const QString& compId, const QString& eventName) {
@@ -1153,6 +1182,10 @@ void MainWindow::openWebEventEditor(const QString& compId, const QString& eventN
     synchronizeLoopBlocks();
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
+
+    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 4) {
+        m_tutorialOverlay->advance();
+    }
 }
 
 void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& globalPos) {

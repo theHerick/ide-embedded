@@ -157,6 +157,17 @@ public:
         m_pulseAnim->start();
     }
 
+    void advance() {
+        if (m_currentStep < m_steps.size() - 1) {
+            m_currentStep++;
+            showStep(m_currentStep);
+        } else {
+            close();
+        }
+    }
+
+    int currentStep() const { return m_currentStep; }
+
     qreal pulseRadius() const { return m_pulse; }
     void setPulseRadius(qreal r) { m_pulse = r; update(); }
 
