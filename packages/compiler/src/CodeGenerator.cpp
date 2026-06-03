@@ -369,7 +369,22 @@ static QString compileBlocks(
             } else if (block.id.startsWith("elseif") || block.id.startsWith("else if")) {
                 res += QString("%1else if (%2) {\n").arg(indent).arg(condExpr);
             } else if (block.id.startsWith("for")) {
-                res += QString("%1for (%2) {\n").arg(indent).arg(condExpr);
+                if (condExpr.count(':') == 3) {
+                    QStringList parts = condExpr.split(':');
+                    QString varName = parts[0].trimmed();
+                    QString startVal = parts[1].trimmed();
+                    QString endVal = parts[2].trimmed();
+                    QString stepVal = parts[3].trimmed();
+                    
+                    if (varName.isEmpty()) varName = "i";
+                    if (startVal.isEmpty()) startVal = "0";
+                    if (endVal.isEmpty()) endVal = "10";
+                    if (stepVal.isEmpty()) stepVal = "1";
+                    
+                    res += QString("%1for (int %2 = %3; %2 < %4; %2 += %5) {\n").arg(indent, varName, startVal, endVal, stepVal);
+                } else {
+                    res += QString("%1for (%2) {\n").arg(indent).arg(condExpr);
+                }
             } else if (block.id.startsWith("quando")) {
                 QString slideId = "webslider_1";
                 int percentage = 100;

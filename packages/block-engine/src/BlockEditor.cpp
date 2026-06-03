@@ -915,7 +915,7 @@ void BlockEditor::addBlock(const QString& type) {
         if (type == "else") {
             b.conditionExpression = "senao";
         } else if (type == "for") {
-            b.conditionExpression = "int i = 0; i < 10; i++";
+            b.conditionExpression = "i:0:10:1";
         } else if (type == "quando") {
             b.conditionExpression = "webslider_1:100";
         } else {
@@ -1292,7 +1292,76 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
             };
 
             connect(slideEdit, &QLineEdit::textChanged, this, updateExpr);
+            connect(slideEdit, &QLineEdit::textChanged, this, updateExpr);
             connect(pctEdit, &QLineEdit::textChanged, this, updateExpr);
+        } else if (block.id.startsWith("for")) {
+            QString varName = "i";
+            QString startVal = "0";
+            QString endVal = "10";
+            QString stepVal = "1";
+
+            if (block.conditionExpression.count(':') == 3) {
+                QStringList parts = block.conditionExpression.split(':');
+                varName = parts[0];
+                startVal = parts[1];
+                endVal = parts[2];
+                stepVal = parts[3];
+            }
+
+            auto* varEdit = new VariableSlotEdit(w);
+            varEdit->installEventFilter(this);
+            varEdit->setPlaceholderText("var");
+            varEdit->setText(varName);
+            varEdit->setFixedWidth(60);
+
+            auto* lblDe = new QLabel("DE", w);
+            lblDe->setStyleSheet("color: white; font-weight: bold; font-size: 11px;");
+
+            auto* startEdit = new VariableSlotEdit(w);
+            startEdit->installEventFilter(this);
+            startEdit->setPlaceholderText("0");
+            startEdit->setText(startVal);
+            startEdit->setFixedWidth(50);
+
+            auto* lblAte = new QLabel("ATÉ", w);
+            lblAte->setStyleSheet("color: white; font-weight: bold; font-size: 11px;");
+
+            auto* endEdit = new VariableSlotEdit(w);
+            endEdit->installEventFilter(this);
+            endEdit->setPlaceholderText("10");
+            endEdit->setText(endVal);
+            endEdit->setFixedWidth(50);
+
+            auto* lblPasso = new QLabel("PASSO", w);
+            lblPasso->setStyleSheet("color: white; font-weight: bold; font-size: 11px;");
+
+            auto* stepEdit = new VariableSlotEdit(w);
+            stepEdit->installEventFilter(this);
+            stepEdit->setPlaceholderText("1");
+            stepEdit->setText(stepVal);
+            stepEdit->setFixedWidth(40);
+
+            lay->addWidget(varEdit);
+            lay->addWidget(lblDe);
+            lay->addWidget(startEdit);
+            lay->addWidget(lblAte);
+            lay->addWidget(endEdit);
+            lay->addWidget(lblPasso);
+            lay->addWidget(stepEdit);
+
+            auto updateExpr = [this, index, varEdit, startEdit, endEdit, stepEdit]() {
+                m_activeBlocks[index].conditionExpression = QString("%1:%2:%3:%4")
+                    .arg(varEdit->text().trimmed())
+                    .arg(startEdit->text().trimmed())
+                    .arg(endEdit->text().trimmed())
+                    .arg(stepEdit->text().trimmed());
+                emit blocksChanged();
+            };
+
+            connect(varEdit, &QLineEdit::textChanged, this, updateExpr);
+            connect(startEdit, &QLineEdit::textChanged, this, updateExpr);
+            connect(endEdit, &QLineEdit::textChanged, this, updateExpr);
+            connect(stepEdit, &QLineEdit::textChanged, this, updateExpr);
         } else {
             auto* expEdit = new VariableSlotEdit(w);
             expEdit->installEventFilter(this);
