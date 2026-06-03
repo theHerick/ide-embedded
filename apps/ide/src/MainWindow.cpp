@@ -5262,7 +5262,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Dê DOIS CLIQUES no workspace (mesa de trabalho).\n"
         "2. Digite \"LED\" no campo de busca e adicione um LED à mesa.",
         "Dê duplo clique no workspace e adicione um LED!",
-        m_view, QRect(), TutorialStep::Up
+        m_view, QRect(), TutorialStep::Up, false
     });
 
     // Step 2: Add Resistor
@@ -5272,7 +5272,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Dê DOIS CLIQUES no workspace.\n"
         "2. Digite \"resistor\" na busca e adicione-o.",
         "Dê duplo clique no workspace e adicione um Resistor!",
-        m_view, QRect(), TutorialStep::Up
+        m_view, QRect(), TutorialStep::Up, false
     });
 
     // Step 3: Connect LED to Resistor
@@ -5282,7 +5282,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Dê um único clique com o botão esquerdo na perna vermelha do LED (anodo).\n"
         "2. Mova o mouse (sem arrastar) e dê outro clique em uma das pernas do Resistor.",
         "Clique no anodo do LED, mova o mouse e clique no Resistor!",
-        m_view, QRect(), TutorialStep::Up
+        m_view, QRect(), TutorialStep::Up, false
     });
 
     // Step 4: Connect Resistor to GPIO2
@@ -5292,7 +5292,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Dê um clique na outra perna livre do Resistor.\n"
         "2. Mova o mouse e clique no pino GPIO2 da placa ESP32 para fazer a ligação.",
         "Clique na perna do Resistor, mova o mouse e clique no GPIO2!",
-        m_view, QRect(), TutorialStep::Up
+        m_view, QRect(), TutorialStep::Up, false
     });
 
     // Step 5: Connect LED to GND
@@ -5302,7 +5302,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Dê um clique na perna cinza do LED (catodo).\n"
         "2. Mova o mouse e clique em um dos pinos GND da placa ESP32.",
         "Clique no catodo do LED, mova o mouse e clique no GND!",
-        m_view, QRect(), TutorialStep::Up
+        m_view, QRect(), TutorialStep::Up, false
     });
 
     // Step 6: Add Button
@@ -5312,7 +5312,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Dê DOIS CLIQUES no workspace.\n"
         "2. Busque por \"botão\" e adicione-o.",
         "Dê duplo clique no workspace e adicione um Botão!",
-        m_view, QRect(), TutorialStep::Up
+        m_view, QRect(), TutorialStep::Up, false
     });
 
     // Step 7: Connect Button to GPIO3
@@ -5322,7 +5322,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Dê um clique em uma das pernas do Botão.\n"
         "2. Mova o mouse e clique no pino GPIO3 da placa ESP32.",
         "Conecte uma das pernas do Botão ao pino GPIO3 da ESP32!",
-        m_view, QRect(), TutorialStep::Up
+        m_view, QRect(), TutorialStep::Up, false
     });
 
     // Step 8: Connect Button to GND
@@ -5332,7 +5332,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Dê um clique na outra perna livre do Botão.\n"
         "2. Mova o mouse e clique em um pino GND livre da placa ESP32.",
         "Conecte a outra perna do Botão ao pino GND da ESP32!",
-        m_view, QRect(), TutorialStep::Up
+        m_view, QRect(), TutorialStep::Up, false
     });
 
     // Step 9: Right Click Button
@@ -5342,7 +5342,7 @@ void MainWindow::startInteractiveTutorial() {
         "1. Clique com o BOTÃO DIREITO sobre o Botão no workspace.\n"
         "2. Selecione o evento \"Ao Clicar\" no menu flutuante.",
         "Clique com o botão direito no Botão e selecione 'Ao Clicar'!",
-        m_view, QRect(), TutorialStep::Up
+        m_view, QRect(), TutorialStep::Up, false
     });
 
     // Step 10: Block Editor logic

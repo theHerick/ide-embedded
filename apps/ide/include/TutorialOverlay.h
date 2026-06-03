@@ -19,6 +19,7 @@ struct TutorialStep {
     QWidget* targetWidget;  // Widget to spotlight (nullptr = center of screen)
     QRect customTargetRect; // Alternative to targetWidget
     enum ArrowDir { None, Up, Down, Left, Right } arrowDir = None;
+    bool showHighlight = true; // If false, no blue pulsing glow or border is drawn (only the cutout hole)
 };
 
 class TutorialOverlay : public QWidget {
@@ -200,20 +201,23 @@ protected:
         p.drawPath(path);
 
         if (hasSpot) {
-            // Glow ring (pulse)
-            QPen glowPen(QColor(59, 130, 246, 120), 3 + m_pulse * 0.3);
-            p.setPen(glowPen);
-            p.setBrush(Qt::NoBrush);
-            p.drawRoundedRect(expanded.adjusted(-(int)m_pulse, -(int)m_pulse, (int)m_pulse, (int)m_pulse), 14, 14);
+            const auto& step = m_steps[m_currentStep];
+            if (step.showHighlight) {
+                // Glow ring (pulse)
+                QPen glowPen(QColor(59, 130, 246, 120), 3 + m_pulse * 0.3);
+                p.setPen(glowPen);
+                p.setBrush(Qt::NoBrush);
+                p.drawRoundedRect(expanded.adjusted(-(int)m_pulse, -(int)m_pulse, (int)m_pulse, (int)m_pulse), 14, 14);
 
-            // White border around spotlight
-            QPen borderPen(QColor(255, 255, 255, 200), 2.5);
-            p.setPen(borderPen);
-            p.setBrush(Qt::NoBrush);
-            p.drawRoundedRect(expanded, 12, 12);
+                // White border around spotlight
+                QPen borderPen(QColor(255, 255, 255, 200), 2.5);
+                p.setPen(borderPen);
+                p.setBrush(Qt::NoBrush);
+                p.drawRoundedRect(expanded, 12, 12);
 
-            // Draw arrow from card to spotlight
-            drawArrow(p, spotRect);
+                // Draw arrow from card to spotlight
+                drawArrow(p, spotRect);
+            }
         }
     }
 
