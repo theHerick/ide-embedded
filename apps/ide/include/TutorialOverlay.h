@@ -332,11 +332,11 @@ protected:
     }
 
     bool eventFilter(QObject* watched, QEvent* event) override {
-        if (event->type() == QEvent::DragEnter) {
-            setAttribute(Qt::WA_TransparentForMouseEvents, true);
-        } else if (event->type() == QEvent::Drop || event->type() == QEvent::DragLeave) {
-            // Restore mouse event interception after the drag finishes (give it a small delay)
-            QTimer::singleShot(100, this, [this]() {
+        if (event->type() == QEvent::MouseButtonRelease ||
+            event->type() == QEvent::Drop ||
+            event->type() == QEvent::DragLeave) {
+            // Restore mouse event interception after the interaction finishes (give it a small delay)
+            QTimer::singleShot(50, this, [this]() {
                 setAttribute(Qt::WA_TransparentForMouseEvents, false);
             });
         }
@@ -379,6 +379,7 @@ protected:
 
     void mousePressEvent(QMouseEvent* event) override {
         if (shouldIgnoreEvent(event->pos())) {
+            setAttribute(Qt::WA_TransparentForMouseEvents, true);
             forwardEvent(event);
             event->accept();
         } else {
