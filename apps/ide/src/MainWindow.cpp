@@ -492,33 +492,58 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     QTimer::singleShot(2000, this, &MainWindow::checkAndInstallToolchain);
 
     // Onboarding / Tutorial auto-advance connections
-    connect(m_scene, &WorkspaceScene::componentAdded, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 1) {
-            m_tutorialOverlay->advance();
+    // Onboarding / Tutorial auto-advance connections
+    connect(m_scene, &WorkspaceScene::componentAdded, this, [this](ComponentItem* comp) {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && comp) {
+            int step = m_tutorialOverlay->currentStep();
+            logMessage(QString("Tutorial: Componente adicionado tipo='%1' no Passo %2").arg(comp->componentType()).arg(step), "SYSTEM");
+            if (step == 1 && comp->componentType() == "led") {
+                m_tutorialOverlay->advance();
+            } else if (step == 2 && comp->componentType() == "resistor") {
+                m_tutorialOverlay->advance();
+            } else if (step == 6 && comp->componentType() == "button") {
+                m_tutorialOverlay->advance();
+            }
         }
     });
 
     connect(m_scene, &WorkspaceScene::cableAdded, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 2) {
-            m_tutorialOverlay->advance();
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
+            int step = m_tutorialOverlay->currentStep();
+            logMessage(QString("Tutorial: Cabo adicionado no Passo %1").arg(step), "SYSTEM");
+            if (step == 3 || step == 4 || step == 5 || step == 7 || step == 8) {
+                m_tutorialOverlay->advance();
+            }
         }
     });
 
     connect(m_buildAction, &QAction::triggered, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 5) {
-            m_tutorialOverlay->advance();
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
+            int step = m_tutorialOverlay->currentStep();
+            logMessage(QString("Tutorial: Build acionado no Passo %1").arg(step), "SYSTEM");
+            if (step == 11) {
+                m_tutorialOverlay->advance();
+            }
         }
     });
 
     connect(m_playAction, &QAction::triggered, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 6) {
-            m_tutorialOverlay->advance();
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
+            int step = m_tutorialOverlay->currentStep();
+            logMessage(QString("Tutorial: Play acionado no Passo %1").arg(step), "SYSTEM");
+            if (step == 12) {
+                m_tutorialOverlay->advance();
+            }
         }
     });
 
     connect(m_blockEditor, &BlockEditor::blocksChanged, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 4) {
-            m_tutorialOverlay->advance();
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
+            int step = m_tutorialOverlay->currentStep();
+            logMessage(QString("Tutorial: Blocos modificados no Passo %1").arg(step), "SYSTEM");
+            if (step == 10) {
+                m_tutorialOverlay->advance();
+            }
         }
     });
 
@@ -1148,7 +1173,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
 
-    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 3) {
+    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 9) {
         m_tutorialOverlay->advance();
     }
 }
@@ -1189,7 +1214,7 @@ void MainWindow::openWebEventEditor(const QString& compId, const QString& eventN
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
 
-    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 3) {
+    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 9) {
         m_tutorialOverlay->advance();
     }
 }

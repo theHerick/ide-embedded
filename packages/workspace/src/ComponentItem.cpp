@@ -167,27 +167,55 @@ bool ComponentItem::isSimulating() const {
 }
 
 void ComponentItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event) {
-    Pin* pin = findPinAt(event->scenePos(), 10.0);
+    Pin* pin = findPinAt(event->scenePos(), 12.0);
     if (pin) {
         QString tooltip = pin->name;
         QString tUpper = tooltip.toUpper();
         
-        if (tUpper.contains("GPIO") || tUpper.contains("IO") || (tUpper.length() <= 2 && tUpper.toInt() > 0) || (tUpper.startsWith("D") && tUpper.mid(1).toInt() > 0)) {
-            QString num = tUpper;
-            num.remove("GPIO").remove("IO").remove("D");
-            if (!num.isEmpty() && num.toInt() > 0) {
-                tooltip = QString("Pino %1 - Pode ser usado para ligar sensores ou LEDs").arg(num);
+        if (m_type == "led") {
+            if (tUpper == "ANODE" || tUpper == "ANODO") {
+                tooltip = "Anodo (Perna Positiva/Longa do LED) - Conecte ao Resistor ou Porta (+)";
+            } else if (tUpper == "CATHODE" || tUpper == "CATODO") {
+                tooltip = "Catodo (Perna Negativa/Curta do LED) - Conecte ao GND (Terra) (-)";
             }
-        } else if (tUpper.contains("5V") || tUpper.contains("3V3") || tUpper.contains("VCC")) {
-            tooltip += " - Fornece energia positiva (+)";
-        } else if (tUpper.contains("GND")) {
-            tooltip += " - Terra / Negativo (-)";
-        } else if (tUpper == "EN") {
-            tooltip += " - Habilitar (Enable)";
-        } else if (tUpper == "RXD" || tUpper == "TXD" || tUpper == "RX" || tUpper == "TX") {
-            tooltip += " - Comunicação Serial (UART)";
-        } else if (tUpper == "SDA" || tUpper == "SCL") {
-            tooltip += " - Comunicação I2C";
+        } else if (m_type == "resistor") {
+            tooltip = QString("Pino %1 - Conexão do Resistor (Sem polaridade)").arg(pin->name);
+        } else if (m_type == "button") {
+            tooltip = QString("Terminal %1 - Contato do Botão (Conecta com o lado oposto ao ser pressionado)").arg(pin->name);
+        } else if (m_type == "potentiometer") {
+            if (pin->name == "1") {
+                tooltip = "Pino 1 - Geralmente conectado ao GND (-)";
+            } else if (pin->name == "2") {
+                tooltip = "Pino 2 (Cursor Central) - Conecte a uma entrada analógica (ADC)";
+            } else if (pin->name == "3") {
+                tooltip = "Pino 3 - Geralmente conectado ao VCC/3V3 (+)";
+            }
+        } else {
+            // General GPIO and control pins classification (only for esp32 or when named GPIO/IO)
+            bool isGpio = tUpper.contains("GPIO") || tUpper.contains("IO");
+            if (!isGpio && m_type == "esp32") {
+                bool isNum = (tUpper.length() <= 2 && tUpper.toInt() > 0);
+                bool isDPrefixed = (tUpper.startsWith("D") && tUpper.mid(1).toInt() > 0);
+                isGpio = isNum || isDPrefixed;
+            }
+
+            if (isGpio) {
+                QString num = tUpper;
+                num.remove("GPIO").remove("IO").remove("D");
+                if (!num.isEmpty() && num.toInt() > 0) {
+                    tooltip = QString("Pino %1 - Pode ser usado para ligar sensores ou LEDs").arg(num);
+                }
+            } else if (tUpper.contains("5V") || tUpper.contains("3V3") || tUpper.contains("VCC")) {
+                tooltip += " - Fornece energia positiva (+)";
+            } else if (tUpper.contains("GND")) {
+                tooltip += " - Terra / Negativo (-)";
+            } else if (tUpper == "EN") {
+                tooltip += " - Habilitar (Enable)";
+            } else if (tUpper == "RXD" || tUpper == "TXD" || tUpper == "RX" || tUpper == "TX") {
+                tooltip += " - Comunicação Serial (UART)";
+            } else if (tUpper == "SDA" || tUpper == "SCL") {
+                tooltip += " - Comunicação I2C";
+            }
         }
         setToolTip(tooltip);
     } else {
