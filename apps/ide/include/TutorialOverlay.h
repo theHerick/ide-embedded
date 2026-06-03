@@ -223,20 +223,39 @@ protected:
         }
     }
 
-    void mousePressEvent(QMouseEvent* event) override {
-        // Allow clicks through to the spotlighted area
+    bool shouldIgnoreEvent(const QPoint& pos) const {
         if (m_currentStep < m_steps.size()) {
             QRect spotRect = getTargetRect(m_steps[m_currentStep]);
             if (!spotRect.isNull()) {
                 QRect expanded = spotRect.adjusted(-12, -12, 12, 12);
-                if (expanded.contains(event->pos())) {
-                    // Let the click through
-                    event->ignore();
-                    return;
-                }
+                return expanded.contains(pos);
             }
         }
-        event->accept(); // Block clicks outside spotlight
+        return false;
+    }
+
+    void mousePressEvent(QMouseEvent* event) override {
+        if (shouldIgnoreEvent(event->pos())) {
+            event->ignore();
+        } else {
+            event->accept();
+        }
+    }
+
+    void mouseReleaseEvent(QMouseEvent* event) override {
+        if (shouldIgnoreEvent(event->pos())) {
+            event->ignore();
+        } else {
+            event->accept();
+        }
+    }
+
+    void mouseDoubleClickEvent(QMouseEvent* event) override {
+        if (shouldIgnoreEvent(event->pos())) {
+            event->ignore();
+        } else {
+            event->accept();
+        }
     }
 
 private:
