@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsSceneWheelEvent>
+#include <QGraphicsSceneHoverEvent>
+#include <QToolTip>
 #include <QGraphicsScene>
 #include <QStyleOptionGraphicsItem>
 #include <QMenu>
@@ -162,6 +164,36 @@ Pin* ComponentItem::getPinByName(const QString& name) {
 bool ComponentItem::isSimulating() const {
     auto* ws = dynamic_cast<WorkspaceScene*>(scene());
     return ws ? ws->isSimulating() : false;
+}
+
+void ComponentItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event) {
+    Pin* pin = findPinAt(event->scenePos(), 10.0);
+    if (pin) {
+        QString tooltip = pin->name;
+        QString tUpper = tooltip.toUpper();
+        
+        if (tUpper.contains("GPIO") || tUpper.contains("IO") || (tUpper.length() <= 2 && tUpper.toInt() > 0) || (tUpper.startsWith("D") && tUpper.mid(1).toInt() > 0)) {
+            QString num = tUpper;
+            num.remove("GPIO").remove("IO").remove("D");
+            if (!num.isEmpty() && num.toInt() > 0) {
+                tooltip = QString("Pino %1 - Pode ser usado para ligar sensores ou LEDs").arg(num);
+            }
+        } else if (tUpper.contains("5V") || tUpper.contains("3V3") || tUpper.contains("VCC")) {
+            tooltip += " - Fornece energia positiva (+)";
+        } else if (tUpper.contains("GND")) {
+            tooltip += " - Terra / Negativo (-)";
+        } else if (tUpper == "EN") {
+            tooltip += " - Habilitar (Enable)";
+        } else if (tUpper == "RXD" || tUpper == "TXD" || tUpper == "RX" || tUpper == "TX") {
+            tooltip += " - Comunicação Serial (UART)";
+        } else if (tUpper == "SDA" || tUpper == "SCL") {
+            tooltip += " - Comunicação I2C";
+        }
+        setToolTip(tooltip);
+    } else {
+        setToolTip(m_name + " (" + m_type + ")");
+    }
+    QGraphicsObject::hoverMoveEvent(event);
 }
 
 void ComponentItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {

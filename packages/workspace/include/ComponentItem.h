@@ -58,6 +58,7 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
 
     QString m_id;
     QString m_name;

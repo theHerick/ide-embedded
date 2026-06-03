@@ -5,7 +5,10 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
 #include <QDebug>
+#include <QPainterPathStroker>
+#include <QTransform>
 #include <cmath>
+#include <QMessageBox>
 #include <QGraphicsView>
 #include "SmdWizardDialog.h"
 #include "BlockEditor.h"
@@ -498,6 +501,23 @@ void WorkspaceScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
         if (comp == m_routeStartComp && !m_routeStartIsJunction) continue;
         Pin* pin = comp->findPinAt(scenePos, 14.0);
         if (pin) {
+            // Short-circuit protection (5V/3V3 directly to GND)
+            if (!m_routeStartIsJunction && m_routeStartPin) {
+                QString p1 = m_routeStartPin->name.toUpper();
+                QString p2 = pin->name.toUpper();
+                auto isPower = [](const QString& p) { return p.contains("5V") || p.contains("3V3") || p.contains("VCC"); };
+                auto isGnd = [](const QString& p) { return p.contains("GND"); };
+                
+                if ((isPower(p1) && isGnd(p2)) || (isGnd(p1) && isPower(p2))) {
+                    QMessageBox::warning(nullptr, "Curto-Circuito Detectado!",
+                        "Aviso: Você tentou ligar energia (5V/3V3) diretamente ao Terra (GND).\n\n"
+                        "Na vida real, isso causaria um curto-circuito e queimaria a placa! A ligação foi impedida.");
+                    cancelRouting();
+                    event->accept();
+                    return;
+                }
+            }
+
             // Pass only the intermediate points (if any). 
             // If started from junction, m_routeWaypoints[0] is the junction pos, so waypoints should be m_routeWaypoints[1..]
             std::vector<QPointF> waypoints(m_routeWaypoints.begin() + 1, m_routeWaypoints.end());
