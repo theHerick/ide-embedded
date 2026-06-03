@@ -5233,19 +5233,23 @@ void MainWindow::startInteractiveTutorial() {
 
     // Step 2: Workspace (double-click to add)
     steps.append({
-        "1. Adicionando Componentes",
-        "Dê DOIS CLIQUES no workspace (área quadriculada) para abrir a barra de busca.\n\n"
-        "Digite \"led\" ou \"botão\" e aperte Enter para colocá-lo na tela.",
-        "Dê duplo clique no workspace e adicione um componente!",
+        "1. Colocando os Componentes na Mesa",
+        "Você percebeu que não tem nenhuma aba lateral cheia de componentes, né? Isso é para a tela ficar limpa!\n\n"
+        "1. Dê DOIS CLIQUES no workspace para abrir a barra de busca.\n"
+        "2. Escreva \"botão\" e dê dois cliques nele para adicioná-lo.\n"
+        "3. Repita o processo: pesquise por \"LED\" e depois por \"resistor\" (porque ligar LED direto queima!).",
+        "Dê duplo clique no workspace, pesquise e adicione as peças!",
         m_view, QRect(), TutorialStep::Up
     });
 
     // Step 3: Connecting cables
     steps.append({
         "2. Conectando as Trilhas (Fios)",
-        "Agora conecte os pinos dos componentes na placa ESP32.\n\n"
-        "Clique com o botão esquerdo em um pino do componente e arraste o fio até o pino correspondente na placa ESP32.",
-        "Clique e arraste um fio até o pino da ESP32!",
+        "Ligue os fios dos componentes até a placa ESP32.\n\n"
+        "1. Clique com o botão esquerdo em um pino e arraste o fio até o pino da placa.\n"
+        "2. Se precisar girar alguma peça para encaixar melhor, clique nela com o BOTÃO DIREITO e escolha \"Girar 90º\".\n"
+        "3. Dica de ouro: clique com o botão direito nas trilhas para mudar a cor dos fios e organizar tudo!",
+        "Ligue os fios até a placa ESP! (Botão direito para girar ou colorir)",
         m_view, QRect(), TutorialStep::Up
     });
 
