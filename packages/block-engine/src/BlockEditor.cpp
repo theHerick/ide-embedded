@@ -534,10 +534,15 @@ void BlockEditor::refreshPalette() {
     }
 
     // Section 1: Pinos e Atuadores
-    if (!pins.isEmpty()) {
-        auto* pinHeader = new QLabel("PINOS E ATUADORES", this);
-        pinHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #EC4899; padding-left: 2px; padding-top: 4px; background: transparent;");
-        m_paletteLayout->addWidget(pinHeader);
+    auto* pinHeader = new QLabel("PINOS E ATUADORES", this);
+    pinHeader->setStyleSheet("font-size: 10px; font-weight: bold; color: #EC4899; padding-left: 2px; padding-top: 4px; background: transparent;");
+    m_paletteLayout->addWidget(pinHeader);
+    
+    if (pins.isEmpty()) {
+        auto* emptyLbl = new QLabel("Nenhum conectado", this);
+        emptyLbl->setStyleSheet("font-size: 10px; color: #94A3B8; padding-left: 2px; font-style: italic; background: transparent;");
+        m_paletteLayout->addWidget(emptyLbl);
+    } else {
         for (const auto& varDef : pins) {
             m_paletteLayout->addWidget(new VisualVariableItem(varDef, this));
         }
