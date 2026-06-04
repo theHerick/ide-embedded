@@ -598,27 +598,28 @@ private:
 
     QWidget* resolveActionParamWidget() const {
         if (parentWidget()) {
-            for (auto* item : parentWidget()->findChildren<QWidget*>()) {
+            QWidget* lastResort = nullptr;
+            for (auto* item : parentWidget()->findChildren<QLineEdit*>()) {
                 if (item->objectName() == "actionParamEdit" && item->isVisible()) {
-                    return item;
+                    if (item->text().isEmpty()) return item;
+                    lastResort = item;
                 }
             }
+            return lastResort; // Fallback to last one if none are empty
         }
         return nullptr;
     }
 
     QWidget* resolveActionTargetWidget() const {
         if (parentWidget()) {
+            QWidget* lastResort = nullptr;
             for (auto* item : parentWidget()->findChildren<QLineEdit*>()) {
-                if (item->objectName() == "actionTargetEdit") {
-                    return item;
+                if (item->objectName() == "actionTargetEdit" && item->isVisible()) {
+                    if (item->text().isEmpty()) return item;
+                    lastResort = item;
                 }
             }
-            for (auto* item : parentWidget()->findChildren<QWidget*>()) {
-                if (item->objectName() == "actionTargetEdit") {
-                    return item;
-                }
-            }
+            return lastResort;
         }
         return nullptr;
     }
