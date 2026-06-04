@@ -14,6 +14,8 @@
 #include <QApplication>
 #include <QPointer>
 #include <QLineEdit>
+#include <QTabBar>
+#include <QTabWidget>
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>
@@ -506,6 +508,16 @@ private:
             if (cmdW && cmdW->isVisible()) {
                 QPoint topLeft = cmdW->mapTo(parentWidget(), QPoint(0, 0));
                 return QRect(topLeft, cmdW->size());
+            }
+        } else if (step.dynamicTargetId == "oscilloscopeTab") {
+            QTabWidget* bottomTabs = parentWidget()->findChild<QTabWidget*>("bottomTabs");
+            if (bottomTabs) {
+                QTabBar* tabBar = bottomTabs->findChild<QTabBar*>();
+                if (tabBar) {
+                    QRect tabRect = tabBar->tabRect(2); // index 2 is Osciloscopio
+                    QPoint topLeft = tabBar->mapTo(parentWidget(), tabRect.topLeft());
+                    return QRect(topLeft, tabRect.size());
+                }
             }
         }
         return QRect();
