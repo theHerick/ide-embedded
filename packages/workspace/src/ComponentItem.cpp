@@ -1300,25 +1300,24 @@ void ButtonItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
 }
 
 void ButtonItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
-    if (!isSimulating()) {
-        ComponentItem::mousePressEvent(event);
-        return;
-    }
     if (event->button() == Qt::LeftButton) {
-        m_isPressed = true;
-        emit stateChanged(true);
-        update();
-        event->accept();
+        if (isSimulating()) {
+            qDebug() << "[BOTAO] Clicado durante a simulacao!";
+            m_isPressed = true;
+            emit stateChanged(true);
+            update();
+            event->accept();
+            return;
+        }
+    }
+    if (isSimulating()) {
+        event->ignore();
         return;
     }
-    event->ignore();
+    ComponentItem::mousePressEvent(event);
 }
 
 void ButtonItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
-    if (!isSimulating()) {
-        ComponentItem::mouseReleaseEvent(event);
-        return;
-    }
     if (m_isPressed) {
         m_isPressed = false;
         emit stateChanged(false);
@@ -1326,7 +1325,11 @@ void ButtonItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
         event->accept();
         return;
     }
-    event->ignore();
+    if (isSimulating()) {
+        event->ignore();
+        return;
+    }
+    ComponentItem::mouseReleaseEvent(event);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
