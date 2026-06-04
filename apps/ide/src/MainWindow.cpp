@@ -403,16 +403,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     // Dynamic compilation on block updates
     connect(m_blockEditor, &BlockEditor::blocksChanged, this, &MainWindow::compileCode);
-    connect(m_blockEditor, &BlockEditor::editorClosed, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
-            int step = m_tutorialOverlay->currentStep();
-            if ((m_activeTutorial == 1 && step == 12) ||
-                (m_activeTutorial == 2 && step == 19) ||
-                (m_activeTutorial == 3 && step == 11)) {
-                m_tutorialOverlay->advance();
-            }
-        }
-    });
 
     buildLayout();
     buildToolbar();
@@ -1126,6 +1116,9 @@ void MainWindow::onSelectionChanged(ComponentItem* selectedComp) {
         if (m_blockEditor) {
             m_blockEditor->hide();
             m_blockEditor->setEnabled(false);
+            if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 3 && m_tutorialOverlay->currentStep() == 11) {
+                m_tutorialOverlay->advance();
+            }
         }
         return;
     }
@@ -5690,6 +5683,7 @@ void MainWindow::startDistanceSensorTutorial() {
     m_tutorialOverlay->addVariableDragStep(11, "BUZZER");            // drag Buzzer to action target (HIGH)
     m_tutorialOverlay->addVariableDragStep(15, "BUZZER");            // drag Buzzer to action target (LOW)
     m_tutorialOverlay->addVariableDragStep(18, "distancia", "param"); // drag distancia to delay ms field
+    m_tutorialOverlay->addVariableDragStep(10, "webslider_1", "param"); // drag webslider to servo block param
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -5819,11 +5813,11 @@ void MainWindow::startMotorIoTTutorial() {
 
     // ── Passo 11: Fechar o Editor de Blocos ──────────────────────────────────
     steps.append({
-        "11. Feche o Editor de Blocos",
+        "11. Saia do Editor de Eventos",
         "Nosso código está pronto.\n\n"
-        "Clique no 'X' vermelho (ou botão Fechar/Salvar) na aba superior direita do Editor de Blocos.",
-        "Feche a janela de eventos e salve!",
-        nullptr, QRect(), TutorialStep::Up, false, "blockEditorCloseBtn"
+        "Clique fora do editor de eventos (na área cinza ou em outro componente) para fechá-lo.",
+        "Clique fora do evento para fechar!",
+        nullptr, QRect(), TutorialStep::Up, false
     });
 
     // ── Passo 12: Abrir Web View novamente ───────────────────────────────────

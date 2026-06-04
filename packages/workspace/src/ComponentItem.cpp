@@ -1148,6 +1148,16 @@ void LEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
         }
 
         QColor ledColor = m_isOn ? QColor(255, 255, 0) : QColor(240, 230, 140);
+
+        if (m_isOn) {
+            painter->setPen(Qt::NoPen);
+            QRadialGradient glow(0, 0, w);
+            glow.setColorAt(0.0, QColor(255, 255, 0, 120));
+            glow.setColorAt(1.0, QColor(255, 255, 0, 0));
+            painter->setBrush(glow);
+            painter->drawEllipse(QPointF(0, 0), w, w);
+        }
+
         painter->setBrush(ledColor);
         painter->setPen(QPen(QColor(200, 200, 100), 1));
         if (size == "5050") {
@@ -1173,6 +1183,13 @@ void LEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
         QRadialGradient grad(0, 0, 18);
         QPen domePen;
         if (m_isOn) {
+            painter->setPen(Qt::NoPen);
+            QRadialGradient glowGrad(0, 0, 28);
+            glowGrad.setColorAt(0.0, QColor(239, 68, 68, 150));
+            glowGrad.setColorAt(1.0, QColor(239, 68, 68, 0));
+            painter->setBrush(glowGrad);
+            painter->drawEllipse(QPointF(0, 0), 28, 28);
+
             grad.setColorAt(0.0, QColor(255, 220, 220));
             grad.setColorAt(0.3, QColor(239, 68, 68));
             grad.setColorAt(1.0, QColor(185, 28, 28));
@@ -1281,6 +1298,10 @@ void ButtonItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
 }
 
 void ButtonItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+    if (!isSimulating()) {
+        ComponentItem::mousePressEvent(event);
+        return;
+    }
     if (event->button() == Qt::LeftButton) {
         // Check if user clicked the plunger area (radius 15)
         QPointF local = event->pos();
@@ -1292,14 +1313,14 @@ void ButtonItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
             return;
         }
     }
-    if (isSimulating()) {
-        event->ignore();
-        return;
-    }
-    ComponentItem::mousePressEvent(event);
+    event->ignore();
 }
 
 void ButtonItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+    if (!isSimulating()) {
+        ComponentItem::mouseReleaseEvent(event);
+        return;
+    }
     if (m_isPressed) {
         m_isPressed = false;
         emit stateChanged(false);
@@ -1307,11 +1328,7 @@ void ButtonItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
         event->accept();
         return;
     }
-    if (isSimulating()) {
-        event->ignore();
-        return;
-    }
-    ComponentItem::mouseReleaseEvent(event);
+    event->ignore();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -474,42 +474,6 @@ BlockEditor::BlockEditor(QWidget* parent) : QWidget(parent) {
     auto* slotLay = new QVBoxLayout(slotContainer);
     slotLay->setContentsMargins(0, 0, 0, 0);
 
-    auto* beHeader = new QWidget(slotContainer);
-    beHeader->setStyleSheet("background-color: #F8FAFC; border-bottom: 1px solid #E2E8F0;");
-    auto* beHeaderLay = new QHBoxLayout(beHeader);
-    beHeaderLay->setContentsMargins(12, 6, 12, 6);
-    auto* beTitle = new QLabel("EDITOR DE BLOCOS", beHeader);
-    beTitle->setStyleSheet("color: #64748B; font-weight: 800; font-size: 11px; font-family: 'Segoe UI', Arial;");
-    beHeaderLay->addWidget(beTitle);
-    beHeaderLay->addStretch();
-    auto* closeBtn = new QPushButton("X", beHeader);
-    closeBtn->setObjectName("blockEditorCloseBtn");
-    closeBtn->setFixedSize(24, 24);
-    closeBtn->setStyleSheet(
-        "QPushButton { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ff9999, stop:0.45 #e53935, stop:0.5 #c62828, stop:1 #b71c1c); "
-        "  color: white; "
-        "  font-weight: 900; "
-        "  border: 1px solid #8e0000; "
-        "  border-top: 1px solid #ffcccc; "
-        "  border-radius: 12px; "
-        "}"
-        "QPushButton:hover { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffcccc, stop:0.45 #ef5350, stop:0.5 #e53935, stop:1 #c62828); "
-        "}"
-        "QPushButton:pressed { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #b71c1c, stop:1 #c62828); "
-        "  border-top: 1px solid #8e0000; "
-        "}"
-    );
-    connect(closeBtn, &QPushButton::clicked, this, [this]() {
-        this->hide();
-        this->setEnabled(false);
-        emit this->editorClosed();
-    });
-    beHeaderLay->addWidget(closeBtn);
-    slotLay->addWidget(beHeader);
-
     m_blockListWidget = new QListWidget(this);
     m_blockListWidget->setObjectName("blockListWidget");
     m_blockListWidget->setFocusPolicy(Qt::StrongFocus);
