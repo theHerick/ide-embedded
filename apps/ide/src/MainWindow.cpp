@@ -452,6 +452,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         } else if (comp->componentType() == "hcsr04") {
             auto* hcsr = static_cast<HCSR04Item*>(comp);
             this->editHCSR04Properties(hcsr);
+            if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 2) {
+                if (m_tutorialOverlay->currentStep() == 22) {
+                    m_tutorialOverlay->advance();
+                }
+            }
         } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
             if (custom->category() == "analog_input") {
                 this->editCustomPotentiometerValue(custom);
@@ -677,6 +682,14 @@ void MainWindow::buildLayout() {
     m_bottomTabs->addTab(m_compilerConsole, "Console");
     m_bottomTabs->addTab(m_serialMonitor, "Monitor Serial");
     m_bottomTabs->addTab(m_oscilloscope,    "Osciloscopio");
+
+    connect(m_bottomTabs, &QTabWidget::currentChanged, this, [this](int index) {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 2) {
+            if (m_tutorialOverlay->currentStep() == 23 && index == 2) { // Index 2 is Osciloscopio
+                m_tutorialOverlay->advance();
+            }
+        }
+    });
 
     leftInnerSplitter->addWidget(canvasToolboxWidget);
     leftInnerSplitter->addWidget(m_bottomTabs);
@@ -5755,22 +5768,30 @@ void MainWindow::startDistanceSensorTutorial() {
         playWidget, QRect(), TutorialStep::Up
     });
 
-    // ── Passo 22: Observe o buzzer ──────────────────────────────────────
+    // ── Passo 22: Observe o buzzer e teste a distância ────────────────────────
     steps.append({
-        "22. Observe o Buzzer bipando e teste a distância!",
-        "O buzzer está bipando em tempo real — isso é o seu sonar funcionando!\n\n"
-        "Quanto mais perto do objeto (padrão: 30 cm), mais rápido o bip.\n\n"
-        "Dê DOIS CLIQUES no HC-SR04 para mudar a distância simulada e ver o intervalo mudar!",
-        "Dê dois cliques no HC-SR04 para ajustar a distância!",
+        "22. Mude a distância simulada!",
+        "O buzzer está bipando em tempo real!\n\n"
+        "Dê DOIS CLIQUES no sensor HC-SR04 para abrir as configurações,\n"
+        "mude a distância e feche a janela para ver o ritmo do bip mudar.",
+        "Dê dois cliques no HC-SR04 e mude a distância simulada!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 23: Concluído ─────────────────────────────────────────────────
+    // ── Passo 23: Abrir o Osciloscópio ──────────────────────────────────────
     steps.append({
-        "Parabéns! Seu sonar está funcionando!",
-        "Você montou um detector de proximidade ultrassônico do zero!\n\n"
-        "Com o HC-SR04, você pode criar alarmes de ré, contadores automáticos, "
-        "robôs que desviam de obstáculos e muito mais.\n\n"
+        "23. Abra o Osciloscópio",
+        "Vamos visualizar os pulsos sonoros em formato de gráfico.\n\n"
+        "Clique na aba 'Osciloscópio' localizada na parte inferior esquerda da tela.",
+        "Clique na aba Osciloscópio!",
+        m_bottomTabs, QRect(), TutorialStep::Up
+    });
+
+    // ── Passo 24: Concluído ─────────────────────────────────────────────────
+    steps.append({
+        "Parabéns! Seu sonar está concluído!",
+        "Você montou e simulou um detector de proximidade ultrassônico do zero!\n\n"
+        "Observe no gráfico as ondas de pulso mudando conforme a distância.\n\n"
         "Explore e divirta-se criando novos projetos!",
         "Clique em 'Concluir' para fechar o tutorial.",
         nullptr, QRect(), TutorialStep::None
