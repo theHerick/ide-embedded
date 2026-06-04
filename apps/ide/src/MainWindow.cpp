@@ -5720,13 +5720,13 @@ void MainWindow::startMotorIoTTutorial() {
         nullptr, QRect(), TutorialStep::None
     });
 
-    // ── Passo 1: Adicionar Servomotor ─────────────────────────────────────────
+    // ── Passo 1: Adicionar Motor Generico ─────────────────────────────────────────
     steps.append({
-        "1. Dê dois cliques no workspace e adicione um Servomotor",
-        "Vamos adicionar o nosso motor SG90.\n\n"
+        "1. Dê dois cliques no workspace e adicione um Motor Genérico",
+        "Vamos adicionar o nosso motor.\n\n"
         "1. Dê DOIS CLIQUES no workspace (mesa de trabalho).\n"
-        "2. Digite \"Motor\" ou \"Servo\" na busca e adicione-o.",
-        "Dê duplo clique no workspace e adicione um Servomotor!",
+        "2. Digite \"Motor\" na busca e adicione-o.",
+        "Dê duplo clique no workspace e adicione um Motor Genérico!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
@@ -5734,7 +5734,7 @@ void MainWindow::startMotorIoTTutorial() {
     steps.append({
         "2. Conecte o pino GND do motor ao pino GND da ESP32",
         "O pino GND (geralmente marrom ou preto) vai para o terra.\n\n"
-        "1. Dê um clique no pino GND do Servomotor.\n"
+        "1. Dê um clique no pino GND do Motor Genérico.\n"
         "2. Mova o mouse e clique em um pino GND da placa ESP32.",
         "Clique no GND do Motor e depois no GND da ESP32!",
         m_view, QRect(), TutorialStep::Up, false
@@ -5744,7 +5744,7 @@ void MainWindow::startMotorIoTTutorial() {
     steps.append({
         "3. Conecte o pino VCC do motor a um pino de alimentação da ESP32",
         "O pino VCC (vermelho) alimenta o motor.\n\n"
-        "1. Dê um clique no pino VCC do Servomotor.\n"
+        "1. Dê um clique no pino VCC do Motor Genérico.\n"
         "2. Mova o mouse e clique no pino 5V ou 3V3 da placa ESP32.",
         "Clique no VCC do Motor e depois no 5V/3V3 da ESP32!",
         m_view, QRect(), TutorialStep::Up, false
@@ -5754,7 +5754,7 @@ void MainWindow::startMotorIoTTutorial() {
     steps.append({
         "4. Conecte o pino PWM (Sinal) a um pino GPIO da ESP32",
         "O pino PWM (laranja) envia o ângulo desejado para o motor.\n\n"
-        "1. Dê um clique no pino PWM do Servomotor.\n"
+        "1. Dê um clique no pino PWM do Motor Genérico.\n"
         "2. Mova o mouse e clique em um pino GPIO livre da ESP32.",
         "Conecte o PWM do Motor a um GPIO da ESP32!",
         m_view, QRect(), TutorialStep::Up, false
@@ -5762,9 +5762,9 @@ void MainWindow::startMotorIoTTutorial() {
 
     // ── Passo 5: Dashboard Web ───────────────────────────────────────────────
     steps.append({
-        "5. Clique no ícone de Construtor Web (Globo)",
+        "5. Clique no ícone de Construtor Web",
         "Agora vamos desenhar a página da web!\n\n"
-        "Clique no botão 'Dashboard Web' (ícone de globo) na barra de ferramentas.",
+        "Clique no botão 'Dashboard Web' na barra de ferramentas.",
         "Clique no botão Dashboard Web na barra superior!",
         webWidget, QRect(), TutorialStep::Up, true
     });
@@ -5810,10 +5810,10 @@ void MainWindow::startMotorIoTTutorial() {
 
     // ── Passo 10: Arrastar variável Slider ───────────────────────────────────
     steps.append({
-        "10. Arraste a variável 'valor' para o campo Ângulo",
-        "A variável 'valor' contém a posição atual do slider na página (0 a 180).\n\n"
-        "Na lista 'VARIÁVEIS DO EVENTO' à esquerda, arraste a variável 'valor' para o campo 'Ângulo'.",
-        "Arraste a variável do Slider para o Ângulo!",
+        "10. Arraste a variável da porcentagem do slider para o campo Ângulo",
+        "A variável 'webslider_1' (ou similar) contém a porcentagem atual do slider na página (0 a 100).\n\n"
+        "Na lista 'VARIÁVEIS DO EVENTO' à esquerda, arraste a variável da porcentagem do slider para o campo 'Ângulo'.",
+        "Arraste a variável da porcentagem do slider para o Ângulo!",
         nullptr, QRect(), TutorialStep::Right
     });
 

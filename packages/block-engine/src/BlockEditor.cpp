@@ -485,7 +485,23 @@ BlockEditor::BlockEditor(QWidget* parent) : QWidget(parent) {
     auto* closeBtn = new QPushButton("X", beHeader);
     closeBtn->setObjectName("blockEditorCloseBtn");
     closeBtn->setFixedSize(24, 24);
-    closeBtn->setStyleSheet("background-color: #EF4444; color: white; font-weight: bold; border-radius: 4px; padding: 0px;");
+    closeBtn->setStyleSheet(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ff9999, stop:0.45 #e53935, stop:0.5 #c62828, stop:1 #b71c1c); "
+        "  color: white; "
+        "  font-weight: 900; "
+        "  border: 1px solid #8e0000; "
+        "  border-top: 1px solid #ffcccc; "
+        "  border-radius: 12px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffcccc, stop:0.45 #ef5350, stop:0.5 #e53935, stop:1 #c62828); "
+        "}"
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #b71c1c, stop:1 #c62828); "
+        "  border-top: 1px solid #8e0000; "
+        "}"
+    );
     connect(closeBtn, &QPushButton::clicked, this, [this]() {
         this->hide();
         this->setEnabled(false);
