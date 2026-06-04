@@ -519,6 +519,20 @@ private:
                     return QRect(topLeft, tabRect.size());
                 }
             }
+        } else if (!step.dynamicTargetId.isEmpty() && parentWidget()) {
+            QWidget* dynTarget = parentWidget()->findChild<QWidget*>(step.dynamicTargetId);
+            if (!dynTarget) {
+                for (auto* dlg : QApplication::topLevelWidgets()) {
+                    if (dlg->inherits("QDialog") && dlg->isVisible()) {
+                        dynTarget = dlg->findChild<QWidget*>(step.dynamicTargetId);
+                        if (dynTarget) break;
+                    }
+                }
+            }
+            if (dynTarget && dynTarget->isVisible()) {
+                QPoint topLeft = dynTarget->mapTo(parentWidget(), QPoint(0, 0));
+                return QRect(topLeft, dynTarget->size());
+            }
         }
         return QRect();
     }

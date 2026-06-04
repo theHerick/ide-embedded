@@ -474,7 +474,25 @@ BlockEditor::BlockEditor(QWidget* parent) : QWidget(parent) {
     auto* slotLay = new QVBoxLayout(slotContainer);
     slotLay->setContentsMargins(0, 0, 0, 0);
 
-
+    auto* beHeader = new QWidget(slotContainer);
+    beHeader->setStyleSheet("background-color: #F8FAFC; border-bottom: 1px solid #E2E8F0;");
+    auto* beHeaderLay = new QHBoxLayout(beHeader);
+    beHeaderLay->setContentsMargins(12, 6, 12, 6);
+    auto* beTitle = new QLabel("EDITOR DE BLOCOS", beHeader);
+    beTitle->setStyleSheet("color: #64748B; font-weight: 800; font-size: 11px; font-family: 'Segoe UI', Arial;");
+    beHeaderLay->addWidget(beTitle);
+    beHeaderLay->addStretch();
+    auto* closeBtn = new QPushButton("X", beHeader);
+    closeBtn->setObjectName("blockEditorCloseBtn");
+    closeBtn->setFixedSize(24, 24);
+    closeBtn->setStyleSheet("background-color: #EF4444; color: white; font-weight: bold; border-radius: 4px; padding: 0px;");
+    connect(closeBtn, &QPushButton::clicked, this, [this]() {
+        this->hide();
+        this->setEnabled(false);
+        emit this->editorClosed();
+    });
+    beHeaderLay->addWidget(closeBtn);
+    slotLay->addWidget(beHeader);
 
     m_blockListWidget = new QListWidget(this);
     m_blockListWidget->setObjectName("blockListWidget");
@@ -946,7 +964,7 @@ void BlockEditor::addBlock(const QString& type) {
                 b.actionCommand = "TOGGLE";
             } else if (type == "delay") {
                 b.actionCommand = "DELAY";
-                b.actionTarget = "1000";
+                b.actionParam = "1000";
             } else if (type == "wifiAP") {
                 b.actionCommand = "WIFI_AP";
                 b.actionTarget = "MinhaRede";

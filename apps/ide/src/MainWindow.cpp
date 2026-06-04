@@ -403,6 +403,16 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     // Dynamic compilation on block updates
     connect(m_blockEditor, &BlockEditor::blocksChanged, this, &MainWindow::compileCode);
+    connect(m_blockEditor, &BlockEditor::editorClosed, this, [this]() {
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
+            int step = m_tutorialOverlay->currentStep();
+            if ((m_activeTutorial == 1 && step == 12) ||
+                (m_activeTutorial == 2 && step == 19) ||
+                (m_activeTutorial == 3 && step == 11)) {
+                m_tutorialOverlay->advance();
+            }
+        }
+    });
 
     buildLayout();
     buildToolbar();
@@ -513,6 +523,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
                 m_tutorialOverlay->advance();
             else if (step == 6 && type == "buzzer")
                 m_tutorialOverlay->advance();
+        } else if (m_activeTutorial == 3) {
+            // Tutorial 3: Servomotor (step 1)
+            if      (step == 1 && (type == "sg90" || type == "servo" || type == "motor"))
+                m_tutorialOverlay->advance();
         }
     });
 
@@ -528,24 +542,28 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             // Tutorial 2: connection steps 2,3,4,5,7,8
             if (step == 2 || step == 3 || step == 4 || step == 5 || step == 7 || step == 8)
                 m_tutorialOverlay->advance();
+        } else if (m_activeTutorial == 3) {
+            // Tutorial 3: connection steps 2, 3, 4
+            if (step == 2 || step == 3 || step == 4)
+                m_tutorialOverlay->advance();
         }
     });
 
     connect(m_buildAction, &QAction::triggered, this, [this]() {
         if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
         int step = m_tutorialOverlay->currentStep();
-        // Tutorial 1 build = step 12, Tutorial 2 build = step 20
         if ((m_activeTutorial == 1 && step == 12) ||
-            (m_activeTutorial == 2 && step == 20))
+            (m_activeTutorial == 2 && step == 20) ||
+            (m_activeTutorial == 3 && step == 15))
             m_tutorialOverlay->advance();
     });
 
     connect(m_playAction, &QAction::triggered, this, [this]() {
         if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
         int step = m_tutorialOverlay->currentStep();
-        // Tutorial 1 play = step 13, Tutorial 2 play = step 21
         if ((m_activeTutorial == 1 && step == 13) ||
-            (m_activeTutorial == 2 && step == 21))
+            (m_activeTutorial == 2 && step == 21) ||
+            (m_activeTutorial == 3 && step == 16))
             m_tutorialOverlay->advance();
     });
 
@@ -898,8 +916,29 @@ void MainWindow::buildToolbar() {
         availableVars.removeDuplicates();
         
         WebPageEditorDialog dlg(m_webPageData, availableVars, this);
+        
+        bool overlayWasActive = m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 3 && (m_tutorialOverlay->currentStep() == 5 || m_tutorialOverlay->currentStep() == 11);
+        if (overlayWasActive) {
+            m_tutorialOverlay->advance(); 
+            m_tutorialOverlay->setParent(&dlg);
+            m_tutorialOverlay->resize(dlg.size());
+            m_tutorialOverlay->show();
+            m_tutorialOverlay->raise();
+        }
+
         dlg.exec();
         
+        if (overlayWasActive && m_tutorialOverlay) {
+            m_tutorialOverlay->setParent(this);
+            m_tutorialOverlay->resize(this->size());
+            m_tutorialOverlay->show();
+            m_tutorialOverlay->raise();
+            
+            if (m_activeTutorial == 3 && m_tutorialOverlay->currentStep() == 13) {
+                m_tutorialOverlay->advance(); // advance to step 14
+            }
+        }
+
         QString editId = dlg.getEditEventCompId();
         QString editEvent = dlg.getEditEventName();
         if (!editId.isEmpty() && !editEvent.isEmpty()) {
@@ -4946,6 +4985,46 @@ void MainWindow::showFirmwareInfo() {
         cardsLayout->addWidget(card1);
         cardsLayout->addWidget(card2);
 
+        // --- Card 3: Motor & IoT ---
+        auto* card3 = new QFrame(tutWidget);
+        card3->setFixedSize(300, 240);
+        card3->setStyleSheet(
+            "QFrame { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.4 #FFFBEB, stop:1 #FEF3C7); "
+            "  border: 1px solid #FCD34D; "
+            "  border-radius: 12px; "
+            "}"
+        );
+        auto* l3 = new QVBoxLayout(card3);
+        l3->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
+        l3->setContentsMargins(20, 25, 20, 25);
+        
+        auto* t3 = new QLabel("Tutorial 3\nMotor IoT", card3);
+        t3->setAlignment(Qt::AlignCenter);
+        t3->setStyleSheet("font-size: 18px; font-weight: 800; color: #D97706; border: none; background: transparent;");
+        l3->addWidget(t3);
+        
+        auto* d3 = new QLabel("Crie um Dashboard Web (site) para controlar a posição de um Servomotor via Wi-Fi.", card3);
+        d3->setAlignment(Qt::AlignCenter);
+        d3->setWordWrap(true);
+        d3->setStyleSheet("font-size: 13px; color: #334155; border: none; background: transparent; margin-top: 10px;");
+        l3->addWidget(d3);
+        
+        l3->addStretch();
+        auto* btnStart3 = new QPushButton("Iniciar Tutorial 3", card3);
+        btnStart3->setCursor(Qt::PointingHandCursor);
+        btnStart3->setFixedSize(200, 42);
+        btnStart3->setStyleSheet(
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FBBF24, stop:0.4 #F59E0B, stop:0.5 #D97706, stop:1 #B45309); "
+            "  border: 1.5px solid rgba(255, 255, 255, 0.85); border-radius: 6px; color: white; font-weight: bold; font-size: 13px; "
+            "}"
+            "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FDE68A, stop:0.3 #FBBF24, stop:0.6 #F59E0B, stop:1 #D97706); }"
+        );
+        l3->addWidget(btnStart3, 0, Qt::AlignHCenter);
+
+        cardsLayout->addWidget(card3);
+
         tutLayout->addLayout(cardsLayout);
         tutLayout->addStretch();
 
@@ -4957,6 +5036,10 @@ void MainWindow::showFirmwareInfo() {
         connect(btnStart2, &QPushButton::clicked, this, [this, dlg]() {
             dlg->accept();
             QTimer::singleShot(300, this, &MainWindow::startDistanceSensorTutorial);
+        });
+        connect(btnStart3, &QPushButton::clicked, this, [this, dlg]() {
+            dlg->accept();
+            QTimer::singleShot(300, this, &MainWindow::startMotorIoTTutorial);
         });
 
         tabs->addTab(tutWidget, "Tutoriais Interativos");
@@ -5611,6 +5694,197 @@ void MainWindow::startDistanceSensorTutorial() {
     m_tutorialOverlay->start();
 }
 
+void MainWindow::startMotorIoTTutorial() {
+    if (!m_tutorialOverlay) {
+        m_tutorialOverlay = new TutorialOverlay(this);
+    }
+
+    QWidget* buildWidget = nullptr;
+    QWidget* playWidget = nullptr;
+    QWidget* webWidget = nullptr;
+    for (auto* toolbar : findChildren<QToolBar*>()) {
+        if (m_buildAction) buildWidget = toolbar->widgetForAction(m_buildAction);
+        if (m_playAction)  playWidget  = toolbar->widgetForAction(m_playAction);
+        if (m_webPageAction) webWidget = toolbar->widgetForAction(m_webPageAction);
+    }
+
+    QVector<TutorialStep> steps;
+
+    // ── Passo 0: Bem-vindo ────────────────────────────────────────────────────
+    steps.append({
+        "Bem-vindo ao Tutorial 3!",
+        "Neste tutorial vamos criar um Dashboard Web IoT:\n\n"
+        "Vamos usar uma página Web (via Wi-Fi) para controlar a posição de um Servomotor!\n\n"
+        "Siga os passos e veja a internet das coisas ganhando vida.",
+        "Clique em 'Próximo' para começar!",
+        nullptr, QRect(), TutorialStep::None
+    });
+
+    // ── Passo 1: Adicionar Servomotor ─────────────────────────────────────────
+    steps.append({
+        "1. Dê dois cliques no workspace e adicione um Servomotor",
+        "Vamos adicionar o nosso motor SG90.\n\n"
+        "1. Dê DOIS CLIQUES no workspace (mesa de trabalho).\n"
+        "2. Digite \"Motor\" ou \"Servo\" na busca e adicione-o.",
+        "Dê duplo clique no workspace e adicione um Servomotor!",
+        m_view, QRect(), TutorialStep::Up, false
+    });
+
+    // ── Passo 2: GND → GND ───────────────────────────────────────────────────
+    steps.append({
+        "2. Conecte o pino GND do motor ao pino GND da ESP32",
+        "O pino GND (geralmente marrom ou preto) vai para o terra.\n\n"
+        "1. Dê um clique no pino GND do Servomotor.\n"
+        "2. Mova o mouse e clique em um pino GND da placa ESP32.",
+        "Clique no GND do Motor e depois no GND da ESP32!",
+        m_view, QRect(), TutorialStep::Up, false
+    });
+
+    // ── Passo 3: VCC → 5V ou 3V3 ─────────────────────────────────────────────
+    steps.append({
+        "3. Conecte o pino VCC do motor a um pino de alimentação da ESP32",
+        "O pino VCC (vermelho) alimenta o motor.\n\n"
+        "1. Dê um clique no pino VCC do Servomotor.\n"
+        "2. Mova o mouse e clique no pino 5V ou 3V3 da placa ESP32.",
+        "Clique no VCC do Motor e depois no 5V/3V3 da ESP32!",
+        m_view, QRect(), TutorialStep::Up, false
+    });
+
+    // ── Passo 4: PWM → GPIO ──────────────────────────────────────────────────
+    steps.append({
+        "4. Conecte o pino PWM (Sinal) a um pino GPIO da ESP32",
+        "O pino PWM (laranja) envia o ângulo desejado para o motor.\n\n"
+        "1. Dê um clique no pino PWM do Servomotor.\n"
+        "2. Mova o mouse e clique em um pino GPIO livre da ESP32.",
+        "Conecte o PWM do Motor a um GPIO da ESP32!",
+        m_view, QRect(), TutorialStep::Up, false
+    });
+
+    // ── Passo 5: Dashboard Web ───────────────────────────────────────────────
+    steps.append({
+        "5. Clique no ícone de Construtor Web (Globo)",
+        "Agora vamos desenhar a página da web!\n\n"
+        "Clique no botão 'Dashboard Web' (ícone de globo) na barra de ferramentas.",
+        "Clique no botão Dashboard Web na barra superior!",
+        webWidget, QRect(), TutorialStep::Up, true
+    });
+
+    // ── Passo 6: Duplo Clique e Slider ───────────────────────────────────────
+    steps.append({
+        "6. Dê dois cliques na tela e adicione um Slider",
+        "A janela do Construtor Web abriu.\n\n"
+        "1. Dê DOIS CLIQUES na área branca do Dashboard Web.\n"
+        "2. Digite \"Slider\" e adicione-o.",
+        "Dê duplo clique e adicione um Slider na tela web!",
+        nullptr, QRect(), TutorialStep::None, false, "webScene"
+    });
+
+    // ── Passo 7: Botão Direito -> Ao Alterar Valor ───────────────────────────
+    steps.append({
+        "7. Clique direito no Slider e edite o evento",
+        "Precisamos programar o que acontece quando o slider for arrastado pelo usuário.\n\n"
+        "1. Clique com o BOTÃO DIREITO sobre o Slider que você acabou de adicionar.\n"
+        "2. Selecione 'Editar Evento: Ao Alterar Valor'.",
+        "Clique direito no Slider e selecione 'Ao Alterar Valor'!",
+        nullptr, QRect(), TutorialStep::None, false, "webScene"
+    });
+
+    // ── Passo 8: Adicionar Girar Motor ───────────────────────────────────────
+    steps.append({
+        "8. Dê dois cliques e adicione 'Girar Motor'",
+        "No editor de blocos que se abriu, vamos mandar o motor girar.\n\n"
+        "1. Dê DOIS CLIQUES na área cinza.\n"
+        "2. Procure por 'Girar Motor' e adicione-o.",
+        "Dê duplo clique e adicione um bloco Girar Motor!",
+        m_blockEditor, QRect(), TutorialStep::Right
+    });
+
+    // ── Passo 9: Arrastar variável Motor ─────────────────────────────────────
+    steps.append({
+        "9. Arraste a variável do Motor para o campo Alvo",
+        "Indique qual motor vai girar.\n\n"
+        "Na lista 'PINOS E ATUADORES' à esquerda, arraste a variável do Motor para o campo 'Alvo'.",
+        "Arraste a variável do Motor para o Alvo!",
+        nullptr, QRect(), TutorialStep::Right
+    });
+
+    // ── Passo 10: Arrastar variável Slider ───────────────────────────────────
+    steps.append({
+        "10. Arraste a variável 'valor' para o campo Ângulo",
+        "A variável 'valor' contém a posição atual do slider na página (0 a 180).\n\n"
+        "Na lista 'VARIÁVEIS DO EVENTO' à esquerda, arraste a variável 'valor' para o campo 'Ângulo'.",
+        "Arraste a variável do Slider para o Ângulo!",
+        nullptr, QRect(), TutorialStep::Right
+    });
+
+    // ── Passo 11: Fechar o Editor de Blocos ──────────────────────────────────
+    steps.append({
+        "11. Feche o Editor de Blocos",
+        "Nosso código está pronto.\n\n"
+        "Clique no 'X' vermelho (ou botão Fechar/Salvar) na aba superior direita do Editor de Blocos.",
+        "Feche a janela de eventos e salve!",
+        nullptr, QRect(), TutorialStep::Up, false, "blockEditorCloseBtn"
+    });
+
+    // ── Passo 12: Abrir Web View novamente ───────────────────────────────────
+    steps.append({
+        "12. Clique no ícone Construtor Web novamente",
+        "Volte para a janela de edição do Dashboard.",
+        "Clique no botão Dashboard Web na barra superior!",
+        webWidget, QRect(), TutorialStep::Up, true
+    });
+
+    // ── Passo 13: Habilitar WebPage ──────────────────────────────────────────
+    steps.append({
+        "13. Marque a caixa 'Habilitar WebPage'",
+        "Para que o ESP32 ative a página web no Wi-Fi, precisamos marcar a caixa superior esquerda.",
+        "Marque a caixa 'Habilitar WebPage'!",
+        nullptr, QRect(), TutorialStep::None, false, "webEnableSwitch"
+    });
+
+    // ── Passo 14: Salvar e Fechar Web View ───────────────────────────────────
+    steps.append({
+        "14. Clique em Salvar e Fechar",
+        "Sua página web está pronta e ativada!",
+        "Clique em 'Salvar e Fechar' na janela do Web View!",
+        nullptr, QRect(), TutorialStep::None, false, "webSaveBtn"
+    });
+
+    // ── Passo 15: Compilar Projeto ───────────────────────────────────────────
+    steps.append({
+        "15. Clique no botão de Build para compilar",
+        "Tudo configurado! Agora clique no martelo para compilar o código gerado em C++.",
+        "Clique no botão Compilar (martelo)!",
+        buildWidget, QRect(), TutorialStep::Up, true
+    });
+
+    // ── Passo 16: Play! ──────────────────────────────────────────────────────
+    steps.append({
+        "16. Inicie a simulação!",
+        "Chegou a hora mágica.\n\n"
+        "1. Clique no botão Play.\n"
+        "2. Espere o terminal mostrar que o Wi-Fi está conectado.\n"
+        "3. Abra o site ou visualize o slider no simulador para controlar o seu motor SG90 pela web!",
+        "Clique no botão Play!",
+        playWidget, QRect(), TutorialStep::Up, true
+    });
+
+    steps.append({
+        "Parabéns! Você concluiu o Tutorial 3! 🎉",
+        "Incrível! Você acabou de criar um sistema IoT de verdade, onde um dashboard web envia sinais Wi-Fi para movimentar um servomotor remotamente.\n\n"
+        "Explore a IDE, mude o tipo de pino, ou crie seus próprios projetos do zero!",
+        "Tutorial concluído com sucesso!",
+        nullptr, QRect(), TutorialStep::None
+    });
+
+    m_activeTutorial = 3;
+    m_tutorialOverlay->clearVariableDragSteps();
+    m_tutorialOverlay->addVariableDragStep(9, "MOTOR"); // drag motor to servo block target
+    m_tutorialOverlay->addVariableDragStep(10, "valor", "param"); // drag valor to servo block param
+    m_tutorialOverlay->setSteps(steps);
+    m_tutorialOverlay->start();
+}
+
 void MainWindow::checkBlockEditorTutorialSteps() {
     if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
 
@@ -5693,17 +5967,46 @@ void MainWindow::checkBlockEditorTutorialSteps() {
             else if (step == 17 && delayCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 18: drag distance variable to second delay's param field
+            // Step 18: drag distance var to delay param
             else if (step == 18 && delayParamCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 19: type *10 in second delay's param field
+            // Step 19: add *10 to param
             else if (step == 19 && delayMultCount >= 1) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
+
+        } else if (m_activeTutorial == 3) {
+            // Tutorial 3 — Motor & IoT
+            
+            int rotateMotorCount = 0;
+            int rotateTargetFilled = 0;
+            int rotateParamFilled = 0;
+            
+            for (const auto& b : active) {
+                if (b.type == LogicBlockType::ACTION && b.actionCommand == "ROTATE_MOTOR") {
+                    rotateMotorCount++;
+                    if (!b.actionTarget.trimmed().isEmpty()) rotateTargetFilled++;
+                    if (!b.actionParam.trimmed().isEmpty()) rotateParamFilled++;
+                }
+            }
+            
+            // Step 8: Add 'Girar Motor' block
+            if (step == 8 && rotateMotorCount >= 1) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
+            // Step 9: Drag motor variable to target
+            else if (step == 9 && rotateTargetFilled >= 1) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
+            // Step 10: Drag 'valor' variable to param (angle)
+            else if (step == 10 && rotateParamFilled >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
         }
     }
 }
+
 
 void MainWindow::synchronizeLoopBlocks() {
     // 1. Get the ESP32 component if it exists.

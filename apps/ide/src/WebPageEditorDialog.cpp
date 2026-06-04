@@ -39,6 +39,7 @@
 
 #include <QDialogButtonBox>
 #include <QLabel>
+#include "MainWindow.h"
 
 // Dialog for selecting multiple variables
 class MultiVarSelectionDialog : public QDialog {
@@ -255,6 +256,11 @@ protected:
                     });
                 } else if (type == "Slider") {
                     menu.addAction("Editar Evento: Ao Alterar Valor", dialog, [this, webItem](){
+                        if (MainWindow* mainWin = qobject_cast<MainWindow*>(dialog->parent())) {
+                            if (mainWin->getActiveTutorial() == 3 && mainWin->getTutorialOverlay() && mainWin->getTutorialOverlay()->currentStep() == 7) {
+                                mainWin->getTutorialOverlay()->advance();
+                            }
+                        }
                         dialog->requestEditEvent(webItem->id(), "aoAlterar");
                     });
                     menu.addAction("Editar Evento: Ao Desligar (aoDesligar)", dialog, [this, webItem](){
@@ -288,6 +294,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     QHBoxLayout* topLayout = new QHBoxLayout();
     
     m_enableSwitch = new QCheckBox("Habilitar WebPage");
+    m_enableSwitch->setObjectName("webEnableSwitch");
     m_enableSwitch->setChecked(m_data.contains("enabled") ? m_data["enabled"].toBool() : false);
     m_enableSwitch->setStyleSheet(
         "QCheckBox { color: #0F172A; font-weight: bold; font-size: 12px; }"
@@ -360,6 +367,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     }
     
     m_view = new QGraphicsView(m_scene);
+    m_view->setObjectName("webScene");
     m_view->setRenderHint(QPainter::Antialiasing);
     m_view->setBackgroundBrush(Qt::white);
     
@@ -367,6 +375,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     
     QHBoxLayout* bottomLayout = new QHBoxLayout();
     QPushButton* btnSave = new QPushButton("Salvar e Fechar");
+    btnSave->setObjectName("webSaveBtn");
     btnSave->setStyleSheet(
         "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #A7F3D0, stop:0.48 #34D399, stop:0.5 #10B981, stop:1 #059669); "
@@ -630,6 +639,12 @@ void WebPageEditorDialog::addElement(const QString& type, const QPointF& pos) {
     
     WebElementItem* item = new WebElementItem(obj);
     m_scene->addItem(item);
+    
+    if (MainWindow* mainWin = qobject_cast<MainWindow*>(parent())) {
+        if (mainWin->getActiveTutorial() == 3 && type == "Slider" && mainWin->getTutorialOverlay() && mainWin->getTutorialOverlay()->currentStep() == 6) {
+            mainWin->getTutorialOverlay()->advance();
+        }
+    }
 }
 
 void WebPageEditorDialog::done(int r) {

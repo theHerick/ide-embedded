@@ -102,6 +102,7 @@ public:
 
 signals:
     void blocksChanged();
+    void editorClosed();
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;

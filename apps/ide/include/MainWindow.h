@@ -30,6 +30,9 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
+    int getActiveTutorial() const { return m_activeTutorial; }
+    TutorialOverlay* getTutorialOverlay() const { return m_tutorialOverlay; }
+
 private slots:
     void onAddComponentClicked(QListWidgetItem* item);
     void onSelectionChanged(ComponentItem* selectedComp);
@@ -63,6 +66,7 @@ private slots:
     void showFirmwareInfo();
     void startInteractiveTutorial();
     void startDistanceSensorTutorial();
+    void startMotorIoTTutorial();
     void platformIOConfigTriggered();
 
 private:
