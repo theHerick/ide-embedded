@@ -36,6 +36,9 @@ public:
     void setSimulating(bool simulating) { m_isSimulating = simulating; }
     bool isSimulating() const { return m_isSimulating; }
 
+    void setSmartConnectionEnabled(bool enabled) { m_smartConnectionEnabled = enabled; }
+    bool isSmartConnectionEnabled() const { return m_smartConnectionEnabled; }
+
 signals:
     void selectionChanged(ComponentItem* selectedComp);
     void rightClickedComponent(ComponentItem* comp, const QPointF& globalPos);
@@ -58,6 +61,8 @@ private:
     QVector<ComponentItem*> m_components;
     QVector<ConnectionCable*> m_cables;
 
+    void applySmartConnection(ComponentItem* newComp);
+
     // ── KiCad-style interactive routing state ──────────────────────────────
     bool m_routing = false;
     ComponentItem* m_routeStartComp = nullptr;
@@ -76,4 +81,6 @@ private:
     QUndoStack* m_undoStack;
     QMap<ComponentItem*, QPointF> m_initialPositions;
     bool m_isSimulating = false;
+    bool m_smartConnectionEnabled = false;
+    bool m_isApplyingSmartConnection = false;
 };

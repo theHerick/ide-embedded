@@ -441,7 +441,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             this->editBessProperties(bess);
         } else if (comp->componentType() == "esp32") {
             this->openEventEditor(comp, "aoIniciar");
-        } else if (comp->componentType() == "led") {
+        } else if (comp->componentType() == "led" || comp->componentType() == "rgb_led") {
             this->openEventEditor(comp, "aoLigar");
         } else if (comp->componentType() == "button") {
             this->openEventEditor(comp, "aoClicar");
@@ -998,6 +998,13 @@ void MainWindow::buildToolbar() {
     QAction* viewCodeAction = menuBar()->addAction("Visualizar C");
     viewCodeAction->setToolTip("Visualizar o código C++ gerado em tempo real");
     connect(viewCodeAction, &QAction::triggered, this, &MainWindow::viewCompiledCodeModal);
+
+    // Help menu
+    QMenu* helpMenu = menuBar()->addMenu("?");
+    helpMenu->setStyleSheet(componentsMenu->styleSheet());
+    QAction* menuSmartConnection = helpMenu->addAction("Conexão inteligente");
+    menuSmartConnection->setCheckable(true);
+    connect(menuSmartConnection, &QAction::toggled, m_scene, &WorkspaceScene::setSmartConnectionEnabled);
 }
 
 void MainWindow::applyTheme() {
@@ -1193,7 +1200,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
 
         QString entry = c->name() + "|" + gpio;
 
-        if (c->componentType() == "led") avLeds.append(entry);
+        if (c->componentType() == "led" || c->componentType() == "rgb_led") avLeds.append(entry);
         else if (c->componentType() == "potentiometer") avPots.append(entry);
         else if (c->componentType() == "bess") avPots.append((c->name() == "Bateria LiPo" || c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name()) + "|" + gpio);
         else if (c->componentType() == "buzzer") avBuzzers.append(entry);
@@ -1236,7 +1243,7 @@ void MainWindow::openWebEventEditor(const QString& compId, const QString& eventN
         
         if (c->componentType() == "dht22") avDhts.append(c->name());
         else if (c->componentType() == "hcsr04") avHcsrs.append(c->name());
-        else if (c->componentType() == "led") avLeds.append(c->name());
+        else if (c->componentType() == "led" || c->componentType() == "rgb_led") avLeds.append(c->name());
         else if (c->componentType() == "potentiometer") avPots.append(c->name());
         else if (c->componentType() == "bess") avPots.append(c->name() == "Bateria LiPo" || c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name());
         else if (c->componentType() == "buzzer") avBuzzers.append(c->name());
@@ -1505,7 +1512,7 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
                 statusBar()->showMessage("EEPROM limpa!", 3000);
             }
         });
-    } else if (comp->componentType() == "led") {
+    } else if (comp->componentType() == "led" || comp->componentType() == "rgb_led") {
         QAction* act = menu.addAction("Evento: Ao Ligar LED (aoLigar)");
         connect(act, &QAction::triggered, this, [this, comp]() {
             m_scene->clearSelection();
@@ -3551,7 +3558,7 @@ void MainWindow::readNativeSimOutput() {
                         if (c->id() == compId) { comp = c; break; }
                     }
                     if (comp) {
-                        if (comp->componentType() == "led") {
+                        if (comp->componentType() == "led" || comp->componentType() == "rgb_led") {
                             // Needs include LedItem.h but actually we can set property
                             comp->setProperty("turnedOn", high);
                             comp->update();
@@ -3609,6 +3616,8 @@ void MainWindow::loadToolboxItems() {
     // 1. Add native built-in components
     auto* ledItem = new QListWidgetItem("LED", m_toolboxList);
     ledItem->setData(Qt::UserRole, "led");
+    auto* rgbLedItem = new QListWidgetItem("LED RGB", m_toolboxList);
+    rgbLedItem->setData(Qt::UserRole, "rgb_led");
     auto* btnItem = new QListWidgetItem("Botão", m_toolboxList);
     btnItem->setData(Qt::UserRole, "button");
     auto* resItem = new QListWidgetItem("Resistor", m_toolboxList);
@@ -6047,7 +6056,7 @@ void MainWindow::synchronizeLoopBlocks() {
             if (storage.contains(releaseKey) && !storage[releaseKey].isEmpty()) {
                 expectedCalls.append(QString("monitor_%1_eventAoSoltar()").arg(name));
             }
-        } else if (comp->componentType() == "led") {
+        } else if (comp->componentType() == "led" || comp->componentType() == "rgb_led") {
             QString eventKey = QString("%1:aoLigar").arg(comp->id());
             if (storage.contains(eventKey) && !storage[eventKey].isEmpty()) {
                 QString name = sanitizeIdentifier(comp->name());
@@ -6622,7 +6631,7 @@ void MainWindow::showComponentModeling(ComponentItem* comp) {
             "    // Ocorreu um pressionar estável seguido por soltar\n"
             "}\n";
 
-    } else if (type == "led") {
+    } else if (type == "led" || type == "rgb_led") {
         html += "<h1>Diodo Emissor de Luz (LED)</h1>";
         html += "<span class=\"badge\">Saída Digital e Analógica / Emissor Óptico</span>";
         html += "<table>";

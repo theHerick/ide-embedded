@@ -1635,6 +1635,19 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                         }
                     }
                 }
+            } else if (param == "SET_RGB_COLOR") {
+                if (comp && comp->componentType() == "rgb_led") {
+                    auto* led = static_cast<RGBLEDItem*>(comp);
+                    QString hexColor = block.actionParam.trimmed();
+                    if (hexColor.startsWith("#")) hexColor.remove(0, 1);
+                    if (hexColor.length() == 6) {
+                        bool ok;
+                        int r = hexColor.mid(0, 2).toInt(&ok, 16);
+                        int g = hexColor.mid(2, 2).toInt(&ok, 16);
+                        int b = hexColor.mid(4, 2).toInt(&ok, 16);
+                        led->setColor(QColor(r, g, b));
+                    }
+                }
             } else if (param == "SET_FREQUENCY" || param == "BUZZER_TONE") {
 
                 if (comp && comp->componentType() == "buzzer") {

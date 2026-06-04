@@ -1214,6 +1214,140 @@ void LEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// RGB LED ITEM IMPLEMENTATION
+// ─────────────────────────────────────────────────────────────────────────────
+RGBLEDItem::RGBLEDItem(const QString& id, const QString& name, QGraphicsItem* parent)
+    : ComponentItem(id, name, "rgb_led", parent) {
+    m_pins.append({"R",   QPointF(-15, 30), false, "", "", QColor(239, 68, 68)});
+    m_pins.append({"GND", QPointF(-5,  30), false, "", "", QColor(75, 85, 99)});
+    m_pins.append({"G",   QPointF( 5,  30), false, "", "", QColor(34, 197, 94)});
+    m_pins.append({"B",   QPointF( 15, 30), false, "", "", QColor(59, 130, 246)});
+    
+    QString idx = extractIndexFromId(id);
+    m_name = "LED RGB " + (idx.isEmpty() ? "1" : idx);
+}
+
+QRectF RGBLEDItem::boundingRect() const {
+    if (property("isSMD").toBool()) {
+        QString size = property("smdSize").toString();
+        double w = 20.0, h = 12.5;
+        if (size == "0603") { w = 16; h = 8; }
+        else if (size == "0805") { w = 20; h = 12.5; }
+        else if (size == "1206") { w = 32; h = 16; }
+        else if (size == "5050") { w = 50; h = 50; }
+        return QRectF(-w/2.0 - 5, -h/2.0 - 5, w + 10, h + 10);
+    }
+    return QRectF(-25, -25, 50, 65);
+}
+
+void RGBLEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
+    painter->setRenderHint(QPainter::Antialiasing);
+
+    if (property("isSMD").toBool()) {
+        QString size = property("smdSize").toString();
+        double w = 20.0, h = 12.5;
+        if (size == "0603") { w = 16; h = 8; }
+        else if (size == "0805") { w = 20; h = 12.5; }
+        else if (size == "1206") { w = 32; h = 16; }
+        else if (size == "5050") { w = 50; h = 50; }
+
+        if (option->state & QStyle::State_Selected) {
+            painter->setPen(QPen(QColor(99, 102, 241, 150), 2.5, Qt::SolidLine));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawRoundedRect(-w/2.0 - 2, -h/2.0 - 2, w + 4, h + 4, 2, 2);
+        }
+
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(250, 250, 250));
+        painter->drawRect(-w/2.0, -h/2.0, w, h);
+
+        painter->setBrush(QColor(200, 200, 200));
+        double termW = w * 0.15;
+        if (size == "5050" || size == "1206" || size == "0805" || size == "0603") {
+            painter->drawRect(-w/2.0, -h/2.0 + 2, termW, h/3 - 2);
+            painter->drawRect(-w/2.0, h/6, termW, h/3 - 2);
+            painter->drawRect(w/2.0 - termW, -h/2.0 + 2, termW, h/3 - 2);
+            painter->drawRect(w/2.0 - termW, h/6, termW, h/3 - 2);
+        }
+
+        bool isOn = (m_color.red() > 0 || m_color.green() > 0 || m_color.blue() > 0);
+        QColor ledColor = isOn ? m_color : QColor(220, 220, 220);
+
+        if (isOn) {
+            painter->setPen(Qt::NoPen);
+            QRadialGradient glow(0, 0, w * 1.8);
+            glow.setColorAt(0.0, QColor(m_color.red(), m_color.green(), m_color.blue(), 220));
+            glow.setColorAt(0.5, QColor(m_color.red(), m_color.green(), m_color.blue(), 100));
+            glow.setColorAt(1.0, QColor(m_color.red(), m_color.green(), m_color.blue(), 0));
+            painter->setBrush(glow);
+            painter->drawEllipse(QPointF(0, 0), w * 1.8, w * 1.8);
+        }
+
+        painter->setBrush(ledColor);
+        painter->setPen(QPen(QColor(150, 150, 150), 1));
+        if (size == "5050") {
+            painter->drawEllipse(QPointF(0, 0), w*0.4, w*0.4);
+        } else {
+            painter->drawEllipse(QPointF(0, 0), w*0.3, h*0.4);
+        }
+    } else {
+        if (option->state & QStyle::State_Selected) {
+            painter->setPen(QPen(QColor(99, 102, 241, 150), 2, Qt::SolidLine));
+            painter->drawEllipse(QPointF(0, 0), 22, 22);
+        }
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(15, 23, 42, 40));
+        painter->drawEllipse(QPointF(0, 4), 18, 18);
+        
+        painter->setPen(QPen(QColor(239, 68, 68), 2)); // R
+        painter->drawLine(-15, 10, -15, 30);
+        painter->setPen(QPen(QColor(156, 163, 175), 2)); // GND
+        painter->drawLine(-5,  10, -5,  30);
+        painter->setPen(QPen(QColor(34, 197, 94), 2)); // G
+        painter->drawLine(5,   10, 5,   30);
+        painter->setPen(QPen(QColor(59, 130, 246), 2)); // B
+        painter->drawLine(15,  10, 15,  30);
+        
+        painter->setBrush(QColor(234, 179, 8)); 
+        painter->setPen(QPen(QColor(161, 98, 7), 1));
+        painter->drawEllipse(QPointF(-15, 30), 3, 3);
+        painter->drawEllipse(QPointF(-5,  30), 3, 3);
+        painter->drawEllipse(QPointF(5,   30), 3, 3);
+        painter->drawEllipse(QPointF(15,  30), 3, 3);
+        
+        bool isOn = (m_color.red() > 0 || m_color.green() > 0 || m_color.blue() > 0);
+        
+        QRadialGradient grad(0, 0, 18);
+        QPen domePen;
+        if (isOn) {
+            painter->setPen(Qt::NoPen);
+            QRadialGradient glowGrad(0, 0, 40);
+            glowGrad.setColorAt(0.0, QColor(m_color.red(), m_color.green(), m_color.blue(), 220));
+            glowGrad.setColorAt(0.5, QColor(m_color.red(), m_color.green(), m_color.blue(), 100));
+            glowGrad.setColorAt(1.0, QColor(m_color.red(), m_color.green(), m_color.blue(), 0));
+            painter->setBrush(glowGrad);
+            painter->drawEllipse(QPointF(0, 0), 40, 40);
+
+            grad.setColorAt(0.0, QColor(255, 255, 255));
+            grad.setColorAt(0.3, m_color);
+            grad.setColorAt(1.0, m_color.darker(150));
+            domePen = QPen(m_color.darker(150), 1);
+        } else {
+            grad.setColorAt(0.0, QColor(255, 255, 255, 240)); 
+            grad.setColorAt(0.6, QColor(230, 230, 230, 200)); 
+            grad.setColorAt(1.0, QColor(200, 200, 200, 120)); 
+            domePen = QPen(QColor(150, 150, 150, 140), 1);      
+        }
+        painter->setBrush(grad);
+        painter->setPen(domePen);
+        painter->drawEllipse(QPointF(0, 0), 18, 18);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(255, 255, 255, 120));
+        painter->drawEllipse(QPointF(-6, -6), 6, 4);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BUTTON ITEM IMPLEMENTATION
 // ─────────────────────────────────────────────────────────────────────────────
 ButtonItem::ButtonItem(const QString& id, const QString& name, QGraphicsItem* parent)
@@ -2579,5 +2713,20 @@ void LEDItem::updateLayoutForSMD(const QString& smdSize) {
     
     m_pins[0].localPos = QPointF(-w * 0.425, 0);
     m_pins[1].localPos = QPointF(w * 0.425, 0);
+    update();
+}
+
+void RGBLEDItem::updateLayoutForSMD(const QString& smdSize) {
+    prepareGeometryChange();
+    double w = 20.0, h = 20.0;
+    if (smdSize == "0603") { w = 16; h = 16; }
+    else if (smdSize == "0805") { w = 20; h = 20; }
+    else if (smdSize == "1206") { w = 32; h = 32; }
+    else if (smdSize == "5050") { w = 50; h = 50; }
+    
+    m_pins[0].localPos = QPointF(-w * 0.425, -h * 0.3);
+    m_pins[1].localPos = QPointF(-w * 0.425,  h * 0.3);
+    m_pins[2].localPos = QPointF( w * 0.425, -h * 0.3);
+    m_pins[3].localPos = QPointF( w * 0.425,  h * 0.3);
     update();
 }

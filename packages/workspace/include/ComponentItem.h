@@ -108,6 +108,22 @@ private:
     bool m_isOn = false;
 };
 
+// RGB LED Item
+class RGBLEDItem : public ComponentItem {
+    Q_OBJECT
+public:
+    void updateLayoutForSMD(const QString& smdSize) override;
+    RGBLEDItem(const QString& id, const QString& name, QGraphicsItem* parent = nullptr);
+    QRectF boundingRect() const override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    
+    QColor color() const { return m_color; }
+    void setColor(const QColor& c) { m_color = c; update(); }
+
+private:
+    QColor m_color = Qt::black;
+};
+
 // Button Item
 class ButtonItem : public ComponentItem {
     Q_OBJECT

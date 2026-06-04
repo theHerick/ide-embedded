@@ -28,6 +28,7 @@
 #include <QInputDialog>
 #include <QScrollArea>
 #include <QRegularExpression>
+#include <QColorDialog>
 
 static QString sanitizeIdentifier(const QString& name) {
     QString res = name.normalized(QString::NormalizationForm_D).toUpper();
@@ -1399,6 +1400,7 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         cmdCombo->addItem("LIGAR (HIGH)", "HIGH");
         cmdCombo->addItem("DESLIGAR (LOW)", "LOW");
         cmdCombo->addItem("INVERTER (TOGGLE)", "TOGGLE");
+        cmdCombo->addItem("DEFINIR COR LED RGB", "SET_RGB_COLOR");
         cmdCombo->addItem("TOCAR TOM (Buzzer)", "BUZZER_TONE");
         cmdCombo->addItem("PARAR TOM (Buzzer)", "BUZZER_NOTONE");
         cmdCombo->addItem("AGUARDAR (DELAY)", "DELAY");
@@ -1425,14 +1427,34 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         lay->addWidget(targetEdit);
         lay->addWidget(cmdCombo);
         lay->addWidget(paramEdit);
+        
+        auto* btnColorPicker = new QPushButton("🎨", w);
+        btnColorPicker->setFixedWidth(30);
+        btnColorPicker->hide();
+        lay->addWidget(btnColorPicker);
+        
+        connect(btnColorPicker, &QPushButton::clicked, this, [w, paramEdit]() {
+            QColor c = QColorDialog::getColor(QColor(paramEdit->text()), w, "Escolha a cor do LED RGB");
+            if (c.isValid()) {
+                paramEdit->setText(c.name().toUpper());
+            }
+        });
+
         lay->addWidget(paramEdit2);
         lay->addWidget(paramCombo3);
 
-        auto updateVis = [cmdCombo, targetEdit, paramEdit, paramEdit2, paramCombo3]() {
+        auto updateVis = [cmdCombo, targetEdit, paramEdit, paramEdit2, paramCombo3, btnColorPicker]() {
             QString cmd = cmdCombo->currentData().toString();
             paramEdit2->hide();
             paramCombo3->hide();
-            if (cmd == "ROTATE_MOTOR") {
+            btnColorPicker->hide();
+            if (cmd == "SET_RGB_COLOR") {
+                targetEdit->setPlaceholderText("Alvo (LED RGB)");
+                paramEdit->setPlaceholderText("Cor HEX (ex: #FF0000)");
+                targetEdit->show();
+                paramEdit->show();
+                btnColorPicker->show();
+            } else if (cmd == "ROTATE_MOTOR") {
                 targetEdit->setPlaceholderText("Motor Alvo");
                 paramEdit->setPlaceholderText("Graus / Velocidade");
                 targetEdit->show();

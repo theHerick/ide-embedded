@@ -593,6 +593,18 @@ static QString compileBlocks(
                 res += QString("%1tone(%2, %3);\n").arg(indent).arg(resolvedPin).arg(freq);
             } else if (actionCmd == "BUZZER_NOTONE") {
                 res += QString("%1noTone(%2);\n").arg(indent).arg(resolvedPin);
+            } else if (actionCmd == "SET_RGB_COLOR") {
+                QString hexColor = block.actionParam.trimmed();
+                if (hexColor.startsWith("#")) hexColor.remove(0, 1);
+                if (hexColor.length() == 6) {
+                    bool ok;
+                    int r = hexColor.mid(0, 2).toInt(&ok, 16);
+                    int g = hexColor.mid(2, 2).toInt(&ok, 16);
+                    int b = hexColor.mid(4, 2).toInt(&ok, 16);
+                    res += QString("%1#ifdef PIN_%2_R\n%1analogWrite(PIN_%2_R, %3);\n%1#endif\n").arg(indent).arg(tgtName).arg(r);
+                    res += QString("%1#ifdef PIN_%2_G\n%1analogWrite(PIN_%2_G, %3);\n%1#endif\n").arg(indent).arg(tgtName).arg(g);
+                    res += QString("%1#ifdef PIN_%2_B\n%1analogWrite(PIN_%2_B, %3);\n%1#endif\n").arg(indent).arg(tgtName).arg(b);
+                }
             } else if (actionCmd == "TOGGLE") {
                 res += QString("%1digitalWrite(%2, !digitalRead(%2));\n").arg(indent).arg(resolvedPin);
             } else if (actionCmd == "DELAY") {
@@ -893,6 +905,36 @@ static QString emitPinDefinitions(
             if (echoGpio.isEmpty()) echoGpio = "3"; // fallback
             code += QString("#define PIN_%1_TRIG %2\n").arg(macroName).arg(trigGpio);
             code += QString("#define PIN_%1_ECHO %2\n").arg(macroName).arg(echoGpio);
+        }
+        if (comp->componentType() == "rgb_led") {
+            QString rGpio, gGpio, bGpio;
+            for (const auto& pin : comp->pins()) {
+                QString pinGpio = "";
+                if (!pin.connectedToComponent.isEmpty()) {
+                    bool toEsp = (esp32 && pin.connectedToComponent == esp32->id()) || pin.connectedToComponent.startsWith("esp32_");
+                    if (toEsp) {
+                        pinGpio = extractPinNumber(pin.connectedToPin);
+                    } else {
+                        ComponentItem* next = idMap.value(pin.connectedToComponent, nullptr);
+                        if (next && isPassiveComponent(next->componentType())) {
+                            for (const auto& nextPin : next->pins()) {
+                                if (nextPin.connectedToComponent.isEmpty() || nextPin.connectedToComponent == comp->id()) continue;
+                                QString found = traceToEsp32(next, nextPin.name, 5);
+                                if (!found.isEmpty()) {
+                                    pinGpio = extractPinNumber(found);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (pin.name == "R") rGpio = pinGpio;
+                else if (pin.name == "G") gGpio = pinGpio;
+                else if (pin.name == "B") bGpio = pinGpio;
+            }
+            if (!rGpio.isEmpty()) code += QString("#define PIN_%1_R %2\n").arg(macroName).arg(rGpio);
+            if (!gGpio.isEmpty()) code += QString("#define PIN_%1_G %2\n").arg(macroName).arg(gGpio);
+            if (!bGpio.isEmpty()) code += QString("#define PIN_%1_B %2\n").arg(macroName).arg(bGpio);
         }
 
         // For custom components with multiple GPIO pins, also emit per-pin macros
@@ -2470,6 +2512,10 @@ QString CodeGenerator::generateArduinoCode(
         } else if (comp->componentType() == "hcsr04") {
             code += QString("    pinMode(PIN_%1_TRIG, OUTPUT);\n").arg(name);
             code += QString("    pinMode(PIN_%1_ECHO, INPUT);\n").arg(name);
+        } else if (comp->componentType() == "rgb_led") {
+            code += QString("    #ifdef PIN_%1_R\n    pinMode(PIN_%1_R, OUTPUT);\n    #endif\n").arg(name);
+            code += QString("    #ifdef PIN_%1_G\n    pinMode(PIN_%1_G, OUTPUT);\n    #endif\n").arg(name);
+            code += QString("    #ifdef PIN_%1_B\n    pinMode(PIN_%1_B, OUTPUT);\n    #endif\n").arg(name);
         } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
             QString category = custom->category();
             if (category == "digital_actuator") {

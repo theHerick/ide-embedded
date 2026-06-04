@@ -165,6 +165,7 @@ ComponentItem* WorkspaceScene::addComponent(const QString& type, const QString& 
     }
     else if (type == "esp32")              item = new ESP32Item(id, compName);
     else if (type == "led")           item = new LEDItem(id, compName);
+    else if (type == "rgb_led")       item = new RGBLEDItem(id, compName);
     else if (type == "button")        item = new ButtonItem(id, compName);
     else if (type == "resistor")      item = new ResistorItem(id, compName);
     else if (type == "capacitor")     item = new CapacitorItem(id, compName);
@@ -228,6 +229,12 @@ ComponentItem* WorkspaceScene::addComponent(const QString& type, const QString& 
         item->setSelected(true);
         emit selectionChanged(item);
         emit componentAdded(item);
+
+        if (m_smartConnectionEnabled && type != "esp32" && !m_isApplyingSmartConnection) {
+            m_isApplyingSmartConnection = true;
+            applySmartConnection(item);
+            m_isApplyingSmartConnection = false;
+        }
     }
     return item;
 }
@@ -692,4 +699,126 @@ void WorkspaceScene::keyPressEvent(QKeyEvent* event) {
         }
     }
     QGraphicsScene::keyPressEvent(event);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// applySmartConnection
+// ─────────────────────────────────────────────────────────────────────────────
+void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
+    if (!newComp) return;
+
+    ESP32Item* esp32 = nullptr;
+    for (auto* comp : m_components) {
+        if (comp->componentType() == "esp32") {
+            esp32 = static_cast<ESP32Item*>(comp);
+            break;
+        }
+    }
+    if (!esp32) return; // Silent abort if no ESP32
+
+    QSet<QString> occupiedPins;
+    for (auto* cable : m_cables) {
+        if (cable->sourceComponent() == esp32) occupiedPins.insert(cable->sourcePinName());
+        if (cable->targetComponent() == esp32) occupiedPins.insert(cable->targetPinName());
+    }
+
+    auto getFreeGpio = [&]() -> QString {
+        QStringList preferred = {"4", "5", "6", "7", "8", "9", "10", "2", "3", "1", "0"}; // Valid ESP32-C3 pins
+        for (const QString& pin : preferred) {
+            if (!occupiedPins.contains(pin)) {
+                occupiedPins.insert(pin); // mark as used for this run
+                return pin;
+            }
+        }
+        return "";
+    };
+
+    QString type = newComp->componentType();
+    
+    auto checkGpioAndWarn = [](const QString& pin) -> bool {
+        if (pin.isEmpty()) {
+            QMessageBox::warning(nullptr, "Conexão Inteligente", "Não há pinos GPIO livres suficientes na placa para conectar este componente automaticamente!");
+            return false;
+        }
+        return true;
+    };
+
+    m_undoStack->beginMacro("Conexão Inteligente");
+
+    if (type == "led") {
+        QString gpio = getFreeGpio();
+        if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
+
+        QPointF rPos = newComp->pos() + QPointF(-100, 0);
+        ComponentItem* resistor = addComponent("resistor", "", rPos, "", true);
+        if (resistor) {
+            connectPins(esp32, gpio, resistor, "1");
+            connectPins(resistor, "2", newComp, "Anode");
+            connectPins(newComp, "Cathode", esp32, "GND");
+        }
+    } else if (type == "rgb_led") {
+        QString rG = getFreeGpio();
+        QString gG = getFreeGpio();
+        QString bG = getFreeGpio();
+        if (!checkGpioAndWarn(rG) || !checkGpioAndWarn(gG) || !checkGpioAndWarn(bG)) { m_undoStack->endMacro(); return; }
+
+        QPointF p = newComp->pos();
+        ComponentItem* rR = addComponent("resistor", "", p + QPointF(-100, -30), "", true);
+        ComponentItem* rG_res = addComponent("resistor", "", p + QPointF(-100, 0), "", true);
+        ComponentItem* rB = addComponent("resistor", "", p + QPointF(-100, 30), "", true);
+
+        if (rR && rG_res && rB) {
+            connectPins(esp32, rG, rR, "1");
+            connectPins(rR, "2", newComp, "R");
+
+            connectPins(esp32, gG, rG_res, "1");
+            connectPins(rG_res, "2", newComp, "G");
+
+            connectPins(esp32, bG, rB, "1");
+            connectPins(rB, "2", newComp, "B");
+
+            connectPins(newComp, "GND", esp32, "GND");
+        }
+    } else if (type == "button") {
+        QString gpio = getFreeGpio();
+        if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
+
+        connectPins(newComp, "1", esp32, gpio);
+        connectPins(newComp, "2", esp32, "GND");
+
+    } else if (type == "buzzer") {
+        QString gpio = getFreeGpio();
+        if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
+
+        connectPins(newComp, "1", esp32, gpio);
+        connectPins(newComp, "2", esp32, "GND");
+
+    } else if (type == "potentiometer") {
+        QString gpio = getFreeGpio();
+        if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
+
+        connectPins(newComp, "1", esp32, "3V3");
+        connectPins(newComp, "2", esp32, gpio);
+        connectPins(newComp, "3", esp32, "GND");
+
+    } else if (type == "dht22") {
+        QString gpio = getFreeGpio();
+        if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
+
+        connectPins(newComp, "VCC", esp32, "3V3");
+        connectPins(newComp, "DATA", esp32, gpio);
+        connectPins(newComp, "GND", esp32, "GND");
+        
+    } else if (type == "hcsr04") {
+        QString tG = getFreeGpio();
+        QString eG = getFreeGpio();
+        if (!checkGpioAndWarn(tG) || !checkGpioAndWarn(eG)) { m_undoStack->endMacro(); return; }
+
+        connectPins(newComp, "VCC", esp32, "5V");
+        connectPins(newComp, "TRIG", esp32, tG);
+        connectPins(newComp, "ECHO", esp32, eG);
+        connectPins(newComp, "GND", esp32, "GND");
+    }
+
+    m_undoStack->endMacro();
 }
