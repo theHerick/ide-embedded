@@ -781,6 +781,10 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
 
         QPointF rPos = newComp->pos() + QPointF(-100, 0);
+        if (Pin* p = esp32->getPinByName(gpio)) {
+            rPos.setY(esp32->pos().y() + p->localPos.y());
+        }
+
         ComponentItem* resistor = addComponent("resistor", "", rPos, "", true);
         if (resistor) {
             connectPins(esp32, gpio, resistor, "1");
@@ -794,9 +798,17 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         if (!checkGpioAndWarn(rG) || !checkGpioAndWarn(gG) || !checkGpioAndWarn(bG)) { m_undoStack->endMacro(); return; }
 
         QPointF p = newComp->pos();
-        ComponentItem* rR = addComponent("resistor", "", p + QPointF(-100, -30), "", true);
-        ComponentItem* rG_res = addComponent("resistor", "", p + QPointF(-100, 0), "", true);
-        ComponentItem* rB = addComponent("resistor", "", p + QPointF(-100, 30), "", true);
+        QPointF pR = p + QPointF(-100, -30);
+        QPointF pG = p + QPointF(-100, 0);
+        QPointF pB = p + QPointF(-100, 30);
+
+        if (Pin* pinR = esp32->getPinByName(rG)) pR.setY(esp32->pos().y() + pinR->localPos.y());
+        if (Pin* pinG = esp32->getPinByName(gG)) pG.setY(esp32->pos().y() + pinG->localPos.y());
+        if (Pin* pinB = esp32->getPinByName(bG)) pB.setY(esp32->pos().y() + pinB->localPos.y());
+
+        ComponentItem* rR = addComponent("resistor", "", pR, "", true);
+        ComponentItem* rG_res = addComponent("resistor", "", pG, "", true);
+        ComponentItem* rB = addComponent("resistor", "", pB, "", true);
 
         if (rR && rG_res && rB) {
             connectPins(esp32, rG, rR, "1");
