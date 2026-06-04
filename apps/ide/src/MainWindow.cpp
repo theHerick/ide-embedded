@@ -652,6 +652,7 @@ void MainWindow::buildLayout() {
     m_oscilloscope = new OscilloscopePanel(leftInnerSplitter);
 
     m_bottomTabs = new QTabWidget(leftInnerSplitter);
+    m_bottomTabs->setObjectName("bottomTabs");
     m_bottomTabs->setMaximumHeight(220);
     m_bottomTabs->setStyleSheet(
         "QTabWidget::pane { border-top: 1px solid #CBD5E1; background: #FFFFFF; }"
@@ -5770,7 +5771,7 @@ void MainWindow::startDistanceSensorTutorial() {
 
     // ── Passo 22: Observe o buzzer e teste a distância ────────────────────────
     steps.append({
-        "22. Mude a distância simulada!",
+        "22. Clique 2 vezes no sensor e mude a distancia!",
         "O buzzer está bipando em tempo real!\n\n"
         "Dê DOIS CLIQUES no sensor HC-SR04 para abrir as configurações,\n"
         "mude a distância e feche a janela para ver o ritmo do bip mudar.",
@@ -5784,7 +5785,7 @@ void MainWindow::startDistanceSensorTutorial() {
         "Vamos visualizar os pulsos sonoros em formato de gráfico.\n\n"
         "Clique na aba 'Osciloscópio' localizada na parte inferior esquerda da tela.",
         "Clique na aba Osciloscópio!",
-        m_bottomTabs, QRect(), TutorialStep::Up
+        nullptr, QRect(), TutorialStep::Up, true, "oscilloscopeTab"
     });
 
     // ── Passo 24: Concluído ─────────────────────────────────────────────────
