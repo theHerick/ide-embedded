@@ -217,12 +217,15 @@ public:
 
     qreal pulseRadius() const { return m_pulse; }
     void setPulseRadius(qreal r) { m_pulse = r; update(); }
-    void addVariableDragStep(int stepIndex, const QString& varKeyword) {
+    // stepIndex → {varKeyword, targetField} where targetField is "target" or "param"
+    void addVariableDragStep(int stepIndex, const QString& varKeyword, const QString& targetField = "target") {
         m_dragStepKeywords[stepIndex] = varKeyword;
+        m_dragStepTargetFields[stepIndex] = targetField;
     }
 
     void clearVariableDragSteps() {
         m_dragStepKeywords.clear();
+        m_dragStepTargetFields.clear();
     }
 
 
@@ -237,8 +240,9 @@ protected:
 
         if (m_dragStepKeywords.contains(m_currentStep)) {
             const QString& kw = m_dragStepKeywords[m_currentStep];
-            QWidget* varW = resolveVariableWidget(kw);
-            QWidget* targetW = resolveActionTargetWidget();
+            const QString  tf = m_dragStepTargetFields.value(m_currentStep, "target");
+            QWidget* varW    = resolveVariableWidget(kw);
+            QWidget* targetW = (tf == "param") ? resolveActionParamWidget() : resolveActionTargetWidget();
             if (varW && targetW && varW->isVisible()) {
                 QPoint topLeftVar = varW->mapTo(parentWidget(), QPoint(0, 0));
                 QRect rectVar(topLeftVar, varW->size());
@@ -353,8 +357,9 @@ protected:
         if (m_currentStep < m_steps.size()) {
             if (m_dragStepKeywords.contains(m_currentStep)) {
                 const QString& kw = m_dragStepKeywords[m_currentStep];
-                QWidget* varW = resolveVariableWidget(kw);
-                QWidget* targetW = resolveActionTargetWidget();
+                const QString  tf = m_dragStepTargetFields.value(m_currentStep, "target");
+                QWidget* varW    = resolveVariableWidget(kw);
+                QWidget* targetW = (tf == "param") ? resolveActionParamWidget() : resolveActionTargetWidget();
                 if (varW && targetW && varW->isVisible()) {
                     QPoint topLeftVar = varW->mapTo(parentWidget(), QPoint(0, 0));
                     QRect rectVar(topLeftVar, varW->size());
@@ -591,6 +596,17 @@ private:
         p.drawPath(arrowHead);
     }
 
+    QWidget* resolveActionParamWidget() const {
+        if (parentWidget()) {
+            for (auto* item : parentWidget()->findChildren<QWidget*>()) {
+                if (item->objectName() == "actionParamEdit" && item->isVisible()) {
+                    return item;
+                }
+            }
+        }
+        return nullptr;
+    }
+
     QWidget* resolveActionTargetWidget() const {
         if (parentWidget()) {
             for (auto* item : parentWidget()->findChildren<QLineEdit*>()) {
@@ -623,5 +639,6 @@ private:
     QPushButton* m_btnNext;
     QPropertyAnimation* m_pulseAnim;
     QRegion m_lastMaskRegion;
-    QMap<int, QString> m_dragStepKeywords; // step index → variable keyword for drag animation
+    QMap<int, QString> m_dragStepKeywords;    // step index → variable keyword for drag animation
+    QMap<int, QString> m_dragStepTargetFields; // step index → "target" or "param"
 };

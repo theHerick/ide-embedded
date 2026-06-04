@@ -1383,6 +1383,7 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         targetEdit->setText(block.actionTarget);
 
         auto* paramEdit = new VariableSlotEdit(w);
+        paramEdit->setObjectName("actionParamEdit");
         paramEdit->installEventFilter(this);
         paramEdit->setText(block.actionParam);
 
