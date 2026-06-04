@@ -1305,15 +1305,11 @@ void ButtonItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
         return;
     }
     if (event->button() == Qt::LeftButton) {
-        // Aumentando a área de clique para o corpo todo do botão em vez de só o pino central
-        QPointF local = event->pos();
-        if (local.x() >= -22 && local.x() <= 22 && local.y() >= -22 && local.y() <= 22) {
-            m_isPressed = true;
-            emit stateChanged(true);
-            update();
-            event->accept();
-            return;
-        }
+        m_isPressed = true;
+        emit stateChanged(true);
+        update();
+        event->accept();
+        return;
     }
     event->ignore();
 }
