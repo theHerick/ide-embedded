@@ -5836,7 +5836,7 @@ void MainWindow::startMotorIoTTutorial() {
         "13. Marque a caixa 'Habilitar WebPage'",
         "Para que o ESP32 ative a página web no Wi-Fi, precisamos marcar a caixa superior esquerda.",
         "Marque a caixa 'Habilitar WebPage'!",
-        nullptr, QRect(), TutorialStep::None, false, "webEnableSwitch"
+        nullptr, QRect(), TutorialStep::Up, false, "webEnableSwitch"
     });
 
     // ── Passo 14: Salvar e Fechar Web View ───────────────────────────────────
@@ -5844,7 +5844,7 @@ void MainWindow::startMotorIoTTutorial() {
         "14. Clique em Salvar e Fechar",
         "Sua página web está pronta e ativada!",
         "Clique em 'Salvar e Fechar' na janela do Web View!",
-        nullptr, QRect(), TutorialStep::None, false, "webSaveBtn"
+        nullptr, QRect(), TutorialStep::Down, false, "webSaveBtn"
     });
 
     // ── Passo 15: Compilar Projeto ───────────────────────────────────────────
