@@ -529,18 +529,18 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_buildAction, &QAction::triggered, this, [this]() {
         if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
         int step = m_tutorialOverlay->currentStep();
-        // Tutorial 1 build = step 12, Tutorial 2 build = step 19
+        // Tutorial 1 build = step 12, Tutorial 2 build = step 20
         if ((m_activeTutorial == 1 && step == 12) ||
-            (m_activeTutorial == 2 && step == 19))
+            (m_activeTutorial == 2 && step == 20))
             m_tutorialOverlay->advance();
     });
 
     connect(m_playAction, &QAction::triggered, this, [this]() {
         if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
         int step = m_tutorialOverlay->currentStep();
-        // Tutorial 1 play = step 13, Tutorial 2 play = step 20
+        // Tutorial 1 play = step 13, Tutorial 2 play = step 21
         if ((m_activeTutorial == 1 && step == 13) ||
-            (m_activeTutorial == 2 && step == 20))
+            (m_activeTutorial == 2 && step == 21))
             m_tutorialOverlay->advance();
     });
 
@@ -5688,19 +5688,27 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 15: Arrastar variável do Buzzer e mudar para LOW ─────────────
+    // ── Passo 15: Arrastar variável do Buzzer ─────────────
     steps.append({
-        "15. Arraste a variável do Buzzer e mude o estado para LOW",
+        "15. Arraste a variável do Buzzer",
         "Vamos configurar o segundo bloco para desligar o buzzer.\n\n"
-        "1. Arraste a variável do Buzzer ao campo 'Alvo' deste novo bloco.\n"
-        "2. Mude o comando de HIGH para LOW (desligar).",
-        "Arraste o Buzzer e mude para LOW!",
+        "Arraste a variável do Buzzer ao campo 'Alvo' deste novo bloco.",
+        "Arraste o Buzzer para o campo Alvo!",
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 16: Adicionar o bloco Aguardar (delay) ──────────────────────
+    // ── Passo 16: Mudar para LOW ─────────────
     steps.append({
-        "16. Adicione um bloco Aguardar",
+        "16. Mude o estado para LOW",
+        "Agora que o alvo está definido, mude o comando do bloco para desligar o buzzer.\n\n"
+        "Clique no campo destacado e mude de HIGH para LOW.",
+        "Mude o comando de HIGH para LOW!",
+        nullptr, QRect(), TutorialStep::Right, true, "actionCmdCombo"
+    });
+
+    // ── Passo 17: Adicionar o bloco Aguardar (delay) ──────────────────────
+    steps.append({
+        "17. Adicione um bloco Aguardar",
         "Agora vamos adicionar o delay dinâmico que controla o ritmo dos bips!\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione um bloco AGUARDAR.",
@@ -5708,9 +5716,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 17: Arrastar variável distância ao campo ms ──────────────────
+    // ── Passo 18: Arrastar variável distância ao campo ms ──────────────────
     steps.append({
-        "17. Arraste a variável distância ao campo de milissegundos",
+        "18. Arraste a variável distância ao campo de milissegundos",
         "A variável de distância do HC-SR04 vai controlar o intervalo entre os bips.\n\n"
         "1. Em 'VARIÁVEIS GLOBAIS', localize o bloco de distância.\n"
         "2. Arraste-o até o campo 'Milissegundos (ms)' do bloco Aguardar.",
@@ -5718,9 +5726,9 @@ void MainWindow::startDistanceSensorTutorial() {
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 18: Adicionar *10 após a variável ─────────────────────────
+    // ── Passo 19: Adicionar *10 após a variável ─────────────────────────
     steps.append({
-        "18. Adicione *10 após a variável no campo ms",
+        "19. Adicione *10 após a variável no campo ms",
         "Efeito sonar: quanto mais longe o objeto, maior o intervalo entre os bips!\n\n"
         "No campo de milissegundos, clique no final do texto que apareceu\n"
         "e adicione: *10\n\n"
@@ -5729,27 +5737,27 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 19: Build ───────────────────────────────────────────────────────
+    // ── Passo 20: Build ───────────────────────────────────────────────────────
     steps.append({
-        "19. Clique no botão de Build para compilar o projeto",
+        "20. Clique no botão de Build para compilar o projeto",
         "Com o circuito montado e a lógica programada, é hora de compilar!\n\n"
         "Clique no botão de Build (ícone de ferramentas na barra superior).",
         "Clique no botão de Build no topo!",
         buildWidget, QRect(), TutorialStep::Up
     });
 
-    // ── Passo 20: Play ────────────────────────────────────────────────────────
+    // ── Passo 21: Play ────────────────────────────────────────────────────────
     steps.append({
-        "20. Clique em Play para iniciar a simulação!",
+        "21. Clique em Play para iniciar a simulação!",
         "Com o código compilado com sucesso, clique no botão de Play!\n\n"
         "Você vai ver o buzzer bipando em tempo real.",
         "Clique no botão de Play no topo!",
         playWidget, QRect(), TutorialStep::Up
     });
 
-    // ── Passo 21: Observe o buzzer ──────────────────────────────────────
+    // ── Passo 22: Observe o buzzer ──────────────────────────────────────
     steps.append({
-        "21. Observe o Buzzer bipando e teste a distância!",
+        "22. Observe o Buzzer bipando e teste a distância!",
         "O buzzer está bipando em tempo real — isso é o seu sonar funcionando!\n\n"
         "Quanto mais perto do objeto (padrão: 30 cm), mais rápido o bip.\n\n"
         "Dê DOIS CLIQUES no HC-SR04 para mudar a distância simulada e ver o intervalo mudar!",
@@ -5757,7 +5765,7 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 22: Concluído ─────────────────────────────────────────────────
+    // ── Passo 23: Concluído ─────────────────────────────────────────────────
     steps.append({
         "Parabéns! Seu sonar está funcionando!",
         "Você montou um detector de proximidade ultrassônico do zero!\n\n"
@@ -5772,7 +5780,7 @@ void MainWindow::startDistanceSensorTutorial() {
     m_tutorialOverlay->clearVariableDragSteps();
     m_tutorialOverlay->addVariableDragStep(11, "BUZZER");            // drag Buzzer to action target (HIGH)
     m_tutorialOverlay->addVariableDragStep(15, "BUZZER");            // drag Buzzer to action target (LOW)
-    m_tutorialOverlay->addVariableDragStep(17, "distancia", "param"); // drag distancia to delay ms field
+    m_tutorialOverlay->addVariableDragStep(18, "distancia", "param"); // drag distancia to delay ms field
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -5838,20 +5846,33 @@ void MainWindow::checkBlockEditorTutorialSteps() {
             else if (step == 14 && actionCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 15: drag buzzer variable to second action (set LOW)
+            // Step 15: drag buzzer variable to second action (target filled)
             else if (step == 15 && filledCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 16: add second DELAY block (empty param OK)
-            else if (step == 16 && delayCount >= 2) {
+            // Step 16: user changes combo to LOW
+            else if (step == 16) {
+                // To check if they set it to LOW, we must verify the last action block
+                int lowCount = 0;
+                for (const auto& b : active) {
+                    if (b.type == LogicBlockType::ACTION && b.actionCommand == "LOW") {
+                        lowCount++;
+                    }
+                }
+                if (lowCount >= 1) {
+                    m_tutorialOverlay->advance(); advanced = true;
+                }
+            }
+            // Step 17: add second DELAY block (empty param OK)
+            else if (step == 17 && delayCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 17: drag distance variable to second delay's param field
-            else if (step == 17 && delayParamCount >= 2) {
+            // Step 18: drag distance variable to second delay's param field
+            else if (step == 18 && delayParamCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 18: type *10 in second delay's param field
-            else if (step == 18 && delayMultCount >= 1) {
+            // Step 19: type *10 in second delay's param field
+            else if (step == 19 && delayMultCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
         }

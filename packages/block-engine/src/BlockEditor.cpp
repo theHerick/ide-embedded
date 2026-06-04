@@ -1397,6 +1397,7 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         paramCombo3->setCurrentText(block.actionParam3.isEmpty() ? "ms" : block.actionParam3);
 
         auto* cmdCombo = new QComboBox(w);
+        cmdCombo->setObjectName("actionCmdCombo");
         cmdCombo->addItem("LIGAR (HIGH)", "HIGH");
         cmdCombo->addItem("DESLIGAR (LOW)", "LOW");
         cmdCombo->addItem("INVERTER (TOGGLE)", "TOGGLE");

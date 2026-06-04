@@ -28,6 +28,7 @@ struct TutorialStep {
     QRect customTargetRect; // Alternative to targetWidget
     enum ArrowDir { None, Up, Down, Left, Right } arrowDir = None;
     bool showHighlight = true; // If false, no blue pulsing glow or border is drawn (only the cutout hole)
+    QString dynamicTargetId; // e.g. "actionCmdCombo"
 };
 
 class TutorialOverlay : public QWidget {
@@ -500,6 +501,13 @@ private:
         if (!step.customTargetRect.isNull()) {
             return step.customTargetRect;
         }
+        if (step.dynamicTargetId == "actionCmdCombo") {
+            QWidget* cmdW = resolveActionCmdWidget();
+            if (cmdW && cmdW->isVisible()) {
+                QPoint topLeft = cmdW->mapTo(parentWidget(), QPoint(0, 0));
+                return QRect(topLeft, cmdW->size());
+            }
+        }
         return QRect();
     }
 
@@ -620,6 +628,19 @@ private:
                 }
             }
             return lastResort;
+        }
+        return nullptr;
+    }
+
+    QWidget* resolveActionCmdWidget() const {
+        if (parentWidget()) {
+            QWidget* lastResort = nullptr;
+            for (auto* item : parentWidget()->findChildren<QWidget*>()) {
+                if (item->objectName() == "actionCmdCombo" && item->isVisible()) {
+                    lastResort = item;
+                }
+            }
+            return lastResort; // Always point to the last action block's combo box
         }
         return nullptr;
     }
