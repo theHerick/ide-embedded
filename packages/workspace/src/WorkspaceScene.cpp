@@ -717,9 +717,15 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
     if (!esp32) return; // Silent abort if no ESP32
 
     QSet<QString> occupiedPins;
+    bool esp32HasGnd = false;
     for (auto* cable : m_cables) {
         if (cable->sourceComponent() == esp32) occupiedPins.insert(cable->sourcePinName());
         if (cable->targetComponent() == esp32) occupiedPins.insert(cable->targetPinName());
+        
+        if ((cable->sourceComponent() == esp32 && cable->sourcePinName() == "GND" && cable->targetComponent()->componentType() == "gnd") ||
+            (cable->targetComponent() == esp32 && cable->targetPinName() == "GND" && cable->sourceComponent()->componentType() == "gnd")) {
+            esp32HasGnd = true;
+        }
     }
 
     auto getFreeGpio = [&]() -> QString {
@@ -744,6 +750,23 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
     };
 
     m_undoStack->beginMacro("Conexão Inteligente");
+    
+    // Add GND to ESP32 if not already present
+    if (!esp32HasGnd) {
+        QPointF espGndPos = esp32->pos() + QPointF(-40, 100);
+        ComponentItem* espGnd = addComponent("gnd", "", espGndPos, "", true);
+        if (espGnd) {
+            connectPins(esp32, "GND", espGnd, "GND");
+            occupiedPins.insert("GND");
+        }
+    }
+    
+    auto connectToGnd = [&](ComponentItem* comp, const QString& pinName, const QPointF& offset) {
+        ComponentItem* gndComp = addComponent("gnd", "", comp->pos() + offset, "", true);
+        if (gndComp) {
+            connectPins(comp, pinName, gndComp, "GND");
+        }
+    };
 
     if (type == "led") {
         QString gpio = getFreeGpio();
@@ -754,7 +777,7 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         if (resistor) {
             connectPins(esp32, gpio, resistor, "1");
             connectPins(resistor, "2", newComp, "Anode");
-            connectPins(newComp, "Cathode", esp32, "GND");
+            connectToGnd(newComp, "Cathode", QPointF(20, 50));
         }
     } else if (type == "rgb_led") {
         QString rG = getFreeGpio();
@@ -777,21 +800,21 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
             connectPins(esp32, bG, rB, "1");
             connectPins(rB, "2", newComp, "B");
 
-            connectPins(newComp, "GND", esp32, "GND");
+            connectToGnd(newComp, "GND", QPointF(-5, 60));
         }
     } else if (type == "button") {
         QString gpio = getFreeGpio();
         if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
 
         connectPins(newComp, "1", esp32, gpio);
-        connectPins(newComp, "2", esp32, "GND");
+        connectToGnd(newComp, "2", QPointF(20, 50));
 
     } else if (type == "buzzer") {
         QString gpio = getFreeGpio();
         if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
 
         connectPins(newComp, "1", esp32, gpio);
-        connectPins(newComp, "2", esp32, "GND");
+        connectToGnd(newComp, "2", QPointF(20, 50));
 
     } else if (type == "potentiometer") {
         QString gpio = getFreeGpio();
@@ -799,7 +822,7 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
 
         connectPins(newComp, "1", esp32, "3V3");
         connectPins(newComp, "2", esp32, gpio);
-        connectPins(newComp, "3", esp32, "GND");
+        connectToGnd(newComp, "3", QPointF(20, 60));
 
     } else if (type == "dht22") {
         QString gpio = getFreeGpio();
@@ -807,7 +830,7 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
 
         connectPins(newComp, "VCC", esp32, "3V3");
         connectPins(newComp, "DATA", esp32, gpio);
-        connectPins(newComp, "GND", esp32, "GND");
+        connectToGnd(newComp, "GND", QPointF(20, 60));
         
     } else if (type == "hcsr04") {
         QString tG = getFreeGpio();
@@ -817,7 +840,7 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         connectPins(newComp, "VCC", esp32, "5V");
         connectPins(newComp, "TRIG", esp32, tG);
         connectPins(newComp, "ECHO", esp32, eG);
-        connectPins(newComp, "GND", esp32, "GND");
+        connectToGnd(newComp, "GND", QPointF(30, 60));
     }
 
     m_undoStack->endMacro();
