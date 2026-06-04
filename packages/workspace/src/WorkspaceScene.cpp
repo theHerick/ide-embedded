@@ -722,8 +722,8 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         if (cable->sourceComponent() == esp32) occupiedPins.insert(cable->sourcePinName());
         if (cable->targetComponent() == esp32) occupiedPins.insert(cable->targetPinName());
         
-        if ((cable->sourceComponent() == esp32 && cable->sourcePinName() == "GND" && cable->targetComponent()->componentType() == "gnd") ||
-            (cable->targetComponent() == esp32 && cable->targetPinName() == "GND" && cable->sourceComponent()->componentType() == "gnd")) {
+        if ((cable->sourceComponent() == esp32 && cable->sourcePinName() == "GND.1" && cable->targetComponent()->componentType() == "gnd") ||
+            (cable->targetComponent() == esp32 && cable->targetPinName() == "GND.1" && cable->sourceComponent()->componentType() == "gnd")) {
             esp32HasGnd = true;
         }
     }
@@ -753,11 +753,11 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
     
     // Add GND to ESP32 if not already present
     if (!esp32HasGnd) {
-        QPointF espGndPos = esp32->pos() + QPointF(-40, 100);
+        QPointF espGndPos = esp32->pos() + QPointF(-80, -20);
         ComponentItem* espGnd = addComponent("gnd", "", espGndPos, "", true);
         if (espGnd) {
-            connectPins(esp32, "GND", espGnd, "GND");
-            occupiedPins.insert("GND");
+            connectPins(esp32, "GND.1", espGnd, "GND");
+            occupiedPins.insert("GND.1");
         }
     }
     
