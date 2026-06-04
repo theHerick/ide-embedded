@@ -1090,7 +1090,18 @@ void ESP32Item::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
             }
         }
 
-        // Draw pin label
+        // Draw pin label — only for "wow" pins: power rails, UART, I2C, EN, RST, BOOT
+        // GPIO-numbered pins are intentionally left unlabeled to keep the board clean
+        QString dUpper = displayName.toUpper();
+        bool isWowPin = dUpper == "GND"   || dUpper == "5V"   || dUpper == "3V3"  ||
+                        dUpper == "VIN"   || dUpper == "VBUS" || dUpper == "VCC"  ||
+                        dUpper == "RX"    || dUpper == "TX"   || dUpper == "RX0"  ||
+                        dUpper == "TX0"   || dUpper == "RXD"  || dUpper == "TXD"  ||
+                        dUpper == "SDA"   || dUpper == "SCL"  ||
+                        dUpper == "EN"    || dUpper == "RST"  || dUpper == "BOOT" ||
+                        dUpper == "RESET" || dUpper == "3.3V" || dUpper == "AREF";
+        if (!isWowPin) continue; // skip label for plain GPIO pins
+
         if (boardId == "esp32-s3-devkitc-1") {
             painter->setPen(QPen(QColor(230, 230, 230)));
         } else {
@@ -1098,6 +1109,7 @@ void ESP32Item::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
         }
         QFont font = painter->font();
         font.setPointSizeF((boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") ? 7 : 10); // Smaller font for modules
+        font.setBold(true); // Make important pins stand out
         painter->setFont(font);
 
         bool isTopPin = false;
@@ -1112,6 +1124,23 @@ void ESP32Item::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
         double txtOffset = (boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") ? 6 : 8;
         double labelWidth = (boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") ? 60 : 70;
         double labelHeight = (boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") ? 14 : 12;
+
+        // Color-code by type for extra "wow"
+        if (dUpper == "GND") {
+            painter->setPen(QPen(QColor(100, 180, 255))); // blue for GND
+        } else if (dUpper == "5V" || dUpper == "VIN" || dUpper == "VBUS") {
+            painter->setPen(QPen(QColor(255, 120, 60)));  // orange-red for 5V
+        } else if (dUpper == "3V3" || dUpper == "3.3V" || dUpper == "VCC") {
+            painter->setPen(QPen(QColor(255, 80, 80)));   // red for 3V3
+        } else if (dUpper == "RX" || dUpper == "TX" || dUpper == "RX0" || dUpper == "TX0" || dUpper == "RXD" || dUpper == "TXD") {
+            painter->setPen(QPen(QColor(100, 220, 140))); // green for UART
+        } else if (dUpper == "SDA" || dUpper == "SCL") {
+            painter->setPen(QPen(QColor(180, 120, 255))); // purple for I2C
+        } else if (boardId == "esp32-s3-devkitc-1") {
+            painter->setPen(QPen(QColor(230, 230, 230)));
+        } else {
+            painter->setPen(QPen(QColor(80, 80, 80)));
+        }
 
         if (isTopPin) {
             // top side (labels outside, above pin, vertical)

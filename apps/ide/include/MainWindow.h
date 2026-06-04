@@ -62,6 +62,7 @@ private slots:
     void viewCompiledCodeModal();
     void showFirmwareInfo();
     void startInteractiveTutorial();
+    void startDistanceSensorTutorial();
     void platformIOConfigTriggered();
 
 private:
