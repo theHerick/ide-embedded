@@ -664,11 +664,11 @@ void WebPageEditorDialog::addElement(const QString& type, const QPointF& pos) {
 }
 
 void WebPageEditorDialog::done(int r) {
-    m_data["enabled"] = m_enableSwitch->isChecked();
-    m_data["auth_enabled"] = m_authEnable->isChecked();
-    m_data["auth_user"] = m_authUser->text();
-    m_data["auth_pass"] = m_authPass->text();
-    m_data["orientation"] = m_orientationCombo->currentIndex();
+    m_data.insert("enabled", m_enableSwitch->isChecked());
+    m_data.insert("auth_enabled", m_authEnable->isChecked());
+    m_data.insert("auth_user", m_authUser->text());
+    m_data.insert("auth_pass", m_authPass->text());
+    m_data.insert("orientation", m_orientationCombo->currentIndex());
     
     QJsonArray newElements;
     for (QGraphicsItem* item : m_scene->items()) {
@@ -676,7 +676,7 @@ void WebPageEditorDialog::done(int r) {
             newElements.append(webItem->toJson());
         }
     }
-    m_data["elements"] = newElements;
+    m_data.insert("elements", newElements);
     
     QDialog::done(r);
 }

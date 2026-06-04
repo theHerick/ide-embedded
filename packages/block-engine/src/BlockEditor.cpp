@@ -944,7 +944,7 @@ void BlockEditor::addBlock(const QString& type) {
                 b.actionCommand = "TOGGLE";
             } else if (type == "delay") {
                 b.actionCommand = "DELAY";
-                b.actionParam = "1000";
+                b.actionParam = "0";
             } else if (type == "wifiAP") {
                 b.actionCommand = "WIFI_AP";
                 b.actionTarget = "MinhaRede";

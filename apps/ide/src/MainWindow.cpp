@@ -1769,6 +1769,12 @@ void MainWindow::toggleSimulation() {
             // Start running with the actual block engine storage
             m_simulator->startSimulation(m_scene, m_blockEditor->getEventBlockStorage(), m_webPageData);
             
+            // Hide block editor when simulation starts
+            if (m_blockEditor) {
+                m_blockEditor->hide();
+                m_blockEditor->setEnabled(false);
+            }
+            
             // Fix: Actually set the scene to simulating mode so components know!
             m_scene->setSimulating(true);
             

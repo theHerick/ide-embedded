@@ -1174,8 +1174,9 @@ void LEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(15, 23, 42, 40));
         painter->drawEllipse(QPointF(0, 4), 18, 18);
-        painter->setPen(QPen(QColor(156, 163, 175), 2));
+        painter->setPen(QPen(QColor(239, 68, 68), 2));
         painter->drawLine(-10, 10, -10, 30);
+        painter->setPen(QPen(QColor(156, 163, 175), 2));
         painter->drawLine(10,  10, 10,  30);
         painter->setBrush(QColor(234, 179, 8)); 
         painter->setPen(QPen(QColor(161, 98, 7), 1));
