@@ -299,6 +299,15 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     m_enableSwitch->setStyleSheet(
         "QCheckBox { color: #0F172A; font-weight: bold; font-size: 12px; }"
     );
+    connect(m_enableSwitch, &QCheckBox::stateChanged, this, [this](int state) {
+        if (state == Qt::Checked) {
+            if (MainWindow* mainWin = qobject_cast<MainWindow*>(parentWidget())) {
+                if (mainWin->getActiveTutorial() == 3 && mainWin->getTutorialOverlay() && mainWin->getTutorialOverlay()->currentStep() == 13) {
+                    mainWin->getTutorialOverlay()->advance();
+                }
+            }
+        }
+    });
     topLayout->addWidget(m_enableSwitch);
     
     // Auth Panel
@@ -393,7 +402,14 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #059669, stop:1 #047857); "
         "}"
     );
-    connect(btnSave, &QPushButton::clicked, this, [this](){ accept(); });
+    connect(btnSave, &QPushButton::clicked, this, [this](){
+        if (MainWindow* mainWin = qobject_cast<MainWindow*>(parentWidget())) {
+            if (mainWin->getActiveTutorial() == 3 && mainWin->getTutorialOverlay() && mainWin->getTutorialOverlay()->currentStep() == 14) {
+                mainWin->getTutorialOverlay()->advance();
+            }
+        }
+        accept();
+    });
     bottomLayout->addStretch();
     
     QPushButton* btnPreview = new QPushButton("Preview Web");
