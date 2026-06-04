@@ -2044,6 +2044,7 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
                          << "Repetir Para (for - Loop com contador)"
                          << "Fim (Fecha bloco condicional ou loop)"
                          << "Ação (Controla hardware / pino)"
+                         << "Definir Cor LED RGB (Ação Hardware)"
                          << "Calcular Bateria (Lê o ADC e calcula carga)"
                          << "Chamar Função (executa função C++)"
                          << "Girar Motor (Ajusta ângulo do servo ou DC)"
@@ -2236,6 +2237,14 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             b.id = QUuid::createUuid().toString();
             b.type = LogicBlockType::ACTION;
             b.actionCommand = "ROTATE_MOTOR";
+            m_activeBlocks.append(b);
+            refreshListDisplay();
+            emit blocksChanged();
+        } else if (text.contains("rgb") || text.contains("cor led") || text.contains("definir cor")) {
+            EventLogicBlock b;
+            b.id = QUuid::createUuid().toString();
+            b.type = LogicBlockType::ACTION;
+            b.actionCommand = "SET_RGB_COLOR";
             m_activeBlocks.append(b);
             refreshListDisplay();
             emit blocksChanged();
