@@ -492,49 +492,56 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     QTimer::singleShot(2000, this, &MainWindow::checkAndInstallToolchain);
 
     // Onboarding / Tutorial auto-advance connections
-    // Onboarding / Tutorial auto-advance connections
     connect(m_scene, &WorkspaceScene::componentAdded, this, [this](ComponentItem* comp) {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && comp) {
-            int step = m_tutorialOverlay->currentStep();
-            logMessage(QString("Tutorial: Componente adicionado tipo='%1' no Passo %2").arg(comp->componentType()).arg(step), "SYSTEM");
-            if (step == 1 && comp->componentType() == "led") {
+        if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible() || !comp) return;
+        int step = m_tutorialOverlay->currentStep();
+        QString type = comp->componentType();
+
+        if (m_activeTutorial == 1) {
+            // Tutorial 1: LED (step 1), Resistor (step 2), Button (step 6)
+            if      (step == 1 && type == "led")      m_tutorialOverlay->advance();
+            else if (step == 2 && type == "resistor")  m_tutorialOverlay->advance();
+            else if (step == 6 && type == "button")    m_tutorialOverlay->advance();
+        } else if (m_activeTutorial == 2) {
+            // Tutorial 2: HC-SR04 (step 1), Buzzer (step 6)
+            if      (step == 1 && (type == "hcsr04" || type == "hc-sr04" || type == "ultrasonic"))
                 m_tutorialOverlay->advance();
-            } else if (step == 2 && comp->componentType() == "resistor") {
+            else if (step == 6 && type == "buzzer")
                 m_tutorialOverlay->advance();
-            } else if (step == 6 && comp->componentType() == "button") {
-                m_tutorialOverlay->advance();
-            }
         }
     });
 
     connect(m_scene, &WorkspaceScene::cableAdded, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
-            int step = m_tutorialOverlay->currentStep();
-            logMessage(QString("Tutorial: Cabo adicionado no Passo %1").arg(step), "SYSTEM");
-            if (step == 3 || step == 4 || step == 5 || step == 7 || step == 8) {
+        if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
+        int step = m_tutorialOverlay->currentStep();
+
+        if (m_activeTutorial == 1) {
+            // Tutorial 1: connection steps 3,4,5,7,8
+            if (step == 3 || step == 4 || step == 5 || step == 7 || step == 8)
                 m_tutorialOverlay->advance();
-            }
+        } else if (m_activeTutorial == 2) {
+            // Tutorial 2: connection steps 2,3,4,5,7,8
+            if (step == 2 || step == 3 || step == 4 || step == 5 || step == 7 || step == 8)
+                m_tutorialOverlay->advance();
         }
     });
 
     connect(m_buildAction, &QAction::triggered, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
-            int step = m_tutorialOverlay->currentStep();
-            logMessage(QString("Tutorial: Build acionado no Passo %1").arg(step), "SYSTEM");
-            if (step == 12) {
-                m_tutorialOverlay->advance();
-            }
-        }
+        if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
+        int step = m_tutorialOverlay->currentStep();
+        // Tutorial 1 build = step 12, Tutorial 2 build = step 16
+        if ((m_activeTutorial == 1 && step == 12) ||
+            (m_activeTutorial == 2 && step == 16))
+            m_tutorialOverlay->advance();
     });
 
     connect(m_playAction, &QAction::triggered, this, [this]() {
-        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
-            int step = m_tutorialOverlay->currentStep();
-            logMessage(QString("Tutorial: Play acionado no Passo %1").arg(step), "SYSTEM");
-            if (step == 13) {
-                m_tutorialOverlay->advance();
-            }
-        }
+        if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
+        int step = m_tutorialOverlay->currentStep();
+        // Tutorial 1 play = step 13, Tutorial 2 play = step 17
+        if ((m_activeTutorial == 1 && step == 13) ||
+            (m_activeTutorial == 2 && step == 17))
+            m_tutorialOverlay->advance();
     });
 
     connect(m_blockEditor, &BlockEditor::blocksChanged, this, [this]() {
@@ -5540,6 +5547,7 @@ void MainWindow::startInteractiveTutorial() {
         nullptr, QRect(), TutorialStep::None
     });
 
+    m_activeTutorial = 1;
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -5662,20 +5670,29 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 10: Bloco Evento/Ação (buzzer HIGH) ─────────────────────────────
+    // ── Passo 10: Adicionar bloco Ação ──────────────────────────────────────
     steps.append({
-        "10. Adicione um bloco de Ação e coloque a variável do Buzzer",
-        "Vamos programar o buzzer para ligar quando o sensor detectar algo!\n\n"
+        "10. Dê dois cliques no editor e adicione um bloco de Ação",
+        "Vamos programar o buzzer para ligar!\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos à direita.\n"
-        "2. Adicione uma AÇÃO.\n"
-        "3. Arraste a variável do Buzzer da paleta esquerda ao campo 'Alvo'.",
-        "Adicione um bloco Ação e arraste a variável do Buzzer!",
+        "2. Adicione uma AÇÃO na lista que aparecer.",
+        "Dê duplo clique no editor e adicione um bloco Ação!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 11: Bloco Aguardar 50ms ────────────────────────────────────────
+    // ── Passo 11: Arrastar variável do Buzzer ao campo Alvo ────────────────────
     steps.append({
-        "11. Adicione um bloco Aguardar e coloque 50 ms",
+        "11. Arraste a variável do Buzzer ao campo 'Alvo'",
+        "Agora puxe a variável do Buzzer para o bloco de ação.\n\n"
+        "1. Na paleta esquerda em 'PINOS E ATUADORES', localize o bloco do Buzzer.\n"
+        "2. Clique e segure e arraste até o campo 'Alvo (Pino / Var)' do bloco de Ação.",
+        "Arraste a variável do Buzzer para o campo Alvo!",
+        nullptr, QRect(), TutorialStep::Right
+    });
+
+    // ── Passo 12: Adicionar bloco Aguardar 50ms ──────────────────────────
+    steps.append({
+        "12. Adicione um bloco Aguardar e coloque 50 ms",
         "Um pequeno delay entre o buzz ON e OFF cria o efeito de bip.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione um bloco AGUARDAR.\n"
@@ -5684,20 +5701,29 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 12: Bloco Ação (buzzer LOW) ────────────────────────────────────
+    // ── Passo 13: Adicionar bloco Ação (buzzer LOW) ──────────────────────
     steps.append({
-        "12. Adicione mais um bloco Ação — Buzzer LOW",
-        "Agora vamos desligar o buzzer após o delay.\n\n"
+        "13. Adicione mais um bloco de Ação",
+        "Agora vamos adicionar o bloco que vai desligar o buzzer após o bip.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
-        "2. Adicione outra AÇÃO.\n"
-        "3. Arraste a variável do Buzzer ao campo 'Alvo' e mude o estado para LOW.",
-        "Adicione outro bloco Ação com o Buzzer em LOW!",
+        "2. Adicione outra AÇÃO.",
+        "Dê duplo clique no editor e adicione outro bloco Ação!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 13: Bloco Aguardar com variável distância * 10 ─────────────────
+    // ── Passo 14: Arrastar variável do Buzzer e mudar para LOW ─────────────
     steps.append({
-        "13. Adicione outro Aguardar e use a variável de distância × 10",
+        "14. Arraste a variável do Buzzer e mude o estado para LOW",
+        "Vamos configurar o segundo bloco para desligar o buzzer.\n\n"
+        "1. Arraste a variável do Buzzer ao campo 'Alvo' deste novo bloco.\n"
+        "2. Mude o comando de HIGH para LOW (desligar).",
+        "Arraste o Buzzer e mude para LOW!",
+        nullptr, QRect(), TutorialStep::Right
+    });
+
+    // ── Passo 15: Bloco Aguardar com variável distância * 10 ────────────────
+    steps.append({
+        "15. Adicione um Aguardar e use a variável de distância × 10",
         "Quanto mais longe o objeto, maior o intervalo entre os bips — efeito sonar!\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione um bloco AGUARDAR.\n"
@@ -5706,35 +5732,35 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 14: Build ───────────────────────────────────────────────────────
+    // ── Passo 16: Build ───────────────────────────────────────────────────────
     steps.append({
-        "14. Clique no botão de Build para compilar o projeto",
+        "16. Clique no botão de Build para compilar o projeto",
         "Com o circuito montado e a lógica programada, é hora de compilar!\n\n"
         "Clique no botão de Build (ícone de ferramentas na barra superior).",
         "Clique no botão de Build no topo!",
         buildWidget, QRect(), TutorialStep::Up
     });
 
-    // ── Passo 15: Play ────────────────────────────────────────────────────────
+    // ── Passo 17: Play ────────────────────────────────────────────────────────
     steps.append({
-        "15. Clique em Play para iniciar a simulação!",
-        "Com o código compilado com sucesso, clique no botão de Play para rodar a simulação interativa!\n\n"
+        "17. Clique em Play para iniciar a simulação!",
+        "Com o código compilado com sucesso, clique no botão de Play!\n\n"
         "Você vai ver o buzzer bipando em tempo real.",
         "Clique no botão de Play no topo!",
         playWidget, QRect(), TutorialStep::Up
     });
 
-    // ── Passo 16: Teste — observe o buzzer ───────────────────────────────────
+    // ── Passo 18: Observe o buzzer ───────────────────────────────────────
     steps.append({
-        "16. Observe o Buzzer bipando no workspace!",
+        "18. Observe o Buzzer bipando e teste a distância!",
         "O buzzer está bipando em tempo real — isso é o seu sonar funcionando!\n\n"
         "Quanto mais perto do objeto (padrão: 30 cm), mais rápido o bip.\n\n"
-        "Agora, dê DOIS CLIQUES no HC-SR04 para mudar a distância simulada.",
+        "Dê DOIS CLIQUES no HC-SR04 para mudar a distância simulada e ver o intervalo mudar!",
         "Dê dois cliques no HC-SR04 para ajustar a distância!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 17: Concluído ───────────────────────────────────────────────────
+    // ── Passo 19: Concluído ──────────────────────────────────────────────────
     steps.append({
         "Parabéns! Seu sonar está funcionando!",
         "Você montou um detector de proximidade ultrassônico do zero!\n\n"
@@ -5745,6 +5771,7 @@ void MainWindow::startDistanceSensorTutorial() {
         nullptr, QRect(), TutorialStep::None
     });
 
+    m_activeTutorial = 2;
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -5758,55 +5785,58 @@ void MainWindow::checkBlockEditorTutorialSteps() {
         int step = m_tutorialOverlay->currentStep();
 
         QVector<EventLogicBlock> active = m_blockEditor->getActiveBlocks();
-        bool hasActionBlock  = false;
-        bool hasTargetFilled = false;
-        int  actionCount     = 0;   // non-DELAY actions
-        int  delayCount      = 0;   // DELAY (aguardar) actions
+        int  actionCount     = 0;   // non-DELAY action blocks
+        int  delayCount      = 0;   // DELAY blocks
+        int  filledCount     = 0;   // action blocks with target filled
 
         for (const auto& b : active) {
             if (b.type == LogicBlockType::ACTION) {
                 if (b.actionCommand == "DELAY") {
                     delayCount++;
                 } else {
-                    hasActionBlock = true;
                     actionCount++;
-                    if (!b.actionTarget.trimmed().isEmpty()) hasTargetFilled = true;
+                    if (!b.actionTarget.trimmed().isEmpty()) filledCount++;
                 }
             }
         }
 
-        // Determine which tutorial is active by total step count
-        // Tutorial 1 (LED/Button) = 15 steps (indices 0-14)
-        // Tutorial 2 (Distance)   = 18 steps (indices 0-17)
-        int totalSteps = m_tutorialOverlay->property("_totalSteps").toInt();
-        // Fallback: use step ranges that are tutorial-specific
-        // Tut1 checks steps 10 (action) & 11 (target)
-        // Tut2 checks steps 10 (action+target), 11 (delay), 12 (2nd action), 13 (2nd delay)
+        if (m_activeTutorial == 1) {
+            // Tutorial 1 — LED/Button
+            // Step 10: user added an action block (target may be empty)
+            if (step == 10 && actionCount >= 1) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
+            // Step 11: user dragged variable to target field
+            else if (step == 11 && filledCount >= 1) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
 
-        if (step == 10 && hasActionBlock && !hasTargetFilled) {
-            // Tutorial 1, step 10: just needs an action block added
-            m_tutorialOverlay->advance();
-            advanced = true;
-        } else if (step == 10 && hasTargetFilled) {
-            // Tutorial 2, step 10: needs action block with buzzer target
-            m_tutorialOverlay->advance();
-            advanced = true;
-        } else if (step == 11 && hasTargetFilled && delayCount == 0) {
-            // Tutorial 1, step 11: needs target filled (no delay needed)
-            m_tutorialOverlay->advance();
-            advanced = true;
-        } else if (step == 11 && delayCount >= 1) {
-            // Tutorial 2, step 11: needs a DELAY block (50ms)
-            m_tutorialOverlay->advance();
-            advanced = true;
-        } else if (step == 12 && actionCount >= 2) {
-            // Tutorial 2, step 12: needs second action block (buzzer LOW)
-            m_tutorialOverlay->advance();
-            advanced = true;
-        } else if (step == 13 && delayCount >= 2) {
-            // Tutorial 2, step 13: needs second DELAY block (distance * 10)
-            m_tutorialOverlay->advance();
-            advanced = true;
+        } else if (m_activeTutorial == 2) {
+            // Tutorial 2 — Distance Sensor
+            // Step 10: add first action block (empty target OK)
+            if (step == 10 && actionCount >= 1) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
+            // Step 11: drag buzzer variable to that action's target
+            else if (step == 11 && filledCount >= 1) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
+            // Step 12: add a DELAY block (50ms)
+            else if (step == 12 && delayCount >= 1) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
+            // Step 13: add second action block (empty target OK)
+            else if (step == 13 && actionCount >= 2) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
+            // Step 14: drag buzzer variable to second action (set LOW)
+            else if (step == 14 && filledCount >= 2) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
+            // Step 15: add second DELAY block (distance * 10)
+            else if (step == 15 && delayCount >= 2) {
+                m_tutorialOverlay->advance(); advanced = true;
+            }
         }
     }
 }
