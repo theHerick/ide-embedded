@@ -217,6 +217,14 @@ public:
 
     qreal pulseRadius() const { return m_pulse; }
     void setPulseRadius(qreal r) { m_pulse = r; update(); }
+    void addVariableDragStep(int stepIndex, const QString& varKeyword) {
+        m_dragStepKeywords[stepIndex] = varKeyword;
+    }
+
+    void clearVariableDragSteps() {
+        m_dragStepKeywords.clear();
+    }
+
 
 protected:
     void paintEvent(QPaintEvent*) override {
@@ -227,8 +235,9 @@ protected:
         QPainterPath path;
         path.addRect(rect());
 
-        if (m_currentStep == 11) {
-            QWidget* varW = resolveTargetWidget(m_steps[11]);
+        if (m_dragStepKeywords.contains(m_currentStep)) {
+            const QString& kw = m_dragStepKeywords[m_currentStep];
+            QWidget* varW = resolveVariableWidget(kw);
             QWidget* targetW = resolveActionTargetWidget();
             if (varW && targetW && varW->isVisible()) {
                 QPoint topLeftVar = varW->mapTo(parentWidget(), QPoint(0, 0));
@@ -342,8 +351,9 @@ protected:
     void updateMask() {
         QRegion r(rect());
         if (m_currentStep < m_steps.size()) {
-            if (m_currentStep == 11) {
-                QWidget* varW = resolveTargetWidget(m_steps[11]);
+            if (m_dragStepKeywords.contains(m_currentStep)) {
+                const QString& kw = m_dragStepKeywords[m_currentStep];
+                QWidget* varW = resolveVariableWidget(kw);
                 QWidget* targetW = resolveActionTargetWidget();
                 if (varW && targetW && varW->isVisible()) {
                     QPoint topLeftVar = varW->mapTo(parentWidget(), QPoint(0, 0));
@@ -452,18 +462,27 @@ private:
         update();
     }
 
-    QWidget* resolveTargetWidget(const TutorialStep& step) const {
-        if (m_currentStep == 11) {
-            if (parentWidget()) {
-                for (auto* item : parentWidget()->findChildren<VisualVariableItem*>()) {
-                    if (item->getDef().type == VarType::PIN && 
-                        item->getDef().name.contains("LED", Qt::CaseInsensitive) && 
-                        item->isVisible()) {
-                        return item;
-                    }
-                }
+    QWidget* resolveVariableWidget(const QString& keyword) const {
+        if (!parentWidget()) return nullptr;
+        for (auto* item : parentWidget()->findChildren<VisualVariableItem*>()) {
+            if (item->getDef().type == VarType::PIN &&
+                item->getDef().name.contains(keyword, Qt::CaseInsensitive) &&
+                item->isVisible()) {
+                return item;
             }
         }
+        // Fallback: look for any visible VisualVariableItem matching keyword (not just PIN type)
+        for (auto* item : parentWidget()->findChildren<VisualVariableItem*>()) {
+            if (item->getDef().name.contains(keyword, Qt::CaseInsensitive) &&
+                item->isVisible()) {
+                return item;
+            }
+        }
+        return nullptr;
+    }
+
+    QWidget* resolveTargetWidget(const TutorialStep& step) const {
+        // Legacy: drag steps now handled by resolveVariableWidget
         return step.targetWidget;
     }
 
@@ -604,4 +623,5 @@ private:
     QPushButton* m_btnNext;
     QPropertyAnimation* m_pulseAnim;
     QRegion m_lastMaskRegion;
+    QMap<int, QString> m_dragStepKeywords; // step index → variable keyword for drag animation
 };

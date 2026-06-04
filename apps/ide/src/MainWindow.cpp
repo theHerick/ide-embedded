@@ -5548,6 +5548,8 @@ void MainWindow::startInteractiveTutorial() {
     });
 
     m_activeTutorial = 1;
+    m_tutorialOverlay->clearVariableDragSteps();
+    m_tutorialOverlay->addVariableDragStep(11, "LED"); // step 11: drag LED variable to Alvo
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -5772,6 +5774,9 @@ void MainWindow::startDistanceSensorTutorial() {
     });
 
     m_activeTutorial = 2;
+    m_tutorialOverlay->clearVariableDragSteps();
+    m_tutorialOverlay->addVariableDragStep(11, "BUZZER"); // step 11: drag Buzzer to Alvo (HIGH)
+    m_tutorialOverlay->addVariableDragStep(14, "BUZZER"); // step 14: drag Buzzer to Alvo (LOW)
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
