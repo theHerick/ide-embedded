@@ -908,7 +908,7 @@ void MainWindow::buildToolbar() {
         
         WebPageEditorDialog dlg(m_webPageData, availableVars, this);
         
-        bool overlayWasActive = m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 3 && (m_tutorialOverlay->currentStep() == 5 || m_tutorialOverlay->currentStep() == 11);
+        bool overlayWasActive = m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 3 && (m_tutorialOverlay->currentStep() == 5 || m_tutorialOverlay->currentStep() == 12);
         if (overlayWasActive) {
             m_tutorialOverlay->advance(); 
             m_tutorialOverlay->setParent(&dlg);
