@@ -4830,146 +4830,113 @@ void MainWindow::showFirmwareInfo() {
     // ─────────────────────────────────────────────────────────────────────────
     {
         auto* tutWidget = new QWidget();
+        tutWidget->setStyleSheet("QWidget { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F0F9FF, stop:1 #E0F2FE); }");
         auto* tutLayout = new QVBoxLayout(tutWidget);
-        tutLayout->setContentsMargins(40, 40, 40, 40);
+        tutLayout->setContentsMargins(30, 30, 30, 30);
         tutLayout->setSpacing(20);
-        tutLayout->setAlignment(Qt::AlignCenter);
+        tutLayout->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
 
-        auto* icon = new QLabel(tutWidget);
-        icon->setAlignment(Qt::AlignCenter);
-        icon->setText(R"(
-            <div style="
-              width: 96px;
-              height: 96px;
-              margin: 0 auto;
-              border-radius: 50%;
-              background: radial-gradient(circle at 35% 35%, #93C5FD, #2563EB, #1E40AF);
-              box-shadow: 
-                inset -8px -8px 20px rgba(0,0,0,0.35), 
-                inset 10px 10px 20px rgba(255,255,255,0.7),
-                0 12px 24px rgba(37,99,235,0.35);
-              position: relative;
-            ">
-              <div style="
-                position: absolute;
-                top: 6px;
-                left: 16px;
-                width: 64px;
-                height: 32px;
-                background: linear-gradient(to bottom, rgba(255,255,255,0.75), rgba(255,255,255,0));
-                border-radius: 50% 50% 40% 40% / 60% 60% 30% 30%;
-              "></div>
-            </div>
-        )");
-        icon->setTextFormat(Qt::RichText);
-        tutLayout->addWidget(icon);
-
-        auto* title = new QLabel("Tutorial Interativo", tutWidget);
+        auto* title = new QLabel("Selecione um Tutorial Interativo", tutWidget);
         title->setAlignment(Qt::AlignCenter);
-        title->setStyleSheet("font-size: 22px; font-weight: 900; color: #0F172A;");
+        title->setStyleSheet("font-size: 26px; font-weight: 900; color: #0284C7; margin-bottom: 10px; background: transparent;");
         tutLayout->addWidget(title);
 
         auto* desc = new QLabel(
-            "Aprenda a usar o IDE Embedded com um guia passo a passo\n"
-            "diretamente na interface! O tutorial vai escurecer a tela,\n"
-            "destacar os botões certos e mostrar setas apontando\n"
-            "exatamente onde você deve clicar.", tutWidget);
+            "Aprenda a usar a IDE com guias práticos passo a passo.\n"
+            "O sistema escurecerá a tela e mostrará exatamente onde você deve clicar.", tutWidget);
         desc->setAlignment(Qt::AlignCenter);
-        desc->setWordWrap(true);
-        desc->setStyleSheet("font-size: 13px; color: #475569; line-height: 1.6;");
+        desc->setStyleSheet("font-size: 14px; color: #334155; margin-bottom: 20px; background: transparent;");
         tutLayout->addWidget(desc);
 
-        tutLayout->addSpacing(10);
+        // Tutorial Cards Layout
+        auto* cardsLayout = new QHBoxLayout();
+        cardsLayout->setSpacing(25);
+        cardsLayout->setAlignment(Qt::AlignCenter);
 
-        auto* btnStart = new QPushButton("Iniciar Tutorial Interativo", tutWidget);
-        btnStart->setFixedSize(280, 50);
-        btnStart->setCursor(Qt::PointingHandCursor);
-        btnStart->setStyleSheet(
-            "QPushButton { "
-            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-            "    stop:0 #34D399, stop:0.4 #10B981, stop:0.5 #059669, stop:1 #047857); "
-            "  border: 1.5px solid rgba(255, 255, 255, 0.85); "
-            "  border-radius: 6px; "
-            "  color: #FFFFFF; "
-            "  padding: 12px 24px; "
-            "  font-weight: bold; "
-            "  font-size: 13px; "
-            "  font-family: 'Segoe UI', Arial, sans-serif; "
-            "}"
-            "QPushButton:hover { "
-            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-            "    stop:0 #6EE7B7, stop:0.3 #34D399, stop:0.6 #10B981, stop:1 #065F46); "
-            "  border-color: #FFFFFF; "
+        // --- Card 1: LED & Button ---
+        auto* card1 = new QFrame(tutWidget);
+        card1->setFixedSize(300, 240);
+        card1->setStyleSheet(
+            "QFrame { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.4 #F0FDFA, stop:1 #CCFBF1); "
+            "  border: 1px solid #5EEAD4; "
+            "  border-radius: 12px; "
             "}"
         );
+        auto* l1 = new QVBoxLayout(card1);
+        l1->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
+        l1->setContentsMargins(20, 25, 20, 25);
+        
+        auto* t1 = new QLabel("Tutorial 1\nLED e Botão", card1);
+        t1->setAlignment(Qt::AlignCenter);
+        t1->setStyleSheet("font-size: 18px; font-weight: 800; color: #0F766E; border: none; background: transparent;");
+        l1->addWidget(t1);
+        
+        auto* d1 = new QLabel("Acenda um LED usando um botão e veja o simulador em ação. Perfeito para começar!", card1);
+        d1->setAlignment(Qt::AlignCenter);
+        d1->setWordWrap(true);
+        d1->setStyleSheet("font-size: 13px; color: #334155; border: none; background: transparent; margin-top: 10px;");
+        l1->addWidget(d1);
+        
+        l1->addStretch();
+        auto* btnStart1 = new QPushButton("Iniciar Tutorial 1", card1);
+        btnStart1->setCursor(Qt::PointingHandCursor);
+        btnStart1->setFixedSize(200, 42);
+        btnStart1->setStyleSheet(
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #34D399, stop:0.4 #10B981, stop:0.5 #059669, stop:1 #047857); "
+            "  border: 1.5px solid rgba(255, 255, 255, 0.85); border-radius: 6px; color: white; font-weight: bold; font-size: 13px; "
+            "}"
+            "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #6EE7B7, stop:0.3 #34D399, stop:0.6 #10B981, stop:1 #065F46); }"
+        );
+        l1->addWidget(btnStart1, 0, Qt::AlignHCenter);
 
-        auto* btnCenter = new QHBoxLayout();
-        btnCenter->addStretch();
-        btnCenter->addWidget(btnStart);
-        btnCenter->addStretch();
-        tutLayout->addLayout(btnCenter);
-
-        auto* hint = new QLabel("O tutorial fecha essa janela e guia você pela IDE real.", tutWidget);
-        hint->setAlignment(Qt::AlignCenter);
-        hint->setStyleSheet("font-size: 11px; color: #94A3B8; font-style: italic;");
-        tutLayout->addWidget(hint);
-
-        tutLayout->addSpacing(20);
-
-        // ── Tutorial 2: Sensor de Distância ──────────────────────────────────
-        auto* divider = new QFrame(tutWidget);
-        divider->setFrameShape(QFrame::HLine);
-        divider->setStyleSheet("color: #E2E8F0;");
-        tutLayout->addWidget(divider);
-
-        tutLayout->addSpacing(8);
-
-        auto* title2 = new QLabel("Tutorial 2 — Sensor de Distância + Buzzer", tutWidget);
-        title2->setAlignment(Qt::AlignCenter);
-        title2->setStyleSheet("font-size: 16px; font-weight: 900; color: #0F172A;");
-        tutLayout->addWidget(title2);
-
-        auto* desc2 = new QLabel(
-            "Monte um detector de proximidade com o HC-SR04!\n"
-            "Conecte o sensor e um buzzer, programe a lógica\n"
-            "e simule o projeto em tempo real.", tutWidget);
-        desc2->setAlignment(Qt::AlignCenter);
-        desc2->setWordWrap(true);
-        desc2->setStyleSheet("font-size: 12px; color: #475569; line-height: 1.6;");
-        tutLayout->addWidget(desc2);
-
-        auto* btnStart2 = new QPushButton("Iniciar Tutorial — Sensor de Distância", tutWidget);
-        btnStart2->setFixedSize(320, 46);
+        // --- Card 2: HC-SR04 & Buzzer ---
+        auto* card2 = new QFrame(tutWidget);
+        card2->setFixedSize(300, 240);
+        card2->setStyleSheet(
+            "QFrame { "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.4 #FAF5FF, stop:1 #E9D5FF); "
+            "  border: 1px solid #D8B4FE; "
+            "  border-radius: 12px; "
+            "}"
+        );
+        auto* l2 = new QVBoxLayout(card2);
+        l2->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
+        l2->setContentsMargins(20, 25, 20, 25);
+        
+        auto* t2 = new QLabel("Tutorial 2\nSensor Ultrassônico", card2);
+        t2->setAlignment(Qt::AlignCenter);
+        t2->setStyleSheet("font-size: 18px; font-weight: 800; color: #6B21A8; border: none; background: transparent;");
+        l2->addWidget(t2);
+        
+        auto* d2 = new QLabel("Crie um radar sonoro com HC-SR04 e controle os bips do Buzzer pela distância em tempo real.", card2);
+        d2->setAlignment(Qt::AlignCenter);
+        d2->setWordWrap(true);
+        d2->setStyleSheet("font-size: 13px; color: #334155; border: none; background: transparent; margin-top: 10px;");
+        l2->addWidget(d2);
+        
+        l2->addStretch();
+        auto* btnStart2 = new QPushButton("Iniciar Tutorial 2", card2);
         btnStart2->setCursor(Qt::PointingHandCursor);
+        btnStart2->setFixedSize(200, 42);
         btnStart2->setStyleSheet(
             "QPushButton { "
-            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-            "    stop:0 #C084FC, stop:0.4 #A855F7, stop:0.5 #9333EA, stop:1 #7E22CE); "
-            "  border: 1.5px solid rgba(255, 255, 255, 0.85); "
-            "  border-radius: 6px; "
-            "  color: #FFFFFF; "
-            "  padding: 10px 24px; "
-            "  font-weight: bold; "
-            "  font-size: 12px; "
-            "  font-family: 'Segoe UI', Arial, sans-serif; "
+            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #C084FC, stop:0.4 #A855F7, stop:0.5 #9333EA, stop:1 #7E22CE); "
+            "  border: 1.5px solid rgba(255, 255, 255, 0.85); border-radius: 6px; color: white; font-weight: bold; font-size: 13px; "
             "}"
-            "QPushButton:hover { "
-            "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-            "    stop:0 #DDD6FE, stop:0.3 #C084FC, stop:0.6 #A855F7, stop:1 #6B21A8); "
-            "  border-color: #FFFFFF; "
-            "}"
+            "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #DDD6FE, stop:0.3 #C084FC, stop:0.6 #A855F7, stop:1 #6B21A8); }"
         );
+        l2->addWidget(btnStart2, 0, Qt::AlignHCenter);
 
-        auto* btnCenter2 = new QHBoxLayout();
-        btnCenter2->addStretch();
-        btnCenter2->addWidget(btnStart2);
-        btnCenter2->addStretch();
-        tutLayout->addLayout(btnCenter2);
+        cardsLayout->addWidget(card1);
+        cardsLayout->addWidget(card2);
 
+        tutLayout->addLayout(cardsLayout);
         tutLayout->addStretch();
 
         QDialog* dlg = &dialog;
-        connect(btnStart, &QPushButton::clicked, this, [this, dlg]() {
+        connect(btnStart1, &QPushButton::clicked, this, [this, dlg]() {
             dlg->accept();
             QTimer::singleShot(300, this, &MainWindow::startInteractiveTutorial);
         });
@@ -4978,7 +4945,7 @@ void MainWindow::showFirmwareInfo() {
             QTimer::singleShot(300, this, &MainWindow::startDistanceSensorTutorial);
         });
 
-        tabs->addTab(tutWidget, "Tutorial Interativo");
+        tabs->addTab(tutWidget, "Tutoriais Interativos");
     }
 
 
