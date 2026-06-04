@@ -200,21 +200,22 @@ void ComponentItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event) {
             }
 
             if (isGpio) {
+                // GPIO pins: just show the pin name, no verbose description
                 QString num = tUpper;
                 num.remove("GPIO").remove("IO").remove("D");
                 if (!num.isEmpty() && num.toInt() > 0) {
-                    tooltip = QString("Pino %1 - Pode ser usado para ligar sensores ou LEDs").arg(num);
+                    tooltip = pin->name; // clean: just "GPIO6" or "6"
                 }
             } else if (tUpper.contains("5V") || tUpper.contains("3V3") || tUpper.contains("VCC")) {
-                tooltip += " - Fornece energia positiva (+)";
+                tooltip += " - Energia (+)";
             } else if (tUpper.contains("GND")) {
-                tooltip += " - Terra / Negativo (-)";
+                tooltip += " - Terra (-)";
             } else if (tUpper == "EN") {
-                tooltip += " - Habilitar (Enable)";
+                tooltip += " - Enable";
             } else if (tUpper == "RXD" || tUpper == "TXD" || tUpper == "RX" || tUpper == "TX") {
-                tooltip += " - Comunicação Serial (UART)";
+                tooltip += " - Serial (UART)";
             } else if (tUpper == "SDA" || tUpper == "SCL") {
-                tooltip += " - Comunicação I2C";
+                tooltip += " - I2C";
             }
         }
         setToolTip(tooltip);
@@ -1090,17 +1091,8 @@ void ESP32Item::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
             }
         }
 
-        // Draw pin label — only for "wow" pins: power rails, UART, I2C, EN, RST, BOOT
-        // GPIO-numbered pins are intentionally left unlabeled to keep the board clean
+        // Draw pin label — show all pins visually on the board
         QString dUpper = displayName.toUpper();
-        bool isWowPin = dUpper == "GND"   || dUpper == "5V"   || dUpper == "3V3"  ||
-                        dUpper == "VIN"   || dUpper == "VBUS" || dUpper == "VCC"  ||
-                        dUpper == "RX"    || dUpper == "TX"   || dUpper == "RX0"  ||
-                        dUpper == "TX0"   || dUpper == "RXD"  || dUpper == "TXD"  ||
-                        dUpper == "SDA"   || dUpper == "SCL"  ||
-                        dUpper == "EN"    || dUpper == "RST"  || dUpper == "BOOT" ||
-                        dUpper == "RESET" || dUpper == "3.3V" || dUpper == "AREF";
-        if (!isWowPin) continue; // skip label for plain GPIO pins
 
         if (boardId == "esp32-s3-devkitc-1") {
             painter->setPen(QPen(QColor(230, 230, 230)));
@@ -1108,8 +1100,7 @@ void ESP32Item::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
             painter->setPen(QPen(QColor(80, 80, 80)));
         }
         QFont font = painter->font();
-        font.setPointSizeF((boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") ? 7 : 10); // Smaller font for modules
-        font.setBold(true); // Make important pins stand out
+        font.setPointSizeF((boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") ? 7 : 10);
         painter->setFont(font);
 
         bool isTopPin = false;
@@ -1125,32 +1116,13 @@ void ESP32Item::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
         double labelWidth = (boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") ? 60 : 70;
         double labelHeight = (boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") ? 14 : 12;
 
-        // Color-code by type for extra "wow"
-        if (dUpper == "GND") {
-            painter->setPen(QPen(QColor(100, 180, 255))); // blue for GND
-        } else if (dUpper == "5V" || dUpper == "VIN" || dUpper == "VBUS") {
-            painter->setPen(QPen(QColor(255, 120, 60)));  // orange-red for 5V
-        } else if (dUpper == "3V3" || dUpper == "3.3V" || dUpper == "VCC") {
-            painter->setPen(QPen(QColor(255, 80, 80)));   // red for 3V3
-        } else if (dUpper == "RX" || dUpper == "TX" || dUpper == "RX0" || dUpper == "TX0" || dUpper == "RXD" || dUpper == "TXD") {
-            painter->setPen(QPen(QColor(100, 220, 140))); // green for UART
-        } else if (dUpper == "SDA" || dUpper == "SCL") {
-            painter->setPen(QPen(QColor(180, 120, 255))); // purple for I2C
-        } else if (boardId == "esp32-s3-devkitc-1") {
-            painter->setPen(QPen(QColor(230, 230, 230)));
-        } else {
-            painter->setPen(QPen(QColor(80, 80, 80)));
-        }
-
         if (isTopPin) {
-            // top side (labels outside, above pin, vertical)
             painter->save();
             painter->translate(pin.localPos.x(), pin.localPos.y() - txtOffset);
             painter->rotate(-90);
             painter->drawText(QRectF(0, -labelHeight/2, labelWidth, labelHeight), Qt::AlignLeft | Qt::AlignVCenter, displayName);
             painter->restore();
         } else if (isBottomPin) {
-            // bottom side (labels outside, below pin, vertical)
             painter->save();
             painter->translate(pin.localPos.x(), pin.localPos.y() + txtOffset);
             painter->rotate(-90);
@@ -1158,18 +1130,14 @@ void ESP32Item::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
             painter->restore();
         } else if (pin.localPos.x() < 0) {
             if (boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") {
-                // left side (labels outside)
                 painter->drawText(QRectF(pin.localPos.x() - labelWidth - txtOffset + 5, pin.localPos.y() - labelHeight/2, labelWidth, labelHeight), Qt::AlignRight | Qt::AlignVCenter, displayName);
             } else {
-                // left side (labels inside)
                 painter->drawText(QRectF(pin.localPos.x() + 10, pin.localPos.y() - 6, 65, 12), Qt::AlignLeft | Qt::AlignVCenter, displayName);
             }
         } else {
             if (boardId == "esp-12e" || boardId == "esp32-c3-wroom-02") {
-                // right side (labels outside)
                 painter->drawText(QRectF(pin.localPos.x() + txtOffset - 2, pin.localPos.y() - labelHeight/2, labelWidth, labelHeight), Qt::AlignLeft | Qt::AlignVCenter, displayName);
             } else {
-                // right side (labels inside)
                 painter->drawText(QRectF(pin.localPos.x() - 75, pin.localPos.y() - 6, 65, 12), Qt::AlignRight | Qt::AlignVCenter, displayName);
             }
         }
