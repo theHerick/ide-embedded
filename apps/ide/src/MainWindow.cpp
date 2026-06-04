@@ -1769,6 +1769,9 @@ void MainWindow::toggleSimulation() {
             // Start running with the actual block engine storage
             m_simulator->startSimulation(m_scene, m_blockEditor->getEventBlockStorage(), m_webPageData);
             
+            // Fix: Actually set the scene to simulating mode so components know!
+            m_scene->setSimulating(true);
+            
             // Hook visual button toggles to simulator triggers
             for (auto* comp : m_scene->components()) {
                 if (comp->componentType() == "button") {
