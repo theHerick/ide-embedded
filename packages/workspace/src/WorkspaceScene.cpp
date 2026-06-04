@@ -753,10 +753,13 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
     
     // Add GND to ESP32 if not already present
     if (!esp32HasGnd) {
-        QPointF espGndPos = esp32->pos() + QPointF(-80, -20);
+        QPointF espGndPos = esp32->pos() + QPointF(-60, 0);
+        if (Pin* gndPin = esp32->getPinByName("GND.1")) {
+            espGndPos = esp32->pos() + gndPin->localPos + QPointF(-40, 0);
+        }
         ComponentItem* espGnd = addComponent("gnd", "", espGndPos, "", true);
         if (espGnd) {
-            espGnd->setRotation(-90);
+            espGnd->setRotation(90);
             connectPins(esp32, "GND.1", espGnd, "GND");
             occupiedPins.insert("GND.1");
         }
