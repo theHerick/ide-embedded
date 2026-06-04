@@ -756,6 +756,7 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         QPointF espGndPos = esp32->pos() + QPointF(-80, -20);
         ComponentItem* espGnd = addComponent("gnd", "", espGndPos, "", true);
         if (espGnd) {
+            espGnd->setRotation(-90);
             connectPins(esp32, "GND.1", espGnd, "GND");
             occupiedPins.insert("GND.1");
         }

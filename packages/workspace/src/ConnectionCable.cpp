@@ -126,7 +126,8 @@ ConnectionCable::ConnectionCable(ComponentItem* sourceComp, const QString& sourc
     // Assign color by pin type
     if (m_sourcePin.contains("3V3") || m_sourcePin.contains("5V") || m_sourcePin.contains("VCC")) {
         m_color = QColor(239, 68, 68);
-    } else if (m_sourcePin.contains("GND") || m_sourcePin.contains("GND.1")) {
+    } else if (m_sourcePin.contains("GND") || m_sourcePin.contains("GND.1") || 
+               m_targetPin.contains("GND") || m_targetPin.contains("GND.1")) {
         m_color = QColor(0, 0, 0);
     } else {
         int hash = (m_sourceComp->id().length() + m_targetComp->id().length() + m_sourcePin.length()) % 4;
