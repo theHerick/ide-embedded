@@ -398,6 +398,7 @@ static void ideMessageHandler(QtMsgType type, const QMessageLogContext&, const Q
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_scene = new WorkspaceScene(this);
     m_view = new WorkspaceView(m_scene, this);
+    m_view->setObjectName("workspaceScene");
     m_blockEditor = new BlockEditor(this);
     m_simulator = new HardwareSimulator(this);
 
@@ -5683,7 +5684,6 @@ void MainWindow::startDistanceSensorTutorial() {
     m_tutorialOverlay->addVariableDragStep(11, "BUZZER");            // drag Buzzer to action target (HIGH)
     m_tutorialOverlay->addVariableDragStep(15, "BUZZER");            // drag Buzzer to action target (LOW)
     m_tutorialOverlay->addVariableDragStep(18, "distancia", "param"); // drag distancia to delay ms field
-    m_tutorialOverlay->addVariableDragStep(10, "webslider_1", "param"); // drag webslider to servo block param
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -5817,7 +5817,7 @@ void MainWindow::startMotorIoTTutorial() {
         "Nosso código está pronto.\n\n"
         "Clique fora do editor de eventos (na área cinza ou em outro componente) para fechá-lo.",
         "Clique fora do evento para fechar!",
-        nullptr, QRect(), TutorialStep::Up, false
+        nullptr, QRect(), TutorialStep::Up, false, "workspaceScene"
     });
 
     // ── Passo 12: Abrir Web View novamente ───────────────────────────────────
@@ -5874,7 +5874,7 @@ void MainWindow::startMotorIoTTutorial() {
     m_activeTutorial = 3;
     m_tutorialOverlay->clearVariableDragSteps();
     m_tutorialOverlay->addVariableDragStep(9, "MOTOR"); // drag motor to servo block target
-    m_tutorialOverlay->addVariableDragStep(10, "valor", "param"); // drag valor to servo block param
+    m_tutorialOverlay->addVariableDragStep(10, "webslider_1", "param"); // drag webslider to servo block param
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }

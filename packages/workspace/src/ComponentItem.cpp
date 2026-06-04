@@ -1151,11 +1151,12 @@ void LEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
 
         if (m_isOn) {
             painter->setPen(Qt::NoPen);
-            QRadialGradient glow(0, 0, w);
-            glow.setColorAt(0.0, QColor(255, 255, 0, 120));
+            QRadialGradient glow(0, 0, w * 1.8);
+            glow.setColorAt(0.0, QColor(255, 255, 0, 220));
+            glow.setColorAt(0.5, QColor(255, 255, 0, 100));
             glow.setColorAt(1.0, QColor(255, 255, 0, 0));
             painter->setBrush(glow);
-            painter->drawEllipse(QPointF(0, 0), w, w);
+            painter->drawEllipse(QPointF(0, 0), w * 1.8, w * 1.8);
         }
 
         painter->setBrush(ledColor);
@@ -1184,11 +1185,12 @@ void LEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
         QPen domePen;
         if (m_isOn) {
             painter->setPen(Qt::NoPen);
-            QRadialGradient glowGrad(0, 0, 28);
-            glowGrad.setColorAt(0.0, QColor(239, 68, 68, 150));
-            glowGrad.setColorAt(1.0, QColor(239, 68, 68, 0));
+            QRadialGradient glowGrad(0, 0, 40);
+            glowGrad.setColorAt(0.0, QColor(255, 50, 50, 220));
+            glowGrad.setColorAt(0.5, QColor(255, 50, 50, 100));
+            glowGrad.setColorAt(1.0, QColor(255, 50, 50, 0));
             painter->setBrush(glowGrad);
-            painter->drawEllipse(QPointF(0, 0), 28, 28);
+            painter->drawEllipse(QPointF(0, 0), 40, 40);
 
             grad.setColorAt(0.0, QColor(255, 220, 220));
             grad.setColorAt(0.3, QColor(239, 68, 68));
@@ -1303,9 +1305,9 @@ void ButtonItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
         return;
     }
     if (event->button() == Qt::LeftButton) {
-        // Check if user clicked the plunger area (radius 15)
+        // Aumentando a área de clique para o corpo todo do botão em vez de só o pino central
         QPointF local = event->pos();
-        if (local.x()*local.x() + local.y()*local.y() <= 225) {
+        if (local.x() >= -22 && local.x() <= 22 && local.y() >= -22 && local.y() <= 22) {
             m_isPressed = true;
             emit stateChanged(true);
             update();
