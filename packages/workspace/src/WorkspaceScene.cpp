@@ -766,7 +766,11 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
     }
     
     auto connectToGnd = [&](ComponentItem* comp, const QString& pinName, const QPointF& offset) {
-        ComponentItem* gndComp = addComponent("gnd", "", comp->pos() + offset, "", true);
+        QPointF targetPos = comp->pos() + offset;
+        if (Pin* p = comp->getPinByName(pinName)) {
+            targetPos.setX(comp->pos().x() + p->localPos.x());
+        }
+        ComponentItem* gndComp = addComponent("gnd", "", targetPos, "", true);
         if (gndComp) {
             connectPins(comp, pinName, gndComp, "GND");
         }
