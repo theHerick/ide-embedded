@@ -187,58 +187,14 @@ void ConnectionCable::updatePath() {
              << "| waypoints:" << m_manualWaypoints.size();
 
     std::vector<QPointF> chain;
+    chain.push_back(p1);
+    for (const auto& wp : m_manualWaypoints) chain.push_back(wp);
+    chain.push_back(p2);
 
-    if (m_manualWaypoints.empty() && !m_sourceIsJunction && !m_targetIsJunction) {
-        QPointF stub1 = p1;
-        QPointF stub2 = p2;
-        
-        bool p1_is_horizontal = true;
-        if (srcPin) {
-            if (qAbs(srcPin->localPos.y()) > qAbs(srcPin->localPos.x())) {
-                p1_is_horizontal = false;
-                stub1.setY(p1.y() + (srcPin->localPos.y() >= 0 ? 30 : -30));
-            } else {
-                stub1.setX(p1.x() + (srcPin->localPos.x() >= 0 ? 30 : -30));
-            }
-        }
-        
-        if (tgtPin) {
-            if (qAbs(tgtPin->localPos.y()) > qAbs(tgtPin->localPos.x())) {
-                stub2.setY(p2.y() + (tgtPin->localPos.y() >= 0 ? 30 : -30));
-            } else {
-                stub2.setX(p2.x() + (tgtPin->localPos.x() >= 0 ? 30 : -30));
-            }
-        }
-        
-        chain.push_back(p1);
-        if (std::hypot(stub1.x() - p1.x(), stub1.y() - p1.y()) > 1.0) chain.push_back(stub1);
-        
-        std::vector<QPointF> midPts = { stub1, stub2 };
-        bool hFirst = p1_is_horizontal ? false : true; 
-        
-        std::vector<QPointF> ortho = buildOrthoChain(midPts, hFirst);
-        for (const auto& pt : ortho) {
-            if (chain.empty() || std::hypot(pt.x() - chain.back().x(), pt.y() - chain.back().y()) > 0.5)
-                chain.push_back(pt);
-        }
-        
-        if (std::hypot(stub2.x() - chain.back().x(), stub2.y() - chain.back().y()) > 0.5)
-            chain.push_back(stub2);
-            
-        if (std::hypot(p2.x() - chain.back().x(), p2.y() - chain.back().y()) > 0.5)
-            chain.push_back(p2);
-            
-    } else {
-        chain.push_back(p1);
-        for (const auto& wp : m_manualWaypoints) chain.push_back(wp);
-        chain.push_back(p2);
-        
-        std::vector<QPointF> ortho = buildOrthoChain(chain, m_startHFirst);
-        chain = ortho;
-    }
-
+    std::vector<QPointF> ortho = buildOrthoChain(chain, m_startHFirst);
+    
     std::vector<QPointF> finalPts;
-    for (const auto& pt : chain) {
+    for (const auto& pt : ortho) {
         if (finalPts.empty() || std::hypot(pt.x()-finalPts.back().x(), pt.y()-finalPts.back().y()) > 0.5)
             finalPts.push_back(pt);
     }
