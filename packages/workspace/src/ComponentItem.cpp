@@ -1199,9 +1199,9 @@ void LEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
             domePen = QPen(QColor(185, 28, 28), 1);
         } else {
             grad.setColorAt(0.0, QColor(255, 255, 255, 240)); 
-            grad.setColorAt(0.6, QColor(254, 226, 226, 200)); 
-            grad.setColorAt(1.0, QColor(248, 113, 113, 120)); 
-            domePen = QPen(QColor(239, 68, 68, 140), 1);      
+            grad.setColorAt(0.6, QColor(230, 230, 230, 200)); 
+            grad.setColorAt(1.0, QColor(200, 200, 200, 120)); 
+            domePen = QPen(QColor(150, 150, 150, 140), 1);      
         }
         painter->setBrush(grad);
         painter->setPen(domePen);
