@@ -1000,7 +1000,7 @@ void MainWindow::buildToolbar() {
     connect(viewCodeAction, &QAction::triggered, this, &MainWindow::viewCompiledCodeModal);
 
     // Help menu
-    QMenu* helpMenu = menuBar()->addMenu("?");
+    QMenu* helpMenu = menuBar()->addMenu("Ajustes");
     helpMenu->setStyleSheet(componentsMenu->styleSheet());
     QAction* menuSmartConnection = helpMenu->addAction("Conexão inteligente");
     menuSmartConnection->setCheckable(true);
