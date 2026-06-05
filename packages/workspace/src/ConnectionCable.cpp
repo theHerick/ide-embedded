@@ -124,11 +124,31 @@ ConnectionCable::ConnectionCable(ComponentItem* sourceComp, const QString& sourc
     }
 
     // Assign color by pin type
-    if (m_sourcePin.contains("3V3") || m_sourcePin.contains("5V") || m_sourcePin.contains("VCC")) {
-        m_color = QColor(239, 68, 68);
-    } else if (m_sourcePin.contains("GND") || m_sourcePin.contains("GND.1") || 
-               m_targetPin.contains("GND") || m_targetPin.contains("GND.1")) {
-        m_color = QColor(0, 0, 0);
+    QColor pickedColor;
+    int bestRank = -1;
+
+    auto checkPinColor = [&](ComponentItem* comp, const QString& pinName) {
+        if (!comp) return;
+        if (pinName.contains("3V3") || pinName.contains("5V") || pinName.contains("VCC")) {
+            if (3 > bestRank) { pickedColor = QColor(239, 68, 68); bestRank = 3; }
+        } else if (pinName.contains("GND") || pinName.contains("GND.1")) {
+            if (3 > bestRank) { pickedColor = QColor(0, 0, 0); bestRank = 3; }
+        } else if (comp->componentType() != "esp32" && comp->componentType() != "resistor") {
+            if (Pin* p = comp->getPinByName(pinName)) {
+                if (2 > bestRank) { pickedColor = p->color; bestRank = 2; }
+            }
+        } else if (comp->componentType() == "esp32") {
+            if (Pin* p = comp->getPinByName(pinName)) {
+                if (1 > bestRank) { pickedColor = p->color; bestRank = 1; }
+            }
+        }
+    };
+
+    checkPinColor(m_sourceComp, m_sourcePin);
+    checkPinColor(m_targetComp, m_targetPin);
+
+    if (bestRank > 0) {
+        m_color = pickedColor;
     } else {
         int hash = (m_sourceComp->id().length() + m_targetComp->id().length() + m_sourcePin.length()) % 4;
         if (hash == 0) m_color = QColor(16, 185, 129);
