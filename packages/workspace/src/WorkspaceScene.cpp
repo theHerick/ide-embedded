@@ -792,8 +792,10 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
 
         ComponentItem* resistor = addComponent("resistor", "", rPos, "", true);
         if (resistor) {
-            connectPins(esp32, gpio, resistor, "1");
-            connectPins(resistor, "2", newComp, "Anode");
+            QString pEsp = "1", pLed = "2";
+            if (Pin* p = esp32->getPinByName(gpio)) { if (p->localPos.x() < 0) { pEsp = "2"; pLed = "1"; } }
+            connectPins(esp32, gpio, resistor, pEsp);
+            connectPins(resistor, pLed, newComp, "Anode");
             connectToGnd(newComp, "Cathode", QPointF(20, 50));
         }
     } else if (type == "rgb_led") {
@@ -822,14 +824,19 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         ComponentItem* rB = addComponent("resistor", "", pB, "", true);
 
         if (rR && rG_res && rB) {
-            connectPins(esp32, rG, rR, "1");
-            connectPins(rR, "2", newComp, "R");
+            QString pEspR = "1", pLedR = "2", pEspG = "1", pLedG = "2", pEspB = "1", pLedB = "2";
+            if (Pin* p = esp32->getPinByName(rG)) { if (p->localPos.x() < 0) { pEspR = "2"; pLedR = "1"; } }
+            if (Pin* p = esp32->getPinByName(gG)) { if (p->localPos.x() < 0) { pEspG = "2"; pLedG = "1"; } }
+            if (Pin* p = esp32->getPinByName(bG)) { if (p->localPos.x() < 0) { pEspB = "2"; pLedB = "1"; } }
 
-            connectPins(esp32, gG, rG_res, "1");
-            connectPins(rG_res, "2", newComp, "G");
+            connectPins(esp32, rG, rR, pEspR);
+            connectPins(rR, pLedR, newComp, "R");
 
-            connectPins(esp32, bG, rB, "1");
-            connectPins(rB, "2", newComp, "B");
+            connectPins(esp32, gG, rG_res, pEspG);
+            connectPins(rG_res, pLedG, newComp, "G");
+
+            connectPins(esp32, bG, rB, pEspB);
+            connectPins(rB, pLedB, newComp, "B");
 
             connectToGnd(newComp, "GND", QPointF(-5, 60));
         }

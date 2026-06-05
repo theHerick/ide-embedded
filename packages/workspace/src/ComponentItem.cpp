@@ -1356,10 +1356,10 @@ void RGBLEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
         }
         painter->setBrush(grad);
         painter->setPen(domePen);
-        painter->drawEllipse(QPointF(0, 0), 18, 18);
+        painter->drawEllipse(QPointF(-5, 0), 18, 18);
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(255, 255, 255, 120));
-        painter->drawEllipse(QPointF(-6, -6), 6, 4);
+        painter->drawEllipse(QPointF(-11, -6), 6, 4);
     }
 }
 
