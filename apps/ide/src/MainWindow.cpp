@@ -5854,12 +5854,12 @@ void MainWindow::startMotorIoTTutorial() {
         nullptr, QRect(), TutorialStep::Up, false, "webEnableSwitch"
     });
 
-    // ── Passo 14: Salvar e Fechar Web View ───────────────────────────────────
+    // ── Passo 14: Fechar Web View ───────────────────────────────────
     steps.append({
-        "14. Clique em Salvar e Fechar",
+        "14. Feche a janela",
         "Sua página web está pronta e ativada!",
-        "Clique em 'Salvar e Fechar' na janela do Web View!",
-        nullptr, QRect(), TutorialStep::Down, false, "webSaveBtn"
+        "Clique no 'X' na janela do Web View para fechar!",
+        nullptr, QRect(), TutorialStep::Down, false, ""
     });
 
     // ── Passo 15: Compilar Projeto ───────────────────────────────────────────
