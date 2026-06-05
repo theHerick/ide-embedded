@@ -719,8 +719,12 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
     QSet<QString> occupiedPins;
     bool esp32HasGnd = false;
     for (auto* cable : m_cables) {
-        if (cable->sourceComponent() == esp32) occupiedPins.insert(cable->sourcePinName());
-        if (cable->targetComponent() == esp32) occupiedPins.insert(cable->targetPinName());
+        if (cable->sourceComponent() == esp32) {
+            if (Pin* p = esp32->getPinByName(cable->sourcePinName())) occupiedPins.insert(p->name);
+        }
+        if (cable->targetComponent() == esp32) {
+            if (Pin* p = esp32->getPinByName(cable->targetPinName())) occupiedPins.insert(p->name);
+        }
         
         if ((cable->sourceComponent() == esp32 && cable->sourcePinName() == "GND.1" && cable->targetComponent()->componentType() == "gnd") ||
             (cable->targetComponent() == esp32 && cable->targetPinName() == "GND.1" && cable->sourceComponent()->componentType() == "gnd")) {
@@ -729,7 +733,7 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
     }
 
     auto getFreeGpio = [&]() -> QString {
-        QStringList preferred = {"4", "5", "6", "7", "8", "9", "10", "2", "3", "1", "0"}; // Valid ESP32-C3 pins
+        QStringList preferred = {"GPIO4", "GPIO5", "GPIO6", "GPIO7", "GPIO8", "GPIO9", "GPIO10", "GPIO2", "GPIO3", "GPIO1", "GPIO0"}; // Valid ESP32-C3 pins
         for (const QString& pin : preferred) {
             if (!occupiedPins.contains(pin)) {
                 occupiedPins.insert(pin); // mark as used for this run
