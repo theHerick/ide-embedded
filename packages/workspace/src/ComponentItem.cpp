@@ -54,6 +54,18 @@ QRectF esp32BodyRectForPins(const ComponentItem* item, const QVector<Pin>& pins)
     qreal bodyWidth = widthMm * mmToPx;
     qreal bodyHeight = heightMm * mmToPx;
 
+    if (!pins.isEmpty()) {
+        qreal minX = 0, maxX = 0, minY = 0, maxY = 0;
+        for (const auto& pin : pins) {
+            if (pin.localPos.x() < minX) minX = pin.localPos.x();
+            if (pin.localPos.x() > maxX) maxX = pin.localPos.x();
+            if (pin.localPos.y() < minY) minY = pin.localPos.y();
+            if (pin.localPos.y() > maxY) maxY = pin.localPos.y();
+        }
+        bodyWidth = qMax(bodyWidth, maxX - minX + 20.0);
+        bodyHeight = qMax(bodyHeight, maxY - minY + 25.0);
+    }
+
     QRectF rect(-bodyWidth * 0.5, -bodyHeight * 0.5, bodyWidth, bodyHeight);
 
     if (item) {
