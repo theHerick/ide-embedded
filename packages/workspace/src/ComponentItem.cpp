@@ -458,7 +458,7 @@ void ESP32Item::applyMicrocontrollerConfig(const QJsonObject& cfgObj) {
     // in the PCB exporter, while in the workspace we snap to multiples of 10px (1mm) for usability.
     // For the PCB image to be perfect, the 'actualSpacing' MUST be exactly pitchMm * mmToPx.
     QString boardId = cfgObj.value("board").toString().toLower();
-    bool bypassSnap = (boardId == "esp32-s3-devkitc-1" || boardId == "esp32-c3-devkitm-1" || boardId == "esp32-c3-wroom-02");
+    bool bypassSnap = false; // Force grid snapping for all boards to fix routing alignment
 
     double sideX = (pinWidthMm * mmToPx) * 0.5;
     double sideY = (pinHeightMm * mmToPx) * 0.5;
@@ -1218,10 +1218,10 @@ void LEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
 // ─────────────────────────────────────────────────────────────────────────────
 RGBLEDItem::RGBLEDItem(const QString& id, const QString& name, QGraphicsItem* parent)
     : ComponentItem(id, name, "rgb_led", parent) {
-    m_pins.append({"R",   QPointF(-15, 30), false, "", "", QColor(239, 68, 68)});
-    m_pins.append({"GND", QPointF(-5,  30), false, "", "", QColor(75, 85, 99)});
-    m_pins.append({"G",   QPointF( 5,  30), false, "", "", QColor(34, 197, 94)});
-    m_pins.append({"B",   QPointF( 15, 30), false, "", "", QColor(59, 130, 246)});
+    m_pins.append({"R",   QPointF(-20, 30), false, "", "", QColor(239, 68, 68)});
+    m_pins.append({"GND", QPointF(-10, 30), false, "", "", QColor(75, 85, 99)});
+    m_pins.append({"G",   QPointF(  0, 30), false, "", "", QColor(34, 197, 94)});
+    m_pins.append({"B",   QPointF( 10, 30), false, "", "", QColor(59, 130, 246)});
     
     QString idx = extractIndexFromId(id);
     m_name = "LED RGB " + (idx.isEmpty() ? "1" : idx);
@@ -1235,9 +1235,9 @@ QRectF RGBLEDItem::boundingRect() const {
         else if (size == "0805") { w = 20; h = 12.5; }
         else if (size == "1206") { w = 32; h = 16; }
         else if (size == "5050") { w = 50; h = 50; }
-        return QRectF(-w/2.0 - 5, -h/2.0 - 5, w + 10, h + 10);
+        return QRectF(-w/2.0 - 5 - 5, -h/2.0 - 5, w + 10, h + 10);
     }
-    return QRectF(-25, -25, 50, 65);
+    return QRectF(-30, -25, 50, 65);
 }
 
 void RGBLEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
@@ -1250,6 +1250,8 @@ void RGBLEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
         else if (size == "0805") { w = 20; h = 12.5; }
         else if (size == "1206") { w = 32; h = 16; }
         else if (size == "5050") { w = 50; h = 50; }
+
+        painter->translate(-5, 0); // Shift SMD by -5 to center over pins
 
         if (option->state & QStyle::State_Selected) {
             painter->setPen(QPen(QColor(99, 102, 241, 150), 2.5, Qt::SolidLine));
@@ -1290,43 +1292,45 @@ void RGBLEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
         } else {
             painter->drawEllipse(QPointF(0, 0), w*0.3, h*0.4);
         }
+        
+        painter->translate(5, 0); // Restore translation
     } else {
         if (option->state & QStyle::State_Selected) {
             painter->setPen(QPen(QColor(99, 102, 241, 150), 2, Qt::SolidLine));
-            painter->drawEllipse(QPointF(0, 0), 22, 22);
+            painter->drawEllipse(QPointF(-5, 0), 22, 22);
         }
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(15, 23, 42, 40));
-        painter->drawEllipse(QPointF(0, 4), 18, 18);
+        painter->drawEllipse(QPointF(-5, 4), 18, 18);
         
         painter->setPen(QPen(QColor(239, 68, 68), 2)); // R
-        painter->drawLine(-15, 10, -15, 30);
+        painter->drawLine(-20, 10, -20, 30);
         painter->setPen(QPen(QColor(156, 163, 175), 2)); // GND
-        painter->drawLine(-5,  10, -5,  30);
+        painter->drawLine(-10, 10, -10, 30);
         painter->setPen(QPen(QColor(34, 197, 94), 2)); // G
-        painter->drawLine(5,   10, 5,   30);
+        painter->drawLine(0,   10, 0,   30);
         painter->setPen(QPen(QColor(59, 130, 246), 2)); // B
-        painter->drawLine(15,  10, 15,  30);
+        painter->drawLine(10,  10, 10,  30);
         
         painter->setBrush(QColor(234, 179, 8)); 
         painter->setPen(QPen(QColor(161, 98, 7), 1));
-        painter->drawEllipse(QPointF(-15, 30), 3, 3);
-        painter->drawEllipse(QPointF(-5,  30), 3, 3);
-        painter->drawEllipse(QPointF(5,   30), 3, 3);
-        painter->drawEllipse(QPointF(15,  30), 3, 3);
+        painter->drawEllipse(QPointF(-20, 30), 3, 3);
+        painter->drawEllipse(QPointF(-10, 30), 3, 3);
+        painter->drawEllipse(QPointF(0,   30), 3, 3);
+        painter->drawEllipse(QPointF(10,  30), 3, 3);
         
         bool isOn = (m_color.red() > 0 || m_color.green() > 0 || m_color.blue() > 0);
         
-        QRadialGradient grad(0, 0, 18);
+        QRadialGradient grad(-5, 0, 18);
         QPen domePen;
         if (isOn) {
             painter->setPen(Qt::NoPen);
-            QRadialGradient glowGrad(0, 0, 40);
+            QRadialGradient glowGrad(-5, 0, 40);
             glowGrad.setColorAt(0.0, QColor(m_color.red(), m_color.green(), m_color.blue(), 220));
             glowGrad.setColorAt(0.5, QColor(m_color.red(), m_color.green(), m_color.blue(), 100));
             glowGrad.setColorAt(1.0, QColor(m_color.red(), m_color.green(), m_color.blue(), 0));
             painter->setBrush(glowGrad);
-            painter->drawEllipse(QPointF(0, 0), 40, 40);
+            painter->drawEllipse(QPointF(-5, 0), 40, 40);
 
             grad.setColorAt(0.0, QColor(255, 255, 255));
             grad.setColorAt(0.3, m_color);
