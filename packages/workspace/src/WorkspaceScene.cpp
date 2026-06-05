@@ -784,9 +784,10 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         QString gpio = getFreeGpio();
         if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
 
-        QPointF rPos = newComp->pos() + QPointF(-100, 0);
+        QPointF rPos = newComp->pos();
         if (Pin* p = esp32->getPinByName(gpio)) {
             rPos.setY(esp32->pos().y() + p->localPos.y());
+            rPos.setX(esp32->pos().x() + p->localPos.x() + (p->localPos.x() >= 0 ? 60 : -60));
         }
 
         ComponentItem* resistor = addComponent("resistor", "", rPos, "", true);
@@ -801,14 +802,20 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         QString bG = getFreeGpio();
         if (!checkGpioAndWarn(rG) || !checkGpioAndWarn(gG) || !checkGpioAndWarn(bG)) { m_undoStack->endMacro(); return; }
 
-        QPointF p = newComp->pos();
-        QPointF pR = p + QPointF(-100, -30);
-        QPointF pG = p + QPointF(-100, 0);
-        QPointF pB = p + QPointF(-100, 30);
+        QPointF pR = newComp->pos(), pG = newComp->pos(), pB = newComp->pos();
 
-        if (Pin* pinR = esp32->getPinByName(rG)) pR.setY(esp32->pos().y() + pinR->localPos.y());
-        if (Pin* pinG = esp32->getPinByName(gG)) pG.setY(esp32->pos().y() + pinG->localPos.y());
-        if (Pin* pinB = esp32->getPinByName(bG)) pB.setY(esp32->pos().y() + pinB->localPos.y());
+        if (Pin* pinR = esp32->getPinByName(rG)) {
+            pR.setY(esp32->pos().y() + pinR->localPos.y());
+            pR.setX(esp32->pos().x() + pinR->localPos.x() + (pinR->localPos.x() >= 0 ? 60 : -60));
+        }
+        if (Pin* pinG = esp32->getPinByName(gG)) {
+            pG.setY(esp32->pos().y() + pinG->localPos.y());
+            pG.setX(esp32->pos().x() + pinG->localPos.x() + (pinG->localPos.x() >= 0 ? 60 : -60));
+        }
+        if (Pin* pinB = esp32->getPinByName(bG)) {
+            pB.setY(esp32->pos().y() + pinB->localPos.y());
+            pB.setX(esp32->pos().x() + pinB->localPos.x() + (pinB->localPos.x() >= 0 ? 60 : -60));
+        }
 
         ComponentItem* rR = addComponent("resistor", "", pR, "", true);
         ComponentItem* rG_res = addComponent("resistor", "", pG, "", true);
