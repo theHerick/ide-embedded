@@ -776,7 +776,7 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         }
         ComponentItem* gndComp = addComponent("gnd", "", targetPos, "", true);
         if (gndComp) {
-            connectPins(comp, pinName, gndComp, "GND");
+            connectPins(comp, pinName, gndComp, "GND", {}, false);
         }
     };
 
@@ -844,30 +844,30 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         QString gpio = getFreeGpio();
         if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
 
-        connectPins(newComp, "1", esp32, gpio);
+        connectPins(newComp, "1", esp32, gpio, {}, false);
         connectToGnd(newComp, "2", QPointF(20, 50));
 
     } else if (type == "buzzer") {
         QString gpio = getFreeGpio();
         if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
 
-        connectPins(newComp, "1", esp32, gpio);
+        connectPins(newComp, "1", esp32, gpio, {}, false);
         connectToGnd(newComp, "2", QPointF(20, 50));
 
     } else if (type == "potentiometer") {
         QString gpio = getFreeGpio();
         if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
 
-        connectPins(newComp, "1", esp32, "3V3");
-        connectPins(newComp, "2", esp32, gpio);
+        connectPins(newComp, "1", esp32, "3V3", {}, false);
+        connectPins(newComp, "2", esp32, gpio, {}, false);
         connectToGnd(newComp, "3", QPointF(20, 60));
 
     } else if (type == "dht22") {
         QString gpio = getFreeGpio();
         if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
 
-        connectPins(newComp, "VCC", esp32, "3V3");
-        connectPins(newComp, "DATA", esp32, gpio);
+        connectPins(newComp, "VCC", esp32, "3V3", {}, false);
+        connectPins(newComp, "DATA", esp32, gpio, {}, false);
         connectToGnd(newComp, "GND", QPointF(20, 60));
         
     } else if (type == "hcsr04") {
@@ -875,9 +875,9 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         QString eG = getFreeGpio();
         if (!checkGpioAndWarn(tG) || !checkGpioAndWarn(eG)) { m_undoStack->endMacro(); return; }
 
-        connectPins(newComp, "VCC", esp32, "5V");
-        connectPins(newComp, "TRIG", esp32, tG);
-        connectPins(newComp, "ECHO", esp32, eG);
+        connectPins(newComp, "VCC", esp32, "5V", {}, false);
+        connectPins(newComp, "TRIG", esp32, tG, {}, false);
+        connectPins(newComp, "ECHO", esp32, eG, {}, false);
         connectToGnd(newComp, "GND", QPointF(30, 60));
     }
 
