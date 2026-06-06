@@ -1193,9 +1193,8 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
 
         QString entry = c->name() + "|" + gpio;
 
-        if (c->componentType() == "led" || c->componentType() == "rgb_led") avLeds.append(entry);
+        if (c->componentType() == "led" || c->componentType() == "rgb_led" || c->componentType() == "relay") avLeds.append(entry);
         else if (c->componentType() == "potentiometer") avPots.append(entry);
-        else if (c->componentType() == "bess") avPots.append((c->name() == "Bateria LiPo" || c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name()) + "|" + gpio);
         else if (c->componentType() == "buzzer") avBuzzers.append(entry);
         else if (c->componentType() == "motor") avMotors.append(entry);
         else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
@@ -1236,9 +1235,8 @@ void MainWindow::openWebEventEditor(const QString& compId, const QString& eventN
         
         if (c->componentType() == "dht22") avDhts.append(c->name());
         else if (c->componentType() == "hcsr04") avHcsrs.append(c->name());
-        else if (c->componentType() == "led" || c->componentType() == "rgb_led") avLeds.append(c->name());
+        else if (c->componentType() == "led" || c->componentType() == "rgb_led" || c->componentType() == "relay") avLeds.append(c->name());
         else if (c->componentType() == "potentiometer") avPots.append(c->name());
-        else if (c->componentType() == "bess") avPots.append(c->name() == "Bateria LiPo" || c->name() == "Bateria Lítio" ? "BESS (Analog)" : c->name());
         else if (c->componentType() == "buzzer") avBuzzers.append(c->name());
         else if (c->componentType() == "motor") avMotors.append(c->name());
         else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {

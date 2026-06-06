@@ -161,7 +161,7 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
     }
 
     // Add components
-    componentsList << "Módulo de Carregamento (TP4056)" << "Bateria LiPo (BESS)";
+    componentsList << "Módulo Relé";
 
     // Add "+ Modelar" option to search
     componentsList << "+ Modelar (Criar Novo Componente)";
@@ -222,12 +222,9 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
         QString type = "";
         QString name = "";
 
-        if (textLower.contains("tp4056") || textLower.contains("módulo de carregamento") || textLower.contains("modulo de carregamento")) {
+        if (textLower.contains("relé") || textLower.contains("rele") || textLower.contains("relay")) {
             WorkspaceScene* wScene = qobject_cast<WorkspaceScene*>(scene());
-            if (wScene) wScene->addComponent("bess_charger", "Módulo TP4056", scenePos);
-        } else if (textLower.contains("bateria lítio") || textLower.contains("bateria litio") || textLower.contains("bateria lipo") || textLower.contains("bess")) {
-            WorkspaceScene* wScene = qobject_cast<WorkspaceScene*>(scene());
-            if (wScene) wScene->addComponent("bess", "Bateria LiPo", scenePos);
+            if (wScene) wScene->addComponent("relay", "Módulo Relé", scenePos);
         } else if (textLower.contains("bot") || textLower.contains("pulsador") || textLower.contains("btn") || textLower.contains("button") || textLower.contains("click")) {
             type = "button";
             name = "Botão Gatilho";

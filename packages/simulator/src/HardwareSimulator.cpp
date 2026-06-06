@@ -1477,7 +1477,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                         } else {
                             for (auto* c : m_scene->components()) {
                                 if (c->name() == part || c->id() == part) {
-                                    if (c->componentType() == "potentiometer" || c->componentType() == "bess") {
+                                    if (c->componentType() == "potentiometer") {
                                         output += QString::number(evaluatePotCondition(c->id(), "> -1") ? 100 : 0); // Very naive
                                         found = true; break;
                                     } else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {

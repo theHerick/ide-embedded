@@ -1238,7 +1238,6 @@ QString CodeGenerator::generateArduinoCode(
 
             // B. Traverse through other pins of passive components or tracks
             bool isPassive = (compType == "resistor" || compType == "capacitor" || 
-                              compType == "bess" || compType == "bess_charger" || 
                               compType == "wire" || compType == "track" || compType.contains("trilha"));
             if (isPassive) {
                 for (const auto& nextPin : comp->pins()) {
@@ -2663,9 +2662,9 @@ QString CodeGenerator::generateArduinoCode(
         }
     }
 
-    // Monitor analógico (Ao Girar) para Potenciômetro e BESS
+    // Monitor analógico (Ao Girar) para Potenciômetro
     for (auto* comp : components) {
-        bool isPot = (comp->componentType() == "potentiometer" || comp->componentType() == "bess");
+        bool isPot = (comp->componentType() == "potentiometer");
         if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
             if (custom->category() == "analog_input") isPot = true;
         }
