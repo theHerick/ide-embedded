@@ -178,6 +178,9 @@ void HardwareSimulator::resetSimulation() {
         if (comp->componentType() == "led") {
             auto* led = static_cast<LEDItem*>(comp);
             led->setOn(false);
+        } else if (comp->componentType() == "rgb_led") {
+            auto* rgbLed = static_cast<RGBLEDItem*>(comp);
+            rgbLed->setColor(Qt::black);
         } else if (comp->componentType() == "buzzer") {
             auto* buzzer = static_cast<BuzzerItem*>(comp);
             buzzer->setActive(false);
@@ -243,6 +246,9 @@ void HardwareSimulator::stopSimulation() {
             if (comp->componentType() == "led") {
                 auto* led = static_cast<LEDItem*>(comp);
                 led->setOn(false);
+            } else if (comp->componentType() == "rgb_led") {
+                auto* rgbLed = static_cast<RGBLEDItem*>(comp);
+                rgbLed->setColor(Qt::black);
             } else if (comp->componentType() == "buzzer") {
                 auto* buzzer = static_cast<BuzzerItem*>(comp);
                 buzzer->setActive(false);

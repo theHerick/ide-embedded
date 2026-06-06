@@ -12,5 +12,6 @@
     <file>icons/book_cover.png</file>
     <file>icons/pasta.png</file>
     <file>icons/webPage.ico</file>
+    <file>icons/palette.svg</file>
 </qresource>
 </RCC>

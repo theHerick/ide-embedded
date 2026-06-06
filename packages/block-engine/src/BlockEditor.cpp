@@ -1428,7 +1428,8 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         lay->addWidget(cmdCombo);
         lay->addWidget(paramEdit);
         
-        auto* btnColorPicker = new QPushButton("🎨", w);
+        auto* btnColorPicker = new QPushButton(w);
+        btnColorPicker->setIcon(QIcon(":/icons/palette.svg"));
         btnColorPicker->setFixedWidth(30);
         btnColorPicker->hide();
         lay->addWidget(btnColorPicker);
