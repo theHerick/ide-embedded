@@ -2179,6 +2179,14 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             addBlock("wifiConnect");
         } else if (text.contains("criar") || text.contains("declar") || text.contains("create") || text.contains("new")) {
             addCreateVarBlock();
+        } else if (text.contains("rgb") || text.contains("cor led") || text.contains("definir cor")) {
+            EventLogicBlock b;
+            b.id = QUuid::createUuid().toString();
+            b.type = LogicBlockType::ACTION;
+            b.actionCommand = "SET_RGB_COLOR";
+            m_activeBlocks.append(b);
+            refreshListDisplay();
+            emit blocksChanged();
         } else if (text.contains("atrib") || text.contains("defin") || text.contains("assign") || text == "=") {
             addAssignmentBlock();
         } else if (text.contains("fim") || text.contains("end") || text.contains("fech") || text == "}") {
@@ -2238,14 +2246,6 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             b.id = QUuid::createUuid().toString();
             b.type = LogicBlockType::ACTION;
             b.actionCommand = "ROTATE_MOTOR";
-            m_activeBlocks.append(b);
-            refreshListDisplay();
-            emit blocksChanged();
-        } else if (text.contains("rgb") || text.contains("cor led") || text.contains("definir cor")) {
-            EventLogicBlock b;
-            b.id = QUuid::createUuid().toString();
-            b.type = LogicBlockType::ACTION;
-            b.actionCommand = "SET_RGB_COLOR";
             m_activeBlocks.append(b);
             refreshListDisplay();
             emit blocksChanged();
