@@ -2118,21 +2118,21 @@ void MotorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 RelayItem::RelayItem(const QString& id, const QString& name, QGraphicsItem* parent)
     : ComponentItem(id, name, "relay", parent), m_isOn(false) {
     // Control pins (Left) - aligned to 10px grid
-    m_pins.append({"IN",  QPointF(-30, -10), true, "", "", QColor(59, 130, 246)}); // IN (signal)
-    m_pins.append({"VCC", QPointF(-30,   0), false, "", "", QColor(239, 68, 68)});
-    m_pins.append({"GND", QPointF(-30,  10), false, "", "", QColor(75, 85, 99)});
+    m_pins.append({"IN",  QPointF(-40, -10), true, "", "", QColor(59, 130, 246)}); // IN (signal)
+    m_pins.append({"VCC", QPointF(-40,   0), false, "", "", QColor(239, 68, 68)});
+    m_pins.append({"GND", QPointF(-40,  10), false, "", "", QColor(75, 85, 99)});
     
     // Output terminals (Right)
-    m_pins.append({"NO", QPointF(30, -10), false, "", "", QColor(16, 185, 129)}); // Normally Open
-    m_pins.append({"COM", QPointF(30,  0), false, "", "", QColor(245, 158, 11)}); // Common
-    m_pins.append({"NC", QPointF(30,  10), false, "", "", QColor(239, 68, 68)});  // Normally Closed
+    m_pins.append({"NO", QPointF(40, -10), false, "", "", QColor(16, 185, 129)}); // Normally Open
+    m_pins.append({"COM", QPointF(40,  0), false, "", "", QColor(245, 158, 11)}); // Common
+    m_pins.append({"NC", QPointF(40,  10), false, "", "", QColor(239, 68, 68)});  // Normally Closed
     
     QString idx = extractIndexFromId(id);
     m_name = "Relé-" + (idx.isEmpty() ? "1" : idx);
 }
 
 QRectF RelayItem::boundingRect() const {
-    return QRectF(-40, -30, 80, 60);
+    return QRectF(-50, -30, 100, 60);
 }
 
 void RelayItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
@@ -2141,13 +2141,13 @@ void RelayItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
     if (option->state & QStyle::State_Selected) {
         painter->setPen(QPen(QColor(99, 102, 241, 150), 3, Qt::SolidLine));
         painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(-38, -28, 76, 56, 4, 4);
+        painter->drawRoundedRect(-48, -28, 96, 56, 4, 4);
     }
 
     // Base PCB
     painter->setPen(QPen(QColor(30, 41, 59), 2));
     painter->setBrush(QColor(15, 23, 42)); // Very dark blue/black PCB
-    painter->drawRoundedRect(-35, -25, 70, 50, 4, 4);
+    painter->drawRoundedRect(-45, -25, 90, 50, 4, 4);
 
     // Blue Relay Box (Songle style)
     painter->setPen(QPen(QColor(29, 78, 216), 1));
@@ -2157,25 +2157,28 @@ void RelayItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
     // Relay Text
     painter->setPen(Qt::white);
     QFont fR = painter->font();
-    fR.setPointSize(5);
+    fR.setPointSize(4);
     fR.setBold(true);
     painter->setFont(fR);
-    painter->drawText(QRectF(-15, -15, 30, 10), Qt::AlignCenter, "RELAY");
-    painter->drawText(QRectF(-15, -5, 30, 10), Qt::AlignCenter, "10A 250V");
+    painter->drawText(QRectF(-15, -12, 30, 10), Qt::AlignCenter, "SONGLE");
+    fR.setPointSize(3);
+    painter->setFont(fR);
+    painter->drawText(QRectF(-15, -2, 30, 10), Qt::AlignCenter, "10A 250VAC");
+    painter->drawText(QRectF(-15, 6, 30, 10), Qt::AlignCenter, "10A 30VDC");
 
     // Output Terminal Block (Green)
     painter->setPen(QPen(QColor(6, 78, 59), 1));
     painter->setBrush(QColor(16, 185, 129));
-    painter->drawRect(18, -15, 12, 30);
+    painter->drawRect(34, -15, 12, 30);
     // Screws
     painter->setBrush(QColor(156, 163, 175));
-    painter->drawEllipse(QPointF(24, -10), 2, 2);
-    painter->drawEllipse(QPointF(24, 0), 2, 2);
-    painter->drawEllipse(QPointF(24, 10), 2, 2);
+    painter->drawEllipse(QPointF(40, -10), 2, 2);
+    painter->drawEllipse(QPointF(40, 0), 2, 2);
+    painter->drawEllipse(QPointF(40, 10), 2, 2);
 
     // Header Pins (Left)
     painter->setBrush(QColor(234, 179, 8)); // Gold base
-    painter->drawRect(-28, -12, 4, 24);
+    painter->drawRect(-42, -12, 4, 24);
 
     // Draw Pin Labels
     painter->setPen(QColor(226, 232, 240)); // Light Gray
@@ -2184,28 +2187,28 @@ void RelayItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
     pinFont.setBold(true);
     painter->setFont(pinFont);
     
-    painter->drawText(QRectF(-23, -14, 12, 8), Qt::AlignLeft | Qt::AlignVCenter, "IN");
-    painter->drawText(QRectF(-23, -4,  12, 8), Qt::AlignLeft | Qt::AlignVCenter, "VCC");
-    painter->drawText(QRectF(-23,  6,  12, 8), Qt::AlignLeft | Qt::AlignVCenter, "GND");
+    painter->drawText(QRectF(-35, -14, 15, 8), Qt::AlignLeft | Qt::AlignVCenter, "IN");
+    painter->drawText(QRectF(-35, -4,  15, 8), Qt::AlignLeft | Qt::AlignVCenter, "VCC");
+    painter->drawText(QRectF(-35,  6,  15, 8), Qt::AlignLeft | Qt::AlignVCenter, "GND");
 
-    painter->drawText(QRectF(4, -14, 12, 8), Qt::AlignRight | Qt::AlignVCenter, "NO");
-    painter->drawText(QRectF(4, -4,  12, 8), Qt::AlignRight | Qt::AlignVCenter, "COM");
-    painter->drawText(QRectF(4,  6,  12, 8), Qt::AlignRight | Qt::AlignVCenter, "NC");
+    painter->drawText(QRectF(17, -14, 15, 8), Qt::AlignRight | Qt::AlignVCenter, "NO");
+    painter->drawText(QRectF(17, -4,  15, 8), Qt::AlignRight | Qt::AlignVCenter, "COM");
+    painter->drawText(QRectF(17,  6,  15, 8), Qt::AlignRight | Qt::AlignVCenter, "NC");
 
     // Status LED
     painter->setPen(Qt::NoPen);
     if (m_isOn) {
         painter->setBrush(QColor(34, 197, 94)); // Bright Green
-        painter->drawEllipse(QPointF(-5, 10), 2.5, 2.5);
+        painter->drawEllipse(QPointF(-25, 15), 2.5, 2.5);
         painter->setBrush(QColor(34, 197, 94, 100)); // Glow
-        painter->drawEllipse(QPointF(-5, 10), 5, 5);
+        painter->drawEllipse(QPointF(-25, 15), 5, 5);
     } else {
         painter->setBrush(QColor(6, 78, 59)); // Dark Green
-        painter->drawEllipse(QPointF(-5, 10), 2.5, 2.5);
+        painter->drawEllipse(QPointF(-25, 15), 2.5, 2.5);
     }
     // Power LED (Red, always on if placed, simplified)
     painter->setBrush(QColor(239, 68, 68));
-    painter->drawEllipse(QPointF(5, 10), 2.5, 2.5);
+    painter->drawEllipse(QPointF(-20, 15), 2.5, 2.5);
 
     // Draw connection pad circles
     for (const auto& pin : m_pins) {
