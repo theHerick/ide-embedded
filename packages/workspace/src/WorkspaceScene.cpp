@@ -342,6 +342,13 @@ void WorkspaceScene::deleteSelected() {
 void WorkspaceScene::clearWorkspace() {
     clearSelection();
     cancelRouting();
+    
+    // WARNING: We must clear the undo stack before deleting the items,
+    // otherwise undo commands might hold dangling pointers to deleted items.
+    if (m_undoStack) {
+        m_undoStack->clear();
+    }
+    
     for (auto* cable : m_cables) { removeItem(cable); delete cable; }
     m_cables.clear();
     for (auto* comp : m_components) { removeItem(comp); delete comp; }
