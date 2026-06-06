@@ -884,6 +884,13 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         connectPins(newComp, "TRIG", esp32, tG, {}, false);
         connectPins(newComp, "ECHO", esp32, eG, {}, false);
         connectToGnd(newComp, "GND", QPointF(30, 60));
+    } else if (type == "relay") {
+        QString gpio = getFreeGpio();
+        if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
+
+        connectPins(newComp, "IN", esp32, gpio, {}, false);
+        connectPins(newComp, "VCC", esp32, "5V", {}, false);
+        connectToGnd(newComp, "GND", QPointF(-20, 60));
     }
 
     m_undoStack->endMacro();

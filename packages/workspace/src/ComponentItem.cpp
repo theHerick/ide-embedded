@@ -2177,6 +2177,21 @@ void RelayItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
     painter->setBrush(QColor(234, 179, 8)); // Gold base
     painter->drawRect(-28, -12, 4, 24);
 
+    // Draw Pin Labels
+    painter->setPen(QColor(226, 232, 240)); // Light Gray
+    QFont pinFont = painter->font();
+    pinFont.setPointSize(4);
+    pinFont.setBold(true);
+    painter->setFont(pinFont);
+    
+    painter->drawText(QRectF(-23, -14, 12, 8), Qt::AlignLeft | Qt::AlignVCenter, "IN");
+    painter->drawText(QRectF(-23, -4,  12, 8), Qt::AlignLeft | Qt::AlignVCenter, "VCC");
+    painter->drawText(QRectF(-23,  6,  12, 8), Qt::AlignLeft | Qt::AlignVCenter, "GND");
+
+    painter->drawText(QRectF(4, -14, 12, 8), Qt::AlignRight | Qt::AlignVCenter, "NO");
+    painter->drawText(QRectF(4, -4,  12, 8), Qt::AlignRight | Qt::AlignVCenter, "COM");
+    painter->drawText(QRectF(4,  6,  12, 8), Qt::AlignRight | Qt::AlignVCenter, "NC");
+
     // Status LED
     painter->setPen(Qt::NoPen);
     if (m_isOn) {
