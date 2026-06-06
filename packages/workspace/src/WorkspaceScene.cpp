@@ -116,7 +116,6 @@ ComponentItem* WorkspaceScene::addComponent(const QString& type, const QString& 
     if (id.isEmpty()) {
         QString formattedType = type;
         if (type == "hcsr04") formattedType = "hc-sr04";
-        else if (type == "bess_charger") formattedType = "bess-charger";
         id = QString("%1-%2").arg(formattedType).arg(idCounter++);
     } else {
         int sep = id.lastIndexOf('-');
@@ -172,8 +171,7 @@ ComponentItem* WorkspaceScene::addComponent(const QString& type, const QString& 
     else if (type == "potentiometer") item = new PotentiometerItem(id, compName);
     else if (type == "buzzer")        item = new BuzzerItem(id, compName);
     else if (type == "motor")         item = new MotorItem(id, compName);
-    else if (type == "bess")          item = new BessItem(id, compName);
-    else if (type == "bess_charger")  item = new BessChargerItem(id, compName);
+    else if (type == "relay")         item = new RelayItem(id, compName);
     else if (type == "dht22")         item = new DHT22Item(id, compName);
     else if (type == "hcsr04")        item = new HCSR04Item(id, compName);
     else if (type == "gnd")           item = new GndItem(id, compName);

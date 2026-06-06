@@ -1407,7 +1407,6 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
         cmdCombo->addItem("GIRAR MOTOR (Ângulo)", "ROTATE_MOTOR");
         cmdCombo->addItem("GIRAR MOTOR (Tempo)", "MOTOR_SPIN_TIME");
         cmdCombo->addItem("GIRAR MOTOR (Infinito)", "MOTOR_SPIN_INFINITE");
-        cmdCombo->addItem("CALCULAR BATERIA (%)", "CALC_BATTERY");
         cmdCombo->addItem("CHAMAR FUNÇÃO", "CALL_FUNCTION");
         cmdCombo->addItem("RETORNAR VALOR", "RETURN");
         cmdCombo->addItem("CRIAR PONTO WIFI", "WIFI_AP");
@@ -1476,11 +1475,6 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
             } else if (cmd == "CALL_FUNCTION") {
                 targetEdit->setPlaceholderText("Nome da função (ex: minhaFuncao)");
                 paramEdit->setPlaceholderText("Parâmetros");
-                targetEdit->show();
-                paramEdit->show();
-            } else if (cmd == "CALC_BATTERY") {
-                targetEdit->setPlaceholderText("Pino ADC (ex: BESS)");
-                paramEdit->setPlaceholderText("Salvar resultado na Var...");
                 targetEdit->show();
                 paramEdit->show();
             } else if (cmd == "SET_FREQUENCY" || cmd == "BUZZER_TONE") {
@@ -2046,7 +2040,6 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
                          << "Fim (Fecha bloco condicional ou loop)"
                          << "Ação (Controla hardware / pino)"
                          << "Definir Cor LED RGB (Ação Hardware)"
-                         << "Calcular Bateria (Lê o ADC e calcula carga)"
                          << "Chamar Função (executa função C++)"
                          << "Girar Motor (Ajusta ângulo do servo ou DC)"
                          << "Retornar (return - Devolve valor de função)"
@@ -2231,14 +2224,6 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
             addBlock("toggle");
         } else if (text.contains("chamar") || text.contains("call function") || text.contains("invocar")) {
             addBlock("callFunction");
-        } else if (text.contains("calcular bateria") || text.contains("bateria") || text.contains("calc bat")) {
-            EventLogicBlock b;
-            b.id = QUuid::createUuid().toString();
-            b.type = LogicBlockType::ACTION;
-            b.actionCommand = "CALC_BATTERY";
-            m_activeBlocks.append(b);
-            refreshListDisplay();
-            emit blocksChanged();
         } else if (text.contains("ação") || text.contains("acao") || text.contains("act") || text.contains("action")) {
             addActionBlock();
         } else if (text.contains("girar") || text.contains("motor") || text.contains("rotacionar")) {

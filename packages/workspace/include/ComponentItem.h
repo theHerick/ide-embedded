@@ -255,39 +255,20 @@ private:
     double m_currentAngle = 0.0;
 };
 
-// BESS (Battery Energy Storage System) Item
-class BessItem : public ComponentItem {
+// Relay Module Item
+class RelayItem : public ComponentItem {
     Q_OBJECT
-    Q_PROPERTY(double chargeLevel READ chargeLevel WRITE setChargeLevel)
+    Q_PROPERTY(bool isOn READ isOn WRITE setOn)
 public:
-    BessItem(const QString& id, const QString& name, QGraphicsItem* parent = nullptr);
+    RelayItem(const QString& id, const QString& name, QGraphicsItem* parent = nullptr);
     QRectF boundingRect() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     
-    double chargeLevel() const { return m_chargeLevel; }
-    void setChargeLevel(double level);
+    bool isOn() const { return m_isOn; }
+    void setOn(bool on) { m_isOn = on; update(); }
     
 private:
-    double m_chargeLevel = 100.0; // 0.0 to 100.0
-};
-
-// BESS Charger Item (TP4056 style)
-class BessChargerItem : public ComponentItem {
-    Q_OBJECT
-    Q_PROPERTY(bool isPluggedIn READ isPluggedIn WRITE setPluggedIn)
-public:
-    BessChargerItem(const QString& id, const QString& name, QGraphicsItem* parent = nullptr);
-    QRectF boundingRect() const override;
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-    
-    bool isPluggedIn() const { return m_isPluggedIn; }
-    void setPluggedIn(bool plugged);
-    
-protected:
-    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
-    
-private:
-    bool m_isPluggedIn = false;
+    bool m_isOn = false;
 };
 
 // DHT22 (Temperature & Humidity Sensor) Item

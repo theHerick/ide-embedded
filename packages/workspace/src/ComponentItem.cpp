@@ -2113,286 +2113,99 @@ void MotorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 
 
 // =======================================================
-// BESS ITEM IMPLEMENTATION
+// RELAY ITEM IMPLEMENTATION
 // =======================================================
-BessItem::BessItem(const QString& id, const QString& name, QGraphicsItem* parent)
-    : ComponentItem(id, name, "bess", parent), m_chargeLevel(100.0) {
-    // VCC pin (red wire) exits from right side, bottom — 10px aligned
-    m_pins.append({"VCC",   QPointF(60,  20), false, "", "", QColor(239, 68, 68)});
-    // GND pin (black wire) exits from right side, top
-    m_pins.append({"GND",   QPointF(60, -20), false, "", "", QColor(30, 30, 30)});
-}
-
-void BessItem::setChargeLevel(double level) {
-    m_chargeLevel = qBound(0.0, level, 100.0);
-    update();
-}
-
-QRectF BessItem::boundingRect() const {
-    // Expanded to accommodate 10px-aligned wire leads at x=60
-    return QRectF(-35, -55, 100, 110);
-}
-
-void BessItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
-    painter->setRenderHint(QPainter::Antialiasing);
-
-    // Selected state glow
-    if (option->state & QStyle::State_Selected) {
-        painter->setPen(QPen(QColor(99, 102, 241, 150), 2.5, Qt::SolidLine));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(-28, -53, 56, 106, 5, 5);
-    }
-
-    // --- BATTERY METAL CAPS (Flat Vector Style) ---
-    QLinearGradient capGrad(-10, 0, 10, 0);
-    capGrad.setColorAt(0.0, QColor(203, 213, 225));
-    capGrad.setColorAt(1.0, QColor(148, 163, 184));
-
-    // Positive Cap (Bottom)
-    painter->setPen(QPen(QColor(100, 116, 139), 1));
-    painter->setBrush(capGrad);
-    painter->drawRoundedRect(-8, 44, 16, 6, 1, 1);
-
-    // Negative Cap (Top)
-    painter->drawRoundedRect(-12, -50, 24, 6, 1, 1);
-
-    // --- BATTERY BODY (Flat Vector Style) ---
-    painter->setPen(QPen(QColor(29, 78, 216), 2));
-    painter->setBrush(QColor(37, 99, 235));
-    painter->drawRoundedRect(-25, -45, 50, 90, 5, 5);
-
-    // --- SILK SCREEN DECORATIONS ON WRAP ---
-    painter->setPen(QColor(191, 219, 254));
-    QFont fL = painter->font();
-    fL.setPointSize(6);
-    fL.setBold(true);
-    fL.setFamily("Segoe UI");
-    painter->setFont(fL);
-    painter->drawText(QRectF(-25, -40, 50, 12), Qt::AlignCenter, "BESS");
-
-    // --- FLAT CHARGE VISUALIZER ---
-    // Clean battery outline
-    painter->setPen(QPen(QColor(255, 255, 255, 200), 1.5));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRoundedRect(-12, -26, 24, 42, 3, 3);
-    painter->drawRect(-5, -29, 10, 3); // top cap of outline
-
-    // Flat fill based on level
-    painter->setPen(Qt::NoPen);
-    double fillH = (m_chargeLevel / 100.0) * 38.0;
-    QColor chargeColor = m_chargeLevel > 20 ? QColor(34, 197, 94) : QColor(239, 68, 68);
-    painter->setBrush(chargeColor);
-    painter->drawRoundedRect(-10, 14 - fillH, 20, fillH, 1, 1);
-
-    // Digital percentage
-    painter->setPen(Qt::white);
-    QFont f = painter->font();
-    f.setPointSize(7.5);
-    f.setBold(true);
-    f.setFamily("Segoe UI");
-    painter->setFont(f);
-    painter->drawText(QRectF(-25, 20, 50, 15), Qt::AlignCenter, QString("%1%").arg(static_cast<int>(m_chargeLevel)));
-
-    // --- WIRE LEADS AND PHYSICAL PINS ---
-    // 1. Red Wire (VCC) to Pin (60, 20)
-    painter->setPen(QPen(QColor(239, 68, 68), 2, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(25, 20), QPointF(60, 20));
-
-    // 2. Black Wire (GND) to Pin (60, -20)
-    painter->setPen(QPen(QColor(55, 65, 81), 2, Qt::SolidLine, Qt::RoundCap));
-    painter->drawLine(QPointF(25, -20), QPointF(60, -20));
-
-    // Render connection header pins
-    QPointF pinPos[] = { QPointF(60, -20), QPointF(60, 20) };
-    for (const auto& pt : pinPos) {
-        // Outer copper pad (Gold)
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(218, 165, 32));
-        painter->drawEllipse(pt, 4.5, 4.5);
-        
-        // Inner hole / Silver header pin
-        painter->setPen(QPen(QColor(50, 50, 50), 0.5));
-        painter->setBrush(QColor(230, 230, 230));
-        painter->drawEllipse(pt, 2.5, 2.5);
-        
-        // Reflection
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(255, 255, 255, 150));
-        painter->drawEllipse(QPointF(pt.x() - 0.5, pt.y() - 0.5), 1.0, 1.0);
-    }
-
-    // --- LABELS ON WIRE LEADS ---
-    painter->setPen(QColor(239, 68, 68));
-    QFont fWire = painter->font();
-    fWire.setPointSize(6.5);
-    fWire.setBold(true);
-    painter->setFont(fWire);
-    painter->drawText(QRectF(30, 22, 24, 10), Qt::AlignCenter, "+");
-
-    painter->setPen(QColor(156, 163, 175));
-    painter->drawText(QRectF(30, -32, 24, 10), Qt::AlignCenter, "-");
-}
-
-// =======================================================
-// BESS CHARGER ITEM IMPLEMENTATION
-// =======================================================
-BessChargerItem::BessChargerItem(const QString& id, const QString& name, QGraphicsItem* parent)
-    : ComponentItem(id, name, "bess_charger", parent), m_isPluggedIn(false) {
-    // Inputs (Solar/USB) — 10px aligned at x=-40
-    m_pins.append({"IN+",  QPointF(-40, -20), false, "", "", QColor(239, 68, 68)});
-    m_pins.append({"IN-",  QPointF(-40,  20), false, "", "", QColor(75, 85, 99)});
+RelayItem::RelayItem(const QString& id, const QString& name, QGraphicsItem* parent)
+    : ComponentItem(id, name, "relay", parent), m_isOn(false) {
+    // Control pins (Left) - aligned to 10px grid
+    m_pins.append({"IN",  QPointF(-30, -10), true, "", "", QColor(59, 130, 246)}); // IN (signal)
+    m_pins.append({"VCC", QPointF(-30,   0), false, "", "", QColor(239, 68, 68)});
+    m_pins.append({"GND", QPointF(-30,  10), false, "", "", QColor(75, 85, 99)});
     
-    // Battery connections — 10px aligned at x=40
-    m_pins.append({"BAT+", QPointF(40, -10), false, "", "", QColor(239, 68, 68)});
-    m_pins.append({"BAT-", QPointF(40,  10), false, "", "", QColor(75, 85, 99)});
+    // Output terminals (Right)
+    m_pins.append({"NO", QPointF(30, -10), false, "", "", QColor(16, 185, 129)}); // Normally Open
+    m_pins.append({"COM", QPointF(30,  0), false, "", "", QColor(245, 158, 11)}); // Common
+    m_pins.append({"NC", QPointF(30,  10), false, "", "", QColor(239, 68, 68)});  // Normally Closed
     
-    // Output loads — 10px aligned at x=40
-    m_pins.append({"OUT+", QPointF(40, -30), false, "", "", QColor(245, 158, 11)});
-    m_pins.append({"OUT-", QPointF(40,  30), false, "", "", QColor(107, 114, 128)});
+    QString idx = extractIndexFromId(id);
+    m_name = "Relé-" + (idx.isEmpty() ? "1" : idx);
 }
 
-void BessChargerItem::setPluggedIn(bool plugged) {
-    m_isPluggedIn = plugged;
-    update();
+QRectF RelayItem::boundingRect() const {
+    return QRectF(-40, -30, 80, 60);
 }
 
-QRectF BessChargerItem::boundingRect() const {
-    return QRectF(-45, -35, 90, 75);
-}
-
-void BessChargerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
+void RelayItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
     painter->setRenderHint(QPainter::Antialiasing);
 
     if (option->state & QStyle::State_Selected) {
         painter->setPen(QPen(QColor(99, 102, 241, 150), 3, Qt::SolidLine));
         painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(-48, -38, 96, 78, 5, 5);
+        painter->drawRoundedRect(-38, -28, 76, 56, 4, 4);
     }
 
-    // Premium Blue PCB Body (TP4056 Type-C style)
-    painter->setPen(QPen(QColor(15, 60, 110), 1.5));
-    painter->setBrush(QColor(25, 90, 170));
-    painter->drawRoundedRect(-45, -35, 90, 70, 4, 4);
+    // Base PCB
+    painter->setPen(QPen(QColor(30, 41, 59), 2));
+    painter->setBrush(QColor(15, 23, 42)); // Very dark blue/black PCB
+    painter->drawRoundedRect(-35, -25, 70, 50, 4, 4);
 
-    // PCB Traces Mock (for premium look)
-    painter->setPen(QPen(QColor(40, 110, 190), 1));
-    painter->drawLine(-30, -20, -10, -10);
-    painter->drawLine(-30, 20, -10, 10);
-    painter->drawLine(30, -10, 10, -5);
-    painter->drawLine(30, 10, 10, 5);
-
-    // TP4056 Main IC
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(QColor(30, 35, 45)); // Matte black
-    painter->drawRoundedRect(-8, -12, 16, 12, 1, 1);
+    // Blue Relay Box (Songle style)
+    painter->setPen(QPen(QColor(29, 78, 216), 1));
+    painter->setBrush(QColor(37, 99, 235)); // Blue color
+    painter->drawRoundedRect(-15, -20, 30, 40, 2, 2);
     
-    // IC pins (silver)
-    painter->setBrush(QColor(180, 185, 190));
-    for (int i = 0; i < 4; i++) {
-        painter->drawRect(-5 + i*3.5, -14, 1.5, 2); // Top pins
-        painter->drawRect(-5 + i*3.5, 0, 1.5, 2);   // Bottom pins
-    }
-    
-    // Protection ICs (DW01A & 8205A)
-    painter->setBrush(QColor(30, 35, 45));
-    painter->drawRoundedRect(-15, 10, 12, 8, 1, 1); // 8205A
-    painter->drawRoundedRect(5, 12, 8, 5, 1, 1);    // DW01A
-    
-    // Type-C USB Port mock
-    painter->setBrush(QColor(210, 215, 220)); // Silver metal
-    painter->setPen(QPen(QColor(130, 140, 150), 1));
-    painter->drawRoundedRect(-48, -8, 12, 16, 3, 3); // Extends out slightly on the left
-    // Inner port black piece
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(QColor(20, 20, 20));
-    painter->drawRoundedRect(-48, -4, 4, 8, 1, 1);
-
-    // Draw connection holes & metallic male header pins at exactly the m_pins coordinates!
-    QPointF pinPos[] = {
-        QPointF(-40, -20), QPointF(-40, 20),
-        QPointF(40, -10), QPointF(40, 10),
-        QPointF(40, -30), QPointF(40, 30)
-    };
-    for (const auto& pt : pinPos) {
-        // Outer copper pad (Gold/Silver)
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(218, 165, 32)); // Golden pad
-        painter->drawEllipse(pt, 4.5, 4.5);
-        
-        // Inner hole / Male header pin inserted
-        painter->setPen(QPen(QColor(50, 50, 50), 0.5));
-        painter->setBrush(QColor(230, 230, 230)); // Silver header pin
-        painter->drawEllipse(pt, 2.5, 2.5);
-        
-        // Pin highlight/reflection for 3D effect
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(255, 255, 255, 150));
-        painter->drawEllipse(QPointF(pt.x() - 0.5, pt.y() - 0.5), 1.0, 1.0);
-    }
-
-    // Text labels for pins
+    // Relay Text
     painter->setPen(Qt::white);
-    QFont f2 = painter->font();
-    f2.setPointSize(5);
-    f2.setBold(true);
-    painter->setFont(f2);
-    
-    // Left side labels (IN+, IN-)
-    painter->drawText(QRectF(-33, -25, 20, 10), Qt::AlignLeft | Qt::AlignVCenter, "IN+");
-    painter->drawText(QRectF(-33, 15, 20, 10), Qt::AlignLeft | Qt::AlignVCenter, "IN-");
-    
-    // Right side labels (B+, B-, OUT+, OUT-)
-    painter->drawText(QRectF(15, -15, 18, 10), Qt::AlignRight | Qt::AlignVCenter, "B+");
-    painter->drawText(QRectF(15, 5, 18, 10), Qt::AlignRight | Qt::AlignVCenter, "B-");
-    painter->drawText(QRectF(15, -35, 18, 10), Qt::AlignRight | Qt::AlignVCenter, "OUT+");
-    painter->drawText(QRectF(15, 25, 18, 10), Qt::AlignRight | Qt::AlignVCenter, "OUT-");
+    QFont fR = painter->font();
+    fR.setPointSize(5);
+    fR.setBold(true);
+    painter->setFont(fR);
+    painter->drawText(QRectF(-15, -15, 30, 10), Qt::AlignCenter, "RELAY");
+    painter->drawText(QRectF(-15, -5, 30, 10), Qt::AlignCenter, "10A 250V");
 
-    // LEDs
-    if (m_isPluggedIn) {
-        // Red LED (Charging)
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(239, 68, 68));
-        painter->drawEllipse(QPointF(-10, -22), 2.5, 2.5);
-        // Glow
-        painter->setBrush(QColor(239, 68, 68, 120));
-        painter->drawEllipse(QPointF(-10, -22), 5, 5);
-        
-        // Blue LED off
-        painter->setBrush(QColor(30, 40, 80));
-        painter->drawEllipse(QPointF(0, -22), 2.0, 2.0);
+    // Output Terminal Block (Green)
+    painter->setPen(QPen(QColor(6, 78, 59), 1));
+    painter->setBrush(QColor(16, 185, 129));
+    painter->drawRect(18, -15, 12, 30);
+    // Screws
+    painter->setBrush(QColor(156, 163, 175));
+    painter->drawEllipse(QPointF(24, -10), 2, 2);
+    painter->drawEllipse(QPointF(24, 0), 2, 2);
+    painter->drawEllipse(QPointF(24, 10), 2, 2);
+
+    // Header Pins (Left)
+    painter->setBrush(QColor(234, 179, 8)); // Gold base
+    painter->drawRect(-28, -12, 4, 24);
+
+    // Status LED
+    painter->setPen(Qt::NoPen);
+    if (m_isOn) {
+        painter->setBrush(QColor(34, 197, 94)); // Bright Green
+        painter->drawEllipse(QPointF(-5, 10), 2.5, 2.5);
+        painter->setBrush(QColor(34, 197, 94, 100)); // Glow
+        painter->drawEllipse(QPointF(-5, 10), 5, 5);
     } else {
-        // Red LED off
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(80, 20, 20));
-        painter->drawEllipse(QPointF(-10, -22), 2.0, 2.0);
+        painter->setBrush(QColor(6, 78, 59)); // Dark Green
+        painter->drawEllipse(QPointF(-5, 10), 2.5, 2.5);
+    }
+    // Power LED (Red, always on if placed, simplified)
+    painter->setBrush(QColor(239, 68, 68));
+    painter->drawEllipse(QPointF(5, 10), 2.5, 2.5);
 
-        // Blue LED (Standby/Full)
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(59, 130, 246));
-        painter->drawEllipse(QPointF(0, -22), 2.5, 2.5);
-        // Glow
-        painter->setBrush(QColor(59, 130, 246, 120));
-        painter->drawEllipse(QPointF(0, -22), 5, 5);
+    // Draw connection pad circles
+    for (const auto& pin : m_pins) {
+        painter->setBrush(pin.color.isValid() ? pin.color : QColor(234, 179, 8));
+        QColor borderCol = pin.color.isValid() ? pin.color.darker(115) : QColor(161, 98, 7);
+        painter->setPen(QPen(borderCol, 1));
+        painter->drawEllipse(pin.localPos, 3, 3);
     }
 
-    // Title / Silk Screen Name
-    painter->setPen(QColor(200, 210, 220));
-    QFont f3 = painter->font();
-    f3.setPointSize(6);
-    f3.setBold(true);
-    painter->setFont(f3);
-    painter->drawText(QRectF(-30, 22, 60, 10), Qt::AlignCenter, "TP4056");
-}
-
-void BessChargerItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
-    QMenu menu;
-    QAction* toggleAct = menu.addAction(m_isPluggedIn ? "Desconectar Energia (Tomada)" : "Ligar na Tomada (5V)");
-    QAction* selected = menu.exec(event->screenPos());
-    if (selected == toggleAct) {
-        setPluggedIn(!m_isPluggedIn);
-    }
-    // Call parent so it also emits rightClicked if needed, but here we consumed it.
-    event->accept();
+    // Name label
+    painter->setPen(Qt::white);
+    QFont f = painter->font();
+    f.setPointSize(5);
+    painter->setFont(f);
+    painter->drawText(QRectF(-35, 26, 70, 10), Qt::AlignCenter, m_name.toUpper());
 }
 
 // =======================================================

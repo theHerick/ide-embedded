@@ -630,14 +630,7 @@ static QString compileBlocks(
                     res += QString("%1delay(%2);\n").arg(indent).arg(duration);
                 }
                 res += QString("%1%2.stop();\n").arg(indent).arg(tgtName);
-            } else if (actionCmd == "CALC_BATTERY") {
-                QString destVar = block.actionParam.trimmed().isEmpty() ? "nivelBateria" : block.actionParam.trimmed();
-                res += QString("%1// Calculando %% da bateria via divisor (2 resistores iguais)\n").arg(indent);
-                res += QString("%1int rawADC_%2 = analogRead(%3);\n").arg(indent).arg(tgtName).arg(resolvedPin);
-                res += QString("%1float vADC_%2 = (rawADC_%3 / 4095.0) * 3.3;\n").arg(indent).arg(tgtName).arg(tgtName);
-                res += QString("%1%2 = (vADC_%3 * 2.0 / 4.2) * 100.0;\n").arg(indent).arg(destVar).arg(tgtName);
-                res += QString("%1if (%2 > 100.0) %2 = 100.0;\n").arg(indent).arg(destVar);
-                res += QString("%1if (%2 < 0.0) %2 = 0.0;\n").arg(indent).arg(destVar);
+
             } else if (actionCmd == "WIFI_AP") {
                 QString ssid = actionTgt.isEmpty() ? "\"ESP32_Network\"" : actionTgt;
                 QString pwd = block.actionParam.trimmed();
@@ -739,7 +732,7 @@ static bool isPowerRailPin(const QString& pinName) {
 
 static bool isPassiveComponent(const QString& type) {
     // Passive/power components that should not generate #define PIN_...
-    return type == "resistor" || type == "capacitor" || type == "bess_charger" || type == "bess";
+    return type == "resistor" || type == "capacitor";
 }
 
 // Extract the numeric pin number from a pin name regardless of naming convention.
@@ -1011,13 +1004,9 @@ static QString emitStateVariables(
                 } else {
                     inferredType = "int";
                 }
-            } else if (b.type == LogicBlockType::ACTION && (b.actionCommand.contains("ROTATE") || b.actionCommand.contains("MOTOR") || b.actionCommand.contains("BATTERY"))) {
+            } else if (b.type == LogicBlockType::ACTION && (b.actionCommand.contains("ROTATE") || b.actionCommand.contains("MOTOR"))) {
                  name = sanitizeIdentifier(b.actionParam.trimmed().remove(" "));
-                 if (b.actionCommand.contains("BATTERY")) {
-                     inferredType = "float"; 
-                 } else {
-                     inferredType = "int";
-                 }
+                 inferredType = "int";
             }
 
             if (!name.isEmpty() && !name.startsWith("PIN_") && !componentNames.contains(name) && !componentNames.contains("PIN_" + name)) {
@@ -2496,7 +2485,7 @@ QString CodeGenerator::generateArduinoCode(
             code += QString("    digitalWrite(%1, LOW); // Inicia desligado\n").arg(pinMacro);
         } else if (comp->componentType() == "button") {
             code += QString("    pinMode(%1, INPUT_PULLUP); // Resistor interno pullup\n").arg(pinMacro);
-        } else if (comp->componentType() == "potentiometer" || comp->componentType() == "bess") {
+        } else if (comp->componentType() == "potentiometer") {
             code += QString("    pinMode(%1, INPUT); // Entrada analógica\n").arg(pinMacro);
         } else if (comp->componentType() == "buzzer") {
             code += QString("    pinMode(%1, OUTPUT);\n").arg(pinMacro);

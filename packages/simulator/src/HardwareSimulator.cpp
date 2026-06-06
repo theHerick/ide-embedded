@@ -64,22 +64,6 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
                         double newAngle = std::fmod(motor->currentAngle() + delta, 360.0);
                         motor->setCurrentAngle(newAngle);
                     }
-                } else if (comp->componentType() == "bess_charger") {
-                    auto* charger = static_cast<BessChargerItem*>(comp);
-                    if (charger->isPluggedIn()) isChargerActive = true;
-                }
-            }
-            
-            for (auto* comp : m_scene->components()) {
-                if (comp->componentType() == "bess") {
-                    auto* bess = static_cast<BessItem*>(comp);
-                    double level = bess->chargeLevel();
-                    if (isChargerActive) {
-                        level += 5.0; // Charge by 5% per tick
-                    } else if (activeConsumers > 0) {
-                        level -= (activeConsumers * 0.5); // Drain by 0.5% per consumer
-                    }
-                    bess->setChargeLevel(level);
                 }
             }
             
@@ -178,6 +162,9 @@ void HardwareSimulator::resetSimulation() {
         if (comp->componentType() == "led") {
             auto* led = static_cast<LEDItem*>(comp);
             led->setOn(false);
+        } else if (comp->componentType() == "relay") {
+            auto* relay = static_cast<RelayItem*>(comp);
+            relay->setOn(false);
         } else if (comp->componentType() == "rgb_led") {
             auto* rgbLed = static_cast<RGBLEDItem*>(comp);
             rgbLed->setColor(Qt::black);
@@ -246,6 +233,9 @@ void HardwareSimulator::stopSimulation() {
             if (comp->componentType() == "led") {
                 auto* led = static_cast<LEDItem*>(comp);
                 led->setOn(false);
+            } else if (comp->componentType() == "relay") {
+                auto* relay = static_cast<RelayItem*>(comp);
+                relay->setOn(false);
             } else if (comp->componentType() == "rgb_led") {
                 auto* rgbLed = static_cast<RGBLEDItem*>(comp);
                 rgbLed->setColor(Qt::black);
@@ -398,13 +388,6 @@ void HardwareSimulator::triggerPeriodicEvents() {
     // Potenciômetros e Custom Sensors Analógicos/Digitais (100ms)
     for (auto* comp : m_scene->components()) {
         if (comp->componentType() == "potentiometer") {
-            QString eventKey = comp->id() + ":aoGirar";
-            if (!m_executingLoop.value(eventKey, false)) {
-                m_executingLoop[eventKey] = true;
-                triggerComponentEvent(comp->id(), "aoGirar");
-                m_executingLoop[eventKey] = false;
-            }
-        } else if (comp->componentType() == "bess") {
             QString eventKey = comp->id() + ":aoGirar";
             if (!m_executingLoop.value(eventKey, false)) {
                 m_executingLoop[eventKey] = true;
@@ -1164,10 +1147,6 @@ double HardwareSimulator::getComponentSimValue(const QString& nameOrId) {
                 auto* pot = static_cast<PotentiometerItem*>(comp);
                 return pot->value();
             }
-            if (comp->componentType() == "bess") {
-                auto* bess = static_cast<BessItem*>(comp);
-                return bess->chargeLevel();
-            }
             if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
                 if (custom->category() == "analog_input") {
                     return custom->value();
@@ -1601,6 +1580,21 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                                 triggerComponentEvent(led->id(), "aoLigar");
                             }, Qt::QueuedConnection);
                         }
+                    } else if (comp->componentType() == "relay") {
+                        auto* relay = static_cast<RelayItem*>(comp);
+                        bool wasOn = relay->isOn();
+                        bool nowOn = param == "TOGGLE" ? !wasOn : (param == "HIGH");
+                        relay->setOn(nowOn);
+                        emit pinStateChanged(comp->id(), "IN", nowOn);
+                        if (!wasOn && nowOn) {
+                            QMetaObject::invokeMethod(this, [this, relay]() {
+                                triggerComponentEvent(relay->id(), "aoLigar");
+                            }, Qt::QueuedConnection);
+                        } else if (wasOn && !nowOn) {
+                            QMetaObject::invokeMethod(this, [this, relay]() {
+                                triggerComponentEvent(relay->id(), "aoDesligar");
+                            }, Qt::QueuedConnection);
+                        }
                     } else if (comp->componentType() == "buzzer") {
                         auto* buzzer = static_cast<BuzzerItem*>(comp);
                         bool wasActive = buzzer->isActive();
@@ -1688,11 +1682,7 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                     motor->setCurrentAngle(angle);
                 }
             } else if (param == "CALC_BATTERY") {
-
-                if (comp && comp->componentType() == "bess") {
-                    double level = static_cast<BessItem*>(comp)->chargeLevel();
-                    qDebug() << "Bateria calculada no simulador:" << level << "%";
-                }
+                // Obsolete
             } else if (param == "MOTOR_SPIN_INFINITE") {
                 double speed = evaluateNumericExpression(block.actionParam);
 
@@ -1781,16 +1771,11 @@ bool HardwareSimulator::evaluatePotCondition(const QString& compId, const QStrin
     ComponentItem* comp = findComponent(compId);
     if (comp) {
         bool isPot = (comp->componentType() == "potentiometer");
-        bool isBess = (comp->componentType() == "bess");
         double potVal = 0.0;
         bool matched = false;
         if (isPot) {
             auto* pot = static_cast<PotentiometerItem*>(comp);
             potVal = pot->value();
-            matched = true;
-        } else if (isBess) {
-            auto* bess = static_cast<BessItem*>(comp);
-            potVal = bess->chargeLevel();
             matched = true;
         } else {
             if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {

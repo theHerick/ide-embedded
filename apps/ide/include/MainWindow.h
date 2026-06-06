@@ -18,7 +18,7 @@ class ResistorItem;
 class PotentiometerItem;
 class CustomComponentItem;
 class MotorItem;
-class BessItem;
+class RelayItem;
 class DHT22Item;
 class HCSR04Item;
 class CapacitorItem;
@@ -43,7 +43,6 @@ private slots:
     void editLEDProperties(LEDItem* led);
     void editPotentiometerValue(PotentiometerItem* potentiometer);
     void editMotorProperties(MotorItem* motor);
-    void editBessProperties(BessItem* bess);
     void editCustomPotentiometerValue(CustomComponentItem* custom);
     void editDHT22Properties(DHT22Item* dht);
     void editHCSR04Properties(HCSR04Item* hcsr);

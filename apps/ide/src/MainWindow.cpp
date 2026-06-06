@@ -264,10 +264,8 @@ static QJsonObject serializeComponentItem(ComponentItem* comp) {
     } else if (auto* motor = dynamic_cast<MotorItem*>(comp)) {
         state["motorType"] = motor->motorType();
         state["currentAngle"] = motor->currentAngle();
-    } else if (auto* bess = dynamic_cast<BessItem*>(comp)) {
-        state["chargeLevel"] = bess->chargeLevel();
-    } else if (auto* chg = dynamic_cast<BessChargerItem*>(comp)) {
-        state["isPluggedIn"] = chg->isPluggedIn();
+    } else if (auto* relay = dynamic_cast<RelayItem*>(comp)) {
+        state["isOn"] = relay->isOn();
     } else if (auto* dht = dynamic_cast<DHT22Item*>(comp)) {
         state["humidity"] = dht->humidity();
         state["temperature"] = dht->temperature();
@@ -336,10 +334,8 @@ static void applyComponentState(ComponentItem* comp, const QJsonObject& state) {
     } else if (auto* motor = dynamic_cast<MotorItem*>(comp)) {
         if (state.contains("motorType")) motor->setMotorType(state["motorType"].toString());
         if (state.contains("currentAngle")) motor->setCurrentAngle(state["currentAngle"].toDouble());
-    } else if (auto* bess = dynamic_cast<BessItem*>(comp)) {
-        if (state.contains("chargeLevel")) bess->setChargeLevel(state["chargeLevel"].toDouble());
-    } else if (auto* chg = dynamic_cast<BessChargerItem*>(comp)) {
-        if (state.contains("isPluggedIn")) chg->setPluggedIn(state["isPluggedIn"].toBool());
+    } else if (auto* relay = dynamic_cast<RelayItem*>(comp)) {
+        if (state.contains("isOn")) relay->setOn(state["isOn"].toBool());
     } else if (auto* dht = dynamic_cast<DHT22Item*>(comp)) {
         if (state.contains("humidity")) dht->setHumidity(state["humidity"].toDouble());
         if (state.contains("temperature")) dht->setTemperature(state["temperature"].toDouble());
@@ -436,9 +432,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         } else if (comp->componentType() == "motor") {
             auto* motor = static_cast<MotorItem*>(comp);
             this->editMotorProperties(motor);
-        } else if (comp->componentType() == "bess") {
-            auto* bess = static_cast<BessItem*>(comp);
-            this->editBessProperties(bess);
         } else if (comp->componentType() == "esp32") {
             this->openEventEditor(comp, "aoIniciar");
         } else if (comp->componentType() == "led" || comp->componentType() == "rgb_led") {
@@ -1566,12 +1559,6 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
             auto* motor = static_cast<MotorItem*>(comp);
             this->editMotorProperties(motor);
         });
-    } else if (comp->componentType() == "bess") {
-        QAction* actEdit = menu.addAction("Editar Bateria (BESS)...");
-        connect(actEdit, &QAction::triggered, this, [this, comp]() {
-            auto* bess = static_cast<BessItem*>(comp);
-            this->editBessProperties(bess);
-        });
     } else if (comp->componentType() == "dht22") {
         QAction* actHum = menu.addAction("Evento: Ao Calcular Umidade (aoCalcularUmidade)");
         connect(actHum, &QAction::triggered, this, [this, comp]() {
@@ -1594,12 +1581,6 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
             comp->setSelected(true);
             m_selectedComponent = comp;
             openEventEditor(comp, "aoMedir");
-        });
-    } else if (comp->componentType() == "bess_charger") {
-        QAction* actToggle = menu.addAction(static_cast<BessChargerItem*>(comp)->isPluggedIn() ? "Desconectar Energia" : "Conectar Energia");
-        connect(actToggle, &QAction::triggered, this, [comp]() {
-            auto* chg = static_cast<BessChargerItem*>(comp);
-            chg->setPluggedIn(!chg->isPluggedIn());
         });
     }
 
@@ -3630,10 +3611,8 @@ void MainWindow::loadToolboxItems() {
     potItem->setData(Qt::UserRole, "potentiometer");
     auto* buzItem = new QListWidgetItem("Buzzer 5V", m_toolboxList);
     buzItem->setData(Qt::UserRole, "buzzer");
-    auto* bessItem = new QListWidgetItem("Pack LiPo (BESS)", m_toolboxList);
-    bessItem->setData(Qt::UserRole, "bess");
-    auto* bessChargerItem = new QListWidgetItem("Módulo Carregador", m_toolboxList);
-    bessChargerItem->setData(Qt::UserRole, "bess_charger");
+    auto* relayItem = new QListWidgetItem("Módulo Relé", m_toolboxList);
+    relayItem->setData(Qt::UserRole, "relay");
     auto* dhtItem = new QListWidgetItem("Sensor Temperatura/Umidade DHT22", m_toolboxList);
     dhtItem->setData(Qt::UserRole, "dht22");
     auto* hcsrItem = new QListWidgetItem("Sensor Ultrassônico HC-SR04", m_toolboxList);
@@ -3653,7 +3632,7 @@ void MainWindow::onToolboxContextMenu(const QPoint& pos) {
     QString typeId = item->data(Qt::UserRole).toString();
 
     // Check if it's a native component
-    QStringList builtIns = {"led", "button", "resistor", "capacitor", "potentiometer", "buzzer", "esp32", "bess", "bess_charger", "dht22", "hcsr04"};
+    QStringList builtIns = {"led", "button", "resistor", "capacitor", "potentiometer", "buzzer", "esp32", "relay", "dht22", "hcsr04"};
     if (builtIns.contains(typeId)) return; // Don't allow deleting native components
 
     QMenu menu(this);
@@ -6425,109 +6404,7 @@ void MainWindow::parseResourceUsage(const QString& line) {
     }
 }
 
-void MainWindow::editBessProperties(BessItem* bess) {
-    if (!bess) return;
 
-    QDialog dialog(this);
-    dialog.setWindowTitle(QString("Configuracao da Bateria - %1").arg(bess->name()));
-    dialog.setMinimumWidth(380);
-    dialog.setStyleSheet(
-        "QDialog { background-color: #F8FAFC; color: #0F172A; border: 1px solid #CBD5E1; border-radius: 8px; }"
-        "QLabel { color: #1E293B; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; font-weight: 600; }"
-        "QSpinBox, QDoubleSpinBox { background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; padding: 6px 8px; font-size: 13px; }"
-        "QSpinBox:focus, QDoubleSpinBox:focus { border: 1px solid #3B82F6; }"
-        "QPushButton { background: #E2E8F0; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 600; color: #475569; font-size: 13px; }"
-        "QPushButton:hover { background: #CBD5E1; }"
-        "QPushButton:pressed { background: #94A3B8; }"
-        "QPushButton#saveBtn { background: #2563EB; color: white; }"
-        "QPushButton#saveBtn:hover { background: #1D4ED8; }"
-        "QPushButton#saveBtn:pressed { background: #1E40AF; }"
-    );
-
-    auto* mainLayout = new QVBoxLayout(&dialog);
-    mainLayout->setContentsMargins(16, 16, 16, 16);
-    mainLayout->setSpacing(12);
-
-    // Capacidade mAh
-    auto* capLayout = new QHBoxLayout();
-    auto* capLabel = new QLabel("Capacidade:");
-    capLayout->addWidget(capLabel);
-    auto* capSpin = new QSpinBox(&dialog);
-    capSpin->setRange(100, 100000);
-    capSpin->setSingleStep(100);
-    capSpin->setSuffix(" mAh");
-    int savedMah = bess->property("capacityMah").toInt();
-    capSpin->setValue(savedMah > 0 ? savedMah : 3000);
-    capLayout->addWidget(capSpin, 1);
-    mainLayout->addLayout(capLayout);
-
-    // Tensao nominal
-    auto* voltLayout = new QHBoxLayout();
-    auto* voltLabel = new QLabel("Tensao Nominal:");
-    voltLayout->addWidget(voltLabel);
-    auto* voltSpin = new QDoubleSpinBox(&dialog);
-    voltSpin->setRange(1.0, 72.0);
-    voltSpin->setDecimals(2);
-    voltSpin->setSingleStep(0.1);
-    voltSpin->setSuffix(" V");
-    double savedVolt = bess->property("nominalVoltage").toDouble();
-    voltSpin->setValue(savedVolt > 0.0 ? savedVolt : 3.7);
-    voltLayout->addWidget(voltSpin, 1);
-    mainLayout->addLayout(voltLayout);
-
-    // SOC inicial
-    auto* socLayout = new QHBoxLayout();
-    auto* socLabel = new QLabel("Estado de Carga (SOC):");
-    socLayout->addWidget(socLabel);
-    auto* socSpin = new QDoubleSpinBox(&dialog);
-    socSpin->setRange(0.0, 100.0);
-    socSpin->setDecimals(1);
-    socSpin->setSingleStep(1.0);
-    socSpin->setSuffix(" %");
-    socSpin->setValue(bess->chargeLevel());
-    socLayout->addWidget(socSpin, 1);
-    mainLayout->addLayout(socLayout);
-
-    // Celulas em serie
-    auto* cellLayout = new QHBoxLayout();
-    auto* cellLabel = new QLabel("Celulas em Serie:");
-    cellLayout->addWidget(cellLabel);
-    auto* cellSpin = new QSpinBox(&dialog);
-    cellSpin->setRange(1, 20);
-    cellSpin->setSuffix("S");
-    int savedCells = bess->property("cellCount").toInt();
-    cellSpin->setValue(savedCells > 0 ? savedCells : 1);
-    cellLayout->addWidget(cellSpin, 1);
-    mainLayout->addLayout(cellLayout);
-
-    // Botoes
-    auto* btnLayout = new QHBoxLayout();
-    btnLayout->setContentsMargins(0, 8, 0, 0);
-    auto* cancelBtn = new QPushButton("Cancelar", &dialog);
-    connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
-    auto* saveBtn = new QPushButton("Salvar", &dialog);
-    saveBtn->setObjectName("saveBtn");
-    connect(saveBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
-    btnLayout->addStretch();
-    btnLayout->addWidget(cancelBtn);
-    btnLayout->addWidget(saveBtn);
-    mainLayout->addLayout(btnLayout);
-
-    if (dialog.exec() == QDialog::Accepted) {
-        bess->setChargeLevel(socSpin->value());
-        bess->setProperty("capacityMah", capSpin->value());
-        bess->setProperty("nominalVoltage", voltSpin->value());
-        bess->setProperty("cellCount", cellSpin->value());
-        bess->update();
-        statusBar()->showMessage(
-            QString("Bateria atualizada: %1 mAh, %2V, SOC %3%")
-            .arg(capSpin->value())
-            .arg(voltSpin->value(), 0, 'f', 2)
-            .arg(socSpin->value(), 0, 'f', 0),
-            4000
-        );
-    }
-}
 
 void MainWindow::showComponentModeling(ComponentItem* comp) {
     if (!comp) return;
