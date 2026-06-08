@@ -40,7 +40,7 @@ Designed for speed, visual excellence, and a premium developer experience.
 
 ---
 
-## ⚡ High-Performance Core Features (Recently Optimized)
+## High-Performance Core Features (Recently Optimized)
 
 To deliver a state-of-the-art developer experience, the IDE architecture has been engineered with critical performance and safety optimizations:
 
@@ -52,7 +52,7 @@ To deliver a state-of-the-art developer experience, the IDE architecture has bee
 
 ---
 
-## 🎨 Pioneering Architecture
+## Pioneering Architecture
 
 **IDE Embedded** is powered by a groundbreaking, event-oriented programming model for embedded components pioneered by **Herick B. Tiburski**. This methodology abstracts raw physical hardware signals and interrupts into clean, component-level logical events, establishing a pioneering paradigm shift in how embedded software is visually designed and modeled.
 
@@ -76,7 +76,7 @@ IDE Embedded separates raw physical hardware signals from your core business log
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 *   **Visual Block Editor** — drag-and-drop Sketchware-inspired interface. Create math expressions, loops, serial formatting, and manage persistent memory visually.
 *   **Custom Component Creator** — Design and define complex custom hardware parts with dedicated properties, pins, simulation behaviors, and semantic roles.
@@ -88,7 +88,7 @@ IDE Embedded separates raw physical hardware signals from your core business log
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |---|---|
@@ -99,7 +99,7 @@ IDE Embedded separates raw physical hardware signals from your core business log
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -124,7 +124,7 @@ cmake --build build
 
 ---
 
-## 📦 Build Automation, Commit, and Version Restoring
+## Build Automation, Commit, and Version Restoring
 
 To prevent any loss of progress, the IDE features an automated compilation, backup, and version-control system powered by Git.
 
@@ -157,7 +157,7 @@ git checkout ":/ID:2"
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 IDE-embedded/
