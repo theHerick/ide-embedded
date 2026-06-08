@@ -44,6 +44,7 @@ Designed for speed, visual excellence, and a premium developer experience.
 
 To deliver a state-of-the-art developer experience, the IDE architecture has been engineered with critical performance and safety optimizations:
 
+*   **Non-Blocking Cooperative Delays (CPS)**: Replaced traditional synchronous/blocking `delay(ms)` routines with a Cooperative Task Scheduler (`AsyncTask` queue) and a recursion-based Continuation-Passing Style (CPS) code generator. The generated C++ code executes delay callbacks asynchronously in the main event loop (`runAsyncTasks()`), keeping the microcontroller responsive. In the IDE simulator, we replaced `QEventLoop` stalls with a CPS-style asynchronous `QTimer::singleShot` model, ensuring the desktop UI remains responsive and free of reentrancy crashes.
 *   **O(1) Component Lookup Cache**: The simulator uses a high-performance hash mapping (`QHash`) to resolve and interact with component states instantly, bypassing legacy linear $O(n)$ search sweeps. This guarantees smooth, CPU-efficient simulation ticks even in dense workspaces.
 *   **Thread-Safe Code Generation**: Utilizes C++17 thread-local memory structures (`thread_local`) during compile passes, making compilation routines fully concurrent and safe from data races.
 *   **Collision-Free EEPROM Mapping**: Implements a deterministic, alphabetical pre-scan sequencer for visual state restoration variables, ensuring zero address collisions and clean memory layouts inside the microcontroler's EEPROM.
