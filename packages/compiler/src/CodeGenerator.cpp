@@ -63,6 +63,12 @@ static QString compileMathFormula(QString formula) {
 static thread_local QSet<QString> g_eepromKeys;
 static thread_local QMap<QString, QString> g_eepromKeyTypes;
 
+static thread_local const QMap<QString, QVector<EventLogicBlock>>* g_eventBlockStorage = nullptr;
+static thread_local const QHash<ComponentItem*, QString>* g_sanitized = nullptr;
+static thread_local QStringList* g_helperFunctions = nullptr;
+static thread_local QStringList* g_helperPrototypes = nullptr;
+static thread_local int g_delayPartCounter = 0;
+
 static int getEepromOffset(const QString& key) {
     QList<QString> sortedKeys = g_eepromKeys.values();
     std::sort(sortedKeys.begin(), sortedKeys.end());
@@ -260,8 +266,56 @@ static QString compileBlocks(
     CustomComponentItem* owner = nullptr,
     const QHash<ComponentItem*, QString>* sanitizedMap = nullptr,
     QMap<QString, int>* eepromOffsets = nullptr,
-    int* nextEepromOffset = nullptr
+    int* nextEepromOffset = nullptr,
+    QStringList* helperFunctions = nullptr,
+    const QString& eventNamePrefix = "",
+    int* delayPartCounter = nullptr
 ) {
+    // Resolve active parameters using thread-local variables if not passed
+    QStringList* activeHelpers = helperFunctions ? helperFunctions : g_helperFunctions;
+    int* activeCounter = delayPartCounter;
+    if (!activeCounter) {
+        if (eventNamePrefix.isEmpty()) {
+            g_delayPartCounter = 0;
+        }
+        activeCounter = &g_delayPartCounter;
+    }
+    
+    QString activePrefix = eventNamePrefix;
+    if (activePrefix.isEmpty() && g_eventBlockStorage) {
+        for (auto it = g_eventBlockStorage->begin(); it != g_eventBlockStorage->end(); ++it) {
+            if (&(it.value()) == &blocks) {
+                QString key = it.key();
+                int colonIdx = key.indexOf(':');
+                if (colonIdx != -1) {
+                    QString compId = key.left(colonIdx);
+                    QString eventSub = key.mid(colonIdx + 1);
+                    QString compName = compId;
+                    
+                    if (g_sanitized) {
+                        for (auto sit = g_sanitized->begin(); sit != g_sanitized->end(); ++sit) {
+                            if (sit.key() && sit.key()->id() == compId) {
+                                compName = sit.value();
+                                break;
+                            }
+                        }
+                    } else {
+                        compName = sanitizeIdentifier(compId);
+                    }
+                    
+                    if (!eventSub.isEmpty()) {
+                        eventSub[0] = eventSub[0].toUpper();
+                    }
+                    
+                    activePrefix = QString("%1_event%2").arg(compName).arg(eventSub);
+                } else {
+                    activePrefix = sanitizeIdentifier(key);
+                }
+                break;
+            }
+        }
+    }
+
     // Build or use sanitized map
     QHash<ComponentItem*, QString> localSanitized;
     if (sanitizedMap) {
@@ -313,7 +367,8 @@ static QString compileBlocks(
     // We do not declare local variables inside the event to persist their state.
     res += "";
 
-    for (const auto& block : blocks) {
+    for (int i = 0; i < blocks.size(); ++i) {
+        const auto& block = blocks[i];
         QString indent = QString(baseIndentSpaces + nestLevel * 4, ' ');
 
         QString condExpr = block.conditionExpression;
@@ -606,7 +661,34 @@ static QString compileBlocks(
                 res += QString("%1digitalWrite(%2, !digitalRead(%2));\n").arg(indent).arg(resolvedPin);
             } else if (actionCmd == "DELAY") {
                 QString param = block.actionParam.trimmed().isEmpty() ? tgtName : block.actionParam.trimmed();
-                res += QString("%1delay(%2);\n").arg(indent).arg(param);
+                if (activeHelpers && !activePrefix.isEmpty() && activeCounter) {
+                    int nextPartIdx = ++(*activeCounter);
+                    QString nextPartName = QString("%1_delay_part%2").arg(activePrefix).arg(nextPartIdx);
+                    res += QString("%1scheduleAsyncTask(%2, %3);\n").arg(indent).arg(param).arg(nextPartName);
+                    
+                    if (g_helperPrototypes) {
+                        g_helperPrototypes->append(QString("void %1();").arg(nextPartName));
+                    }
+                    
+                    int tempNest = nestLevel;
+                    while (tempNest > 0) {
+                        tempNest--;
+                        QString fimIndent = QString(baseIndentSpaces + tempNest * 4, ' ');
+                        res += QString("%1} // Fechamento no Delay\n").arg(fimIndent);
+                    }
+                    
+                    QVector<EventLogicBlock> remaining = blocks.mid(i + 1);
+                    QString nextBody = compileBlocks(remaining, components, baseIndentSpaces, owner, sanitizedMap, eepromOffsets, nextEepromOffset, activeHelpers, activePrefix, activeCounter);
+                    
+                    QString helperCode = QString("void %1() {\n").arg(nextPartName);
+                    helperCode += nextBody;
+                    helperCode += "}\n\n";
+                    activeHelpers->append(helperCode);
+                    
+                    return res;
+                } else {
+                    res += QString("%1delay(%2);\n").arg(indent).arg(param);
+                }
             } else if (actionCmd == "ROTATE_MOTOR") {
                 QString param = block.actionParam.trimmed().isEmpty() ? "0" : block.actionParam.trimmed();
                 res += QString("%1// Rotacionando motor (requer objeto %2 instanciado)\n").arg(indent).arg(tgtName);
@@ -1146,6 +1228,13 @@ QString CodeGenerator::generateArduinoCode(
     g_eepromKeys.clear();
     g_eepromKeyTypes.clear();
     
+    QStringList localHelpers;
+    QStringList localPrototypes;
+    g_eventBlockStorage = &eventBlockStorage;
+    g_helperFunctions = &localHelpers;
+    g_helperPrototypes = &localPrototypes;
+    g_delayPartCounter = 0;
+    
     // First, scan all CREATE_VAR blocks to pre-populate g_eepromKeyTypes with variable types!
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
         for (const auto& b : it.value()) {
@@ -1400,9 +1489,36 @@ QString CodeGenerator::generateArduinoCode(
         code += "\n";
     }
 
+    code += "// ── AGENDADOR DE TAREFAS ASSÍNCRONAS (NÃO-BLOQUEANTE) ──\n";
+    code += "struct AsyncTask {\n";
+    code += "    unsigned long executeTime;\n";
+    code += "    void (*callback)();\n";
+    code += "};\n";
+    code += "#define MAX_ASYNC_TASKS 32\n";
+    code += "AsyncTask asyncTasks[MAX_ASYNC_TASKS];\n";
+    code += "int asyncTaskCount = 0;\n\n";
+    code += "void scheduleAsyncTask(unsigned long delayMs, void (*callback)()) {\n";
+    code += "    if (asyncTaskCount < MAX_ASYNC_TASKS) {\n";
+    code += "        asyncTasks[asyncTaskCount++] = { millis() + delayMs, callback };\n";
+    code += "    }\n";
+    code += "}\n\n";
+    code += "void runAsyncTasks() {\n";
+    code += "    unsigned long now = millis();\n";
+    code += "    for (int i = 0; i < asyncTaskCount; ++i) {\n";
+    code += "        if (now >= asyncTasks[i].executeTime) {\n";
+    code += "            void (*cb)() = asyncTasks[i].callback;\n";
+    code += "            asyncTasks[i] = asyncTasks[--asyncTaskCount];\n";
+    code += "            i--;\n";
+    code += "            cb();\n";
+    code += "        }\n";
+    code += "    }\n";
+    code += "}\n\n";
+    code += "/* DELAY_PROTOTYPES_PLACEHOLDER */\n";
+
     // Precompute sanitized identifiers per component to avoid repeated computation
     QHash<ComponentItem*, QString> sanitized;
     for (auto* comp : components) sanitized[comp] = sanitizeIdentifier(comp->name());
+    g_sanitized = &sanitized;
 
     // Initialize EEPROM address mapping registry for this generation
     QMap<QString, int> eepromOffsets;
@@ -2548,6 +2664,7 @@ QString CodeGenerator::generateArduinoCode(
 
     // 5. Loop function (handling Button click events and LED triggers)
     code += "void loop() {\n";
+    code += "    runAsyncTasks(); // Executa tarefas assíncronas agendadas\n";
     if (webPageData.value("enabled").toBool()) {
         code += "    server.handleClient(); // Processa requisições do Web Dashboard\n";
         
@@ -2759,6 +2876,28 @@ QString CodeGenerator::generateArduinoCode(
 
     code += "}\n";
 
+    g_eventBlockStorage = nullptr;
+    g_sanitized = nullptr;
+    g_helperFunctions = nullptr;
+    g_helperPrototypes = nullptr;
+
+    QString prototypesStr;
+    if (!localPrototypes.isEmpty()) {
+        prototypesStr += "// ── PROTÓTIPOS DE AUXILIARES DE DELAY ──────────────────\n";
+        for (const auto& proto : localPrototypes) {
+            prototypesStr += proto + "\n";
+        }
+        prototypesStr += "\n";
+    }
+    code.replace("/* DELAY_PROTOTYPES_PLACEHOLDER */\n", prototypesStr);
+
+    if (!localHelpers.isEmpty()) {
+        code += "\n// ── FUNÇÕES AUXILIARES DE DELAY ────────────────────────\n";
+        for (const auto& helper : localHelpers) {
+            code += helper;
+        }
+    }
+
     return code;
 }
 
@@ -2771,6 +2910,13 @@ QString CodeGenerator::compileComponentEvents(
 
     g_eepromKeys.clear();
     g_eepromKeyTypes.clear();
+
+    QStringList localHelpers;
+    QStringList localPrototypes;
+    g_eventBlockStorage = &eventBlockStorage;
+    g_helperFunctions = &localHelpers;
+    g_helperPrototypes = &localPrototypes;
+    g_delayPartCounter = 0;
 
     // First, scan all CREATE_VAR blocks to pre-populate g_eepromKeyTypes with variable types!
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
@@ -2810,10 +2956,12 @@ QString CodeGenerator::compileComponentEvents(
     for (auto* c : components) {
         sanitized[c] = sanitizeIdentifier(c->name());
     }
+    g_sanitized = &sanitized;
 
     QString name = sanitized.value(comp, sanitizeIdentifier(comp->name()));
     QString type = comp->componentType();
     QString code;
+    code += "/* DELAY_PROTOTYPES_PLACEHOLDER */\n";
 
     // EEPROM offset tracking for variable blocks
     QMap<QString, int> eepromOffsets;
@@ -3428,6 +3576,28 @@ QString CodeGenerator::compileComponentEvents(
                 "// ========================================== \n\n"
                 "// Componentes passivos ou genéricos não executam códigos C++ de evento.\n"
                 "// Eles modificam fisicamente as tensões e correntes na simulação.\n";
+    }
+
+    g_eventBlockStorage = nullptr;
+    g_sanitized = nullptr;
+    g_helperFunctions = nullptr;
+    g_helperPrototypes = nullptr;
+
+    QString prototypesStr;
+    if (!localPrototypes.isEmpty()) {
+        prototypesStr += "// ── PROTÓTIPOS DE AUXILIARES DE DELAY ──────────────────\n";
+        for (const auto& proto : localPrototypes) {
+            prototypesStr += proto + "\n";
+        }
+        prototypesStr += "\n";
+    }
+    code.replace("/* DELAY_PROTOTYPES_PLACEHOLDER */\n", prototypesStr);
+
+    if (!localHelpers.isEmpty()) {
+        code += "\n// ── FUNÇÕES AUXILIARES DE DELAY ────────────────────────\n";
+        for (const auto& helper : localHelpers) {
+            code += helper;
+        }
     }
 
     return code;

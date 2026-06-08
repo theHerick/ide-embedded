@@ -95,6 +95,18 @@ private slots:
     void onClientDisconnected();
 
 private:
+    struct LevelState {
+        bool active = false;
+        bool lastIfTaken = false;
+        int loopStartPc = -1;
+        QString loopVar = "";
+        int loopEnd = 0;
+        int loopStep = 0;
+        QString loopConditionOp = "";
+    };
+
+    void executeBlockChainInternal(const QVector<EventLogicBlock>& blocks, int pc, QVector<LevelState> execStack);
+
     qint64 m_lastMedir = 0;
     qint64 m_lastDht = 0;
     QHash<QString, ComponentItem*> m_componentCache;

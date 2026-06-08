@@ -2,7 +2,6 @@
 #include "CustomComponent.h"
 #include <QDebug>
 #include <cmath>
-#include <QEventLoop>
 #include <QRegularExpression>
 #include <chrono>
 
@@ -1191,19 +1190,12 @@ double HardwareSimulator::evaluateNumericExpression(const QString& expr) {
 }
 
 void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks) {
-    struct LevelState {
-        bool active;
-        bool lastIfTaken;
-        int loopStartPc;
-        QString loopVar;
-        int loopEnd;
-        int loopStep;
-        QString loopConditionOp;
-    };
     QVector<LevelState> execStack;
     execStack.push_back({true, false, -1, "", 0, 0, ""}); // Root level
+    executeBlockChainInternal(blocks, 0, execStack);
+}
 
-    int pc = 0;
+void HardwareSimulator::executeBlockChainInternal(const QVector<EventLogicBlock>& blocks, int pc, QVector<LevelState> execStack) {
     int stepCount = 0;
     const int MAX_STEPS = 5000;
     
@@ -1721,23 +1713,31 @@ void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks
                 if (comp && comp->componentType() == "motor") {
                     m_motorSpeeds[comp->id()] = speed; // Iniciar rotação contínua por tempo
                 }
-                QEventLoop loop;
-                QTimer::singleShot(ms, &loop, &QEventLoop::quit);
-                loop.exec();
-                if (comp && comp->componentType() == "motor") {
-                    auto* motor = static_cast<MotorItem*>(comp);
-                    m_motorSpeeds[comp->id()] = 0.0; // Parar rotação contínua
-                    motor->setCurrentAngle(0); // Stop visually
-                }
+                int nextPc = pc + 1;
+                QTimer::singleShot(ms, this, [this, comp, blocks, nextPc, execStack]() {
+                    if (m_isRunning) {
+                        if (comp && comp->componentType() == "motor") {
+                            auto* motor = static_cast<MotorItem*>(comp);
+                            m_motorSpeeds[comp->id()] = 0.0; // Parar rotação contínua
+                            motor->setCurrentAngle(0); // Stop visually
+                        }
+                        executeBlockChainInternal(blocks, nextPc, execStack);
+                    }
+                });
+                return;
             } else if (param == "DELAY") {
                 int ms = static_cast<int>(evaluateNumericExpression(block.actionParam));
                 if (ms <= 0 && !block.actionParam.isEmpty()) {
                     ms = static_cast<int>(evaluateNumericExpression(targetId));
                 }
                 if (ms <= 0) ms = 500; // default
-                QEventLoop loop;
-                QTimer::singleShot(ms, &loop, &QEventLoop::quit);
-                loop.exec();
+                int nextPc = pc + 1;
+                QTimer::singleShot(ms, this, [this, blocks, nextPc, execStack]() {
+                    if (m_isRunning) {
+                        executeBlockChainInternal(blocks, nextPc, execStack);
+                    }
+                });
+                return;
             } else if (param == "WIFI_AP") {
                 emit serialMessage("Simulador: Ponto de Acesso Wi-Fi Iniciado", "INFO");
             } else if (param == "WIFI_CONNECT") {
