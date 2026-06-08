@@ -63,11 +63,9 @@ static QString compileMathFormula(QString formula) {
 static thread_local QSet<QString> g_eepromKeys;
 static thread_local QMap<QString, QString> g_eepromKeyTypes;
 
-static thread_local const QMap<QString, QVector<EventLogicBlock>>* g_eventBlockStorage = nullptr;
-static thread_local const QHash<ComponentItem*, QString>* g_sanitized = nullptr;
 static thread_local QStringList* g_helperFunctions = nullptr;
 static thread_local QStringList* g_helperPrototypes = nullptr;
-static thread_local int g_delayPartCounter = 0;
+static thread_local int g_globalDelayPartCounter = 0;
 
 static int getEepromOffset(const QString& key) {
     QList<QString> sortedKeys = g_eepromKeys.values();
@@ -267,54 +265,11 @@ static QString compileBlocks(
     const QHash<ComponentItem*, QString>* sanitizedMap = nullptr,
     QMap<QString, int>* eepromOffsets = nullptr,
     int* nextEepromOffset = nullptr,
-    QStringList* helperFunctions = nullptr,
-    const QString& eventNamePrefix = "",
-    int* delayPartCounter = nullptr
+    QStringList* helperFunctions = nullptr
 ) {
     // Resolve active parameters using thread-local variables if not passed
     QStringList* activeHelpers = helperFunctions ? helperFunctions : g_helperFunctions;
-    int* activeCounter = delayPartCounter;
-    if (!activeCounter) {
-        if (eventNamePrefix.isEmpty()) {
-            g_delayPartCounter = 0;
-        }
-        activeCounter = &g_delayPartCounter;
-    }
-    
-    QString activePrefix = eventNamePrefix;
-    if (activePrefix.isEmpty() && g_eventBlockStorage) {
-        for (auto it = g_eventBlockStorage->begin(); it != g_eventBlockStorage->end(); ++it) {
-            if (&(it.value()) == &blocks) {
-                QString key = it.key();
-                int colonIdx = key.indexOf(':');
-                if (colonIdx != -1) {
-                    QString compId = key.left(colonIdx);
-                    QString eventSub = key.mid(colonIdx + 1);
-                    QString compName = compId;
-                    
-                    if (g_sanitized) {
-                        for (auto sit = g_sanitized->begin(); sit != g_sanitized->end(); ++sit) {
-                            if (sit.key() && sit.key()->id() == compId) {
-                                compName = sit.value();
-                                break;
-                            }
-                        }
-                    } else {
-                        compName = sanitizeIdentifier(compId);
-                    }
-                    
-                    if (!eventSub.isEmpty()) {
-                        eventSub[0] = eventSub[0].toUpper();
-                    }
-                    
-                    activePrefix = QString("%1_event%2").arg(compName).arg(eventSub);
-                } else {
-                    activePrefix = sanitizeIdentifier(key);
-                }
-                break;
-            }
-        }
-    }
+
 
     // Build or use sanitized map
     QHash<ComponentItem*, QString> localSanitized;
@@ -661,9 +616,9 @@ static QString compileBlocks(
                 res += QString("%1digitalWrite(%2, !digitalRead(%2));\n").arg(indent).arg(resolvedPin);
             } else if (actionCmd == "DELAY") {
                 QString param = block.actionParam.trimmed().isEmpty() ? tgtName : block.actionParam.trimmed();
-                if (activeHelpers && !activePrefix.isEmpty() && activeCounter) {
-                    int nextPartIdx = ++(*activeCounter);
-                    QString nextPartName = QString("%1_delay_part%2").arg(activePrefix).arg(nextPartIdx);
+                if (activeHelpers) {
+                    g_globalDelayPartCounter++;
+                    QString nextPartName = QString("delay_continuation_%1").arg(g_globalDelayPartCounter);
                     res += QString("%1scheduleAsyncTask(%2, %3);\n").arg(indent).arg(param).arg(nextPartName);
                     
                     if (g_helperPrototypes) {
@@ -678,7 +633,7 @@ static QString compileBlocks(
                     }
                     
                     QVector<EventLogicBlock> remaining = blocks.mid(i + 1);
-                    QString nextBody = compileBlocks(remaining, components, baseIndentSpaces, owner, sanitizedMap, eepromOffsets, nextEepromOffset, activeHelpers, activePrefix, activeCounter);
+                    QString nextBody = compileBlocks(remaining, components, baseIndentSpaces, owner, sanitizedMap, eepromOffsets, nextEepromOffset, activeHelpers);
                     
                     QString helperCode = QString("void %1() {\n").arg(nextPartName);
                     helperCode += nextBody;
@@ -1230,10 +1185,9 @@ QString CodeGenerator::generateArduinoCode(
     
     QStringList localHelpers;
     QStringList localPrototypes;
-    g_eventBlockStorage = &eventBlockStorage;
     g_helperFunctions = &localHelpers;
     g_helperPrototypes = &localPrototypes;
-    g_delayPartCounter = 0;
+    g_globalDelayPartCounter = 0;
     
     // First, scan all CREATE_VAR blocks to pre-populate g_eepromKeyTypes with variable types!
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
@@ -1518,7 +1472,6 @@ QString CodeGenerator::generateArduinoCode(
     // Precompute sanitized identifiers per component to avoid repeated computation
     QHash<ComponentItem*, QString> sanitized;
     for (auto* comp : components) sanitized[comp] = sanitizeIdentifier(comp->name());
-    g_sanitized = &sanitized;
 
     // Initialize EEPROM address mapping registry for this generation
     QMap<QString, int> eepromOffsets;
@@ -2876,8 +2829,6 @@ QString CodeGenerator::generateArduinoCode(
 
     code += "}\n";
 
-    g_eventBlockStorage = nullptr;
-    g_sanitized = nullptr;
     g_helperFunctions = nullptr;
     g_helperPrototypes = nullptr;
 
@@ -2913,10 +2864,9 @@ QString CodeGenerator::compileComponentEvents(
 
     QStringList localHelpers;
     QStringList localPrototypes;
-    g_eventBlockStorage = &eventBlockStorage;
     g_helperFunctions = &localHelpers;
     g_helperPrototypes = &localPrototypes;
-    g_delayPartCounter = 0;
+    g_globalDelayPartCounter = 0;
 
     // First, scan all CREATE_VAR blocks to pre-populate g_eepromKeyTypes with variable types!
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
@@ -2956,7 +2906,6 @@ QString CodeGenerator::compileComponentEvents(
     for (auto* c : components) {
         sanitized[c] = sanitizeIdentifier(c->name());
     }
-    g_sanitized = &sanitized;
 
     QString name = sanitized.value(comp, sanitizeIdentifier(comp->name()));
     QString type = comp->componentType();
@@ -3578,8 +3527,6 @@ QString CodeGenerator::compileComponentEvents(
                 "// Eles modificam fisicamente as tensões e correntes na simulação.\n";
     }
 
-    g_eventBlockStorage = nullptr;
-    g_sanitized = nullptr;
     g_helperFunctions = nullptr;
     g_helperPrototypes = nullptr;
 
