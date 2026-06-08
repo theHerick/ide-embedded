@@ -28,7 +28,6 @@
 </tr>
 </table>
 
-
 **IDE Embedded** is a high-performance, native desktop platform for modeling, simulating, and generating code for event-driven embedded systems.
 
 Stop wrestling with low-level boilerplate, debounce logic, and hardcoded state machines. Model your hardware workspace visually, design robust logic with an intuitive block-based engine, and compile high-quality C++ code in seconds.
@@ -39,21 +38,35 @@ Visual Workspace (Components + Blocks) → IDE Embedded → Production C++ Code 
 
 Designed for speed, visual excellence, and a premium developer experience.
 
-## Pioneering Architecture
+---
+
+## ⚡ High-Performance Core Features (Recently Optimized)
+
+To deliver a state-of-the-art developer experience, the IDE architecture has been engineered with critical performance and safety optimizations:
+
+*   **O(1) Component Lookup Cache**: The simulator uses a high-performance hash mapping (`QHash`) to resolve and interact with component states instantly, bypassing legacy linear $O(n)$ search sweeps. This guarantees smooth, CPU-efficient simulation ticks even in dense workspaces.
+*   **Thread-Safe Code Generation**: Utilizes C++17 thread-local memory structures (`thread_local`) during compile passes, making compilation routines fully concurrent and safe from data races.
+*   **Collision-Free EEPROM Mapping**: Implements a deterministic, alphabetical pre-scan sequencer for visual state restoration variables, ensuring zero address collisions and clean memory layouts inside the microcontroler's EEPROM.
+*   **Zero-Boilerplate Event Sandwich**: Abstracted hardware monitoring (debouncing, noise filtering) from visual block logic so that user loops remain clean and lightweight.
+
+---
+
+## 🎨 Pioneering Architecture
+
 **IDE Embedded** is powered by a groundbreaking, event-oriented programming model for embedded components pioneered by **Herick B. Tiburski**. This methodology abstracts raw physical hardware signals and interrupts into clean, component-level logical events, establishing a pioneering paradigm shift in how embedded software is visually designed and modeled.
 
-## How it Works
+### How it Works (The Event Sandwich)
 
-IDE Embedded separates raw physical hardware signals from your core business logic using the **Event Sandwich** architecture:
+IDE Embedded separates raw physical hardware signals from your core business logic:
 
 ```text
                      Hardware Workspace (ESP32)
-                                │
-                                ▼
-         Physical Monitor (Automatic Debouncing & Hysteresis)
-                                │
-                                ▼
-         User Event Logic (High-Level Block functions)
+                                 │
+                                 ▼
+          Physical Monitor (Automatic Debouncing & Hysteresis)
+                                 │
+                                 ▼
+          User Event Logic (High-Level Block functions)
 ```
 
 1. **Hardware Monitors** directly track state, manage debouncing, and handle noise isolation in the background.
@@ -62,7 +75,7 @@ IDE Embedded separates raw physical hardware signals from your core business log
 
 ---
 
-## Features
+## 🌟 Key Features
 
 *   **Visual Block Editor** — drag-and-drop Sketchware-inspired interface. Create math expressions, loops, serial formatting, and manage persistent memory visually.
 *   **Custom Component Creator** — Design and define complex custom hardware parts with dedicated properties, pins, simulation behaviors, and semantic roles.
@@ -70,10 +83,11 @@ IDE Embedded separates raw physical hardware signals from your core business log
 *   **EEPROM State Persist Engine** — High-level persistent saving and restoring blocks that handle low-level memory offset management and C++ EEPROM commitments transparently.
 *   **Live Simulation Canvas** — Interactive QGraphicsView workspace displaying active motor rotations, buzzer audio ripples, glowing LEDs, and analog sensor readings in real-time.
 *   **Zero Boilerplate Generation** — Generates complete, compile-ready, and human-readable Arduino/ESP32 C++ sketches instantly.
+*   **Physical PCB Exporter** — Instantly export layout traces to Laser-cut PNG, Drill guide mapping, or schematic KiCad formats.
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Component | Technology |
 |---|---|
@@ -84,11 +98,11 @@ IDE Embedded separates raw physical hardware signals from your core business log
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-You need a fully functional C++ compiler supporting C++17 (e.g. GCC/MinGW) and the Qt6 SDK.
+You need a C++ compiler supporting C++17 (e.g. GCC/MinGW) and the Qt6 SDK.
 For the in-app PDF preview, install the optional **Qt6Pdf** module; without it the PDF tab shows a placeholder.
 
 ### Build and Launch (Windows)
@@ -106,9 +120,10 @@ cmake --build build
 # Launch the executable
 ./build/apps/ide/ide-embedded.exe
 ```
+
 ---
 
-## Build Automation, Commit, and Version Restoring
+## 📦 Build Automation, Commit, and Version Restoring
 
 To prevent any loss of progress, the IDE features an automated compilation, backup, and version-control system powered by Git.
 
@@ -123,18 +138,15 @@ Whenever you want to build the project and securely push your changes to GitHub,
 This script:
 1. Rebuilds the IDE with maximum release optimizations (`-O3` and Link-Time Optimization).
 2. Detects modifications in your codebase if the compilation is 100% successful.
-3. Automatically generates an incremental version tag titled **`ID:<number>`** (e.g., `ID:1`, `ID:2`, `ID:3`...).
+3. Automatically generates an incremental version tag titled **`ID:<number>`** (e.g., `ID:227`...).
 4. Pushes the commit directly to your remote repository on GitHub.
 
 ### 2. How to Restore an Older Version
-If you ever want to revert or examine a previous version (e.g., go back to `ID:2` or `ID:1`), you don't need to remember complex commit hashes! Simply use Git's text-matching feature:
+If you ever want to revert or examine a previous version, simply use Git's text-matching feature:
 
 ```powershell
 # Rollback the workspace state to version ID:2
 git checkout ":/ID:2"
-
-# Rollback the workspace state to version ID:1
-git checkout ":/ID:1"
 ```
 
 *   **To return to the latest code (continue developing)**:
@@ -144,17 +156,18 @@ git checkout ":/ID:1"
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
 ```text
 IDE-embedded/
 ├── apps/
-│   └── ide/              # Main executable entry point & UI (MainWindow, main.cpp)
+│   └── ide/              # Main executable entry point & UI (MainWindow, TutorialOverlay)
 ├── packages/
 │   ├── block-engine/     # Sketchware-style visual programming engine & variables
-│   ├── compiler/         # C++ Code Generator & physical PCB schematics exporter
-│   ├── simulator/        # Live interactive hardware simulation framework
+│   ├── compiler/         # C++ Code Generator & physical PCB schematics exporter (PcbExporter)
+│   ├── simulator/        # Live interactive hardware simulation framework (HardwareSimulator)
 │   └── workspace/        # Component canvas, routing cables, custom components Registry
+├── assets/               # Artwork, icons, and logo assets
 ├── examples/             # Sample components and workspace presets
 ├── CMakeLists.txt        # Root build orchestration
 └── EVENT_LOGIC_ARCHITECTURE.md
