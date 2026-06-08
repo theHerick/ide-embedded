@@ -34,7 +34,7 @@ jobs:
         if: success()
         run: |
           mkdir -p artifact
-          cp -R build/*.exe artifact/ || echo "No .exe found"
+          cp -R build/apps/ide/*.exe artifact/ || echo "No .exe found"
         shell: msys2 {0}
 
       - name: Upload artifact

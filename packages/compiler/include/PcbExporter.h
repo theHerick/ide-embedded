@@ -1,8 +1,11 @@
 #pragma once
 #include <QString>
 #include <QVector>
-#include "ComponentItem.h"
-#include "ConnectionCable.h"
+#include <QImage>
+
+class ComponentItem;
+class ConnectionCable;
+
 
 class PcbExporter {
 public:

@@ -30,3 +30,29 @@ cppcheck_cfg/
 
 # Test project files in root
 /teste.ideproject
+
+# Compiled binaries and objects
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.a
+*.lib
+*.la
+*.lai
+*.lo
+
+# Debug databases
+*.pdb
+*.ilk
+
+# CMake and IDE files
+CMakeUserPresets.json
+compile_commands.json
+.cache/
+*.autosave
+*.pro.user*
+out/
+

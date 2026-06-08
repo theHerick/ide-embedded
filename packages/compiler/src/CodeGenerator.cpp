@@ -1,32 +1,17 @@
 #include "CodeGenerator.h"
 #include "CustomComponent.h"
+#include "ComponentItem.h"
+#include "ConnectionCable.h"
+#include "WorkspaceScene.h"
 #include <QDebug>
 #include <QSet>
 #include <QRegularExpression>
 
-static bool isValidIdentifier(const QString& name) {
-    if (name.isEmpty()) return false;
-    QChar first = name.at(0);
-    if (!first.isLetter() && first != '_') return false;
-    for (int i = 1; i < name.length(); ++i) {
-        QChar c = name.at(i);
-        if (!c.isLetterOrNumber() && c != '_') return false;
-    }
-    static const QSet<QString> reserved = {
-        "if", "else", "while", "for", "switch", "case", "default", "break", "continue", "return",
-        "int", "float", "double", "char", "bool", "void", "String", "true", "false", "HIGH", "LOW",
-        "INPUT", "OUTPUT", "analogRead", "analogWrite", "digitalRead", "digitalWrite", "delay",
-        "Serial", "print", "println", "EEPROM", "commit", "put", "get", "restoredVal", "Valor"
-    };
-    if (reserved.contains(name)) return false;
-    if (name.startsWith("PIN_")) return false;
-    return true;
-}
-
 static QString compileMathFormula(QString formula) {
-    // Replace pi
-    formula.replace("pi", "3.14159265358979323846", Qt::CaseInsensitive);
+    // Replace pi using word boundaries to avoid matching inside other words (e.g. pin)
+    formula.replace(QRegularExpression("\\bpi\\b", QRegularExpression::CaseInsensitiveOption), "3.14159265358979323846");
     formula.replace("π", "3.14159265358979323846");
+
     
     // 1. Compile fraction(A, B) -> ((double)(A)/(B))
     QRegularExpression fracRegex("fraction\\(([^,]+),([^\\)]+)\\)");
@@ -75,8 +60,20 @@ static QString compileMathFormula(QString formula) {
     return formula;
 }
 
-static QSet<QString> g_eepromKeys;
-static QMap<QString, QString> g_eepromKeyTypes;
+static thread_local QSet<QString> g_eepromKeys;
+static thread_local QMap<QString, QString> g_eepromKeyTypes;
+
+static int getEepromOffset(const QString& key) {
+    QList<QString> sortedKeys = g_eepromKeys.values();
+    std::sort(sortedKeys.begin(), sortedKeys.end());
+    int idx = sortedKeys.indexOf(key);
+    if (idx != -1) {
+        return idx * 4;
+    }
+    // Fallback deterministic hash if key not found (should be rare)
+    return (qHash(key) % 120) * 4;
+}
+
 
 static QString sanitizeIdentifier(const QString& name) {
     QString res = name.normalized(QString::NormalizationForm_D).toUpper();
@@ -115,7 +112,7 @@ static QString getNumericSuffixFromSanitized(const QString& name) {
     return "";
 }
 
-#include <QSet>
+
 
 static QString formatSerialPart(const QString& part, const QSet<QString>& knownVars) {
     QString trimmed = part.trimmed();
@@ -166,7 +163,7 @@ static QString formatSerialPart(const QString& part, const QSet<QString>& knownV
     return QString("\"%1\"").arg(escaped);
 }
 
-#include <QRegularExpression>
+
 
 static QString replaceCustomComponentPlaceholders(QString text, CustomComponentItem* custom) {
     if (!custom) return text;
@@ -471,7 +468,7 @@ static QString compileBlocks(
                 }
             }
             
-            int offset = (qHash(keyName) % 120) * 4; // Map to 0-480 range in 4-byte steps
+            int offset = getEepromOffset(keyName);
             
             if (block.actionCommand == "SAVE") {
                 if (isComp && targetComp) {
@@ -2461,7 +2458,7 @@ QString CodeGenerator::generateArduinoCode(
         if (!g_eepromKeys.isEmpty()) {
             code += "    // Carregar registros da EEPROM para as variáveis\n";
             for (const auto& key : g_eepromKeys) {
-                int offset = (qHash(key) % 120) * 4;
+                int offset = getEepromOffset(key);
                 QString type = g_eepromKeyTypes.value(key, "int");
                 if (type == "String") {
                     code += QString("    %2 = EEPROM.readString(%1);\n").arg(offset).arg(key);
@@ -2771,6 +2768,43 @@ QString CodeGenerator::compileComponentEvents(
     const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage
 ) {
     if (!comp) return QString();
+
+    g_eepromKeys.clear();
+    g_eepromKeyTypes.clear();
+
+    // First, scan all CREATE_VAR blocks to pre-populate g_eepromKeyTypes with variable types!
+    for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
+        for (const auto& b : it.value()) {
+            if (b.type == LogicBlockType::CREATE_VAR) {
+                QString name = b.createVarName.trimmed().remove(" ");
+                if (!name.isEmpty()) {
+                    if (b.createVarType == VarType::STRING) {
+                        g_eepromKeyTypes[name] = "String";
+                    } else if (b.createVarType == VarType::FLOAT) {
+                        g_eepromKeyTypes[name] = "float";
+                    } else if (b.createVarType == VarType::BOOL) {
+                        g_eepromKeyTypes[name] = "bool";
+                    } else {
+                        g_eepromKeyTypes[name] = "int";
+                    }
+                }
+            }
+        }
+    }
+
+    for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
+        for (const auto& b : it.value()) {
+            if (b.type == LogicBlockType::EEPROM_OP) {
+                QString key = b.actionTarget.trimmed().remove(" ");
+                if (!key.isEmpty()) {
+                    g_eepromKeys.insert(key);
+                    if (!g_eepromKeyTypes.contains(key)) {
+                        g_eepromKeyTypes[key] = "int";
+                    }
+                }
+            }
+        }
+    }
 
     QHash<ComponentItem*, QString> sanitized;
     for (auto* c : components) {

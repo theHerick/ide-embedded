@@ -2,8 +2,12 @@
 #include <QString>
 #include <QVector>
 #include <QMap>
-#include "WorkspaceScene.h"
+#include <QJsonObject>
 #include "BlockEditor.h"
+
+class ComponentItem;
+class ConnectionCable;
+
 
 class CodeGenerator {
 public:

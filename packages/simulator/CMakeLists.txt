@@ -13,6 +13,5 @@ target_include_directories(simulator PUBLIC
 target_link_libraries(simulator PUBLIC
     Qt6::Core
     Qt6::Network
-    Qt6::Qml
     workspace
 )

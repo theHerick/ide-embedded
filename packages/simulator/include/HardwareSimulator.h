@@ -4,6 +4,7 @@
 #include <QMap>
 #include <QVector>
 #include <QVariant>
+#include <QJsonObject>
 #include "WorkspaceScene.h"
 #include "BlockEditor.h"
 
@@ -16,13 +17,8 @@ class HardwareSimulator : public QObject {
     Q_OBJECT
 public:
     explicit HardwareSimulator(QObject* parent = nullptr);
-    ~HardwareSimulator() {
-        m_soundThreadRunning = false;
-        m_activeBuzzerFreq = 0;
-        if (m_soundThread.joinable()) {
-            m_soundThread.join();
-        }
-    }
+    ~HardwareSimulator() override;
+
 
     void startSimulation(WorkspaceScene* scene, const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage, const QJsonObject& webPageData = QJsonObject());
     void stopSimulation();
@@ -40,7 +36,6 @@ public:
     double getComponentSimValue(const QString& nameOrId);
 
 signals:
-    void activeComponentChanged(const QString& compId, bool isActive);
     void simulationStopped();
     // Emitted whenever a digital output pin changes state during simulation
     void pinStateChanged(const QString& compId, const QString& pinName, bool isHigh);
@@ -98,4 +93,9 @@ private slots:
     void onNewConnection();
     void onReadyRead();
     void onClientDisconnected();
+
+private:
+    qint64 m_lastMedir = 0;
+    qint64 m_lastDht = 0;
+    QHash<QString, ComponentItem*> m_componentCache;
 };

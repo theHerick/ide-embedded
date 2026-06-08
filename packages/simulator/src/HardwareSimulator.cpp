@@ -10,8 +10,17 @@
 #include <windows.h>
 #endif
 
+static QString sanitizeIdentifier(const QString& name);
 
 HardwareSimulator::HardwareSimulator(QObject* parent) : QObject(parent) {}
+
+HardwareSimulator::~HardwareSimulator() {
+    m_soundThreadRunning = false;
+    m_activeBuzzerFreq = 0;
+    if (m_soundThread.joinable()) {
+        m_soundThread.join();
+    }
+}
 
 void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage, const QJsonObject& webPageData) {
     m_scene = scene;
@@ -21,6 +30,20 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
     m_motorSpeeds.clear();
     m_simVariables.clear();
     m_executingLoop.clear();
+
+    m_lastMedir = 0;
+    m_lastDht = 0;
+
+    m_componentCache.clear();
+    if (m_scene) {
+        for (auto* comp : m_scene->components()) {
+            if (comp) {
+                m_componentCache[comp->id()] = comp;
+                m_componentCache[comp->name()] = comp;
+                m_componentCache[sanitizeIdentifier(comp->name())] = comp;
+            }
+        }
+    }
     
     // Scan all event blocks for EEPROM keys to initialize them as variables
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
@@ -346,12 +369,10 @@ void HardwareSimulator::triggerLoopEvents() {
 void HardwareSimulator::triggerPeriodicEvents() {
     if (!m_isRunning || !m_scene) return;
     
-    static qint64 lastMedir = 0;
-    static qint64 lastDht = 0;
     qint64 now = QDateTime::currentMSecsSinceEpoch();
     
-    if (now - lastMedir >= 100) {
-        lastMedir = now;
+    if (now - m_lastMedir >= 100) {
+        m_lastMedir = now;
         for (auto* comp : m_scene->components()) {
             if (comp->componentType() == "hcsr04") {
                 QString eventKey = comp->id() + ":aoMedir";
@@ -364,8 +385,8 @@ void HardwareSimulator::triggerPeriodicEvents() {
         }
     }
     
-    if (now - lastDht >= 2000) {
-        lastDht = now;
+    if (now - m_lastDht >= 2000) {
+        m_lastDht = now;
         for (auto* comp : m_scene->components()) {
             if (comp->componentType() == "dht22") {
                 QString eventKey = comp->id() + ":aoCalcularUmidade";
@@ -459,9 +480,13 @@ void HardwareSimulator::triggerComponentEvent(const QString& compId, const QStri
 
 ComponentItem* HardwareSimulator::findComponent(const QString& target) {
     if (!m_scene) return nullptr;
+    QString clean = target.trimmed();
+    if (m_componentCache.contains(clean)) {
+        return m_componentCache.value(clean);
+    }
     for (auto* comp : m_scene->components()) {
         QString sName = sanitizeIdentifier(comp->name());
-        if (comp->id() == target || comp->name() == target || sName == target || (QString("PIN_") + sName) == target) {
+        if (comp->id() == clean || comp->name() == clean || sName == clean || (QString("PIN_") + sName) == clean) {
             return comp;
         }
     }

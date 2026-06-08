@@ -1,15 +1,12 @@
 #include "PcbExporter.h"
-#include <QFile>
-#include <QTextStream>
-#include <QMap>
+#include "ComponentItem.h"
+#include "ConnectionCable.h"
 #include <QSet>
-#include <QColor>
-#include <QImage>
 #include <QPainter>
-#include <QPainterPathStroker>
 #include <QPen>
 #include <cmath>
 #include <algorithm>
+
 
 // Helper to get consistent bounding box for layout and drill
 static QRectF calculatePcbBounds(const QVector<ComponentItem*>& components, const QVector<ConnectionCable*>& cables) {

@@ -29,8 +29,6 @@
 </table>
 
 
-<!-- trigger commit -->
-
 **IDE Embedded** is a high-performance, native desktop platform for modeling, simulating, and generating code for event-driven embedded systems.
 
 Stop wrestling with low-level boilerplate, debounce logic, and hardcoded state machines. Model your hardware workspace visually, design robust logic with an intuitive block-based engine, and compile high-quality C++ code in seconds.
