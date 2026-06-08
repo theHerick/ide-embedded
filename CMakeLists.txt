@@ -44,14 +44,3 @@ add_subdirectory(packages/block-engine)
 add_subdirectory(packages/compiler)
 add_subdirectory(packages/simulator)
 add_subdirectory(apps/ide)
-
-add_executable(test_codegen
-    scratch/test_codegen.cpp
-)
-target_link_libraries(test_codegen PRIVATE
-    Qt6::Widgets
-    compiler
-    workspace
-    block_engine
-    simulator
-)
