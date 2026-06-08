@@ -63,9 +63,6 @@ static QString compileMathFormula(QString formula) {
 static thread_local QSet<QString> g_eepromKeys;
 static thread_local QMap<QString, QString> g_eepromKeyTypes;
 
-static thread_local QStringList* g_helperFunctions = nullptr;
-static thread_local QStringList* g_helperPrototypes = nullptr;
-static thread_local int g_globalDelayPartCounter = 0;
 
 static int getEepromOffset(const QString& key) {
     QList<QString> sortedKeys = g_eepromKeys.values();
@@ -257,6 +254,18 @@ static QString replaceAllComponentNames(QString text, const QHash<ComponentItem*
     return text;
 }
 
+static bool blocksHaveDelay(const QVector<EventLogicBlock>& blocks) {
+    for (const auto& b : blocks) {
+        if (b.type == LogicBlockType::ACTION) {
+            QString cmd = b.actionCommand.toUpper();
+            if (cmd.contains("DELAY") || cmd.contains("AGUARD") || cmd.contains("MOTOR_SPIN_TIME")) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static QString compileBlocks(
     const QVector<EventLogicBlock>& blocks,
     const QVector<ComponentItem*>& components,
@@ -264,11 +273,8 @@ static QString compileBlocks(
     CustomComponentItem* owner = nullptr,
     const QHash<ComponentItem*, QString>* sanitizedMap = nullptr,
     QMap<QString, int>* eepromOffsets = nullptr,
-    int* nextEepromOffset = nullptr,
-    QStringList* helperFunctions = nullptr
+    int* nextEepromOffset = nullptr
 ) {
-    // Resolve active parameters using thread-local variables if not passed
-    QStringList* activeHelpers = helperFunctions ? helperFunctions : g_helperFunctions;
 
 
     // Build or use sanitized map
@@ -616,34 +622,7 @@ static QString compileBlocks(
                 res += QString("%1digitalWrite(%2, !digitalRead(%2));\n").arg(indent).arg(resolvedPin);
             } else if (actionCmd == "DELAY") {
                 QString param = block.actionParam.trimmed().isEmpty() ? tgtName : block.actionParam.trimmed();
-                if (activeHelpers) {
-                    g_globalDelayPartCounter++;
-                    QString nextPartName = QString("delay_continuation_%1").arg(g_globalDelayPartCounter);
-                    res += QString("%1scheduleAsyncTask(%2, %3);\n").arg(indent).arg(param).arg(nextPartName);
-                    
-                    if (g_helperPrototypes) {
-                        g_helperPrototypes->append(QString("void %1();").arg(nextPartName));
-                    }
-                    
-                    int tempNest = nestLevel;
-                    while (tempNest > 0) {
-                        tempNest--;
-                        QString fimIndent = QString(baseIndentSpaces + tempNest * 4, ' ');
-                        res += QString("%1} // Fechamento no Delay\n").arg(fimIndent);
-                    }
-                    
-                    QVector<EventLogicBlock> remaining = blocks.mid(i + 1);
-                    QString nextBody = compileBlocks(remaining, components, baseIndentSpaces, owner, sanitizedMap, eepromOffsets, nextEepromOffset, activeHelpers);
-                    
-                    QString helperCode = QString("void %1() {\n").arg(nextPartName);
-                    helperCode += nextBody;
-                    helperCode += "}\n\n";
-                    activeHelpers->append(helperCode);
-                    
-                    return res;
-                } else {
-                    res += QString("%1delay(%2);\n").arg(indent).arg(param);
-                }
+                res += QString("%1delay(%2);\n").arg(indent).arg(param);
             } else if (actionCmd == "ROTATE_MOTOR") {
                 QString param = block.actionParam.trimmed().isEmpty() ? "0" : block.actionParam.trimmed();
                 res += QString("%1// Rotacionando motor (requer objeto %2 instanciado)\n").arg(indent).arg(tgtName);
@@ -757,6 +736,83 @@ static QString compileBlocks(
     }
 
     return res;
+}
+
+static QString emitEventFunction(
+    const QString& fnName,
+    const QVector<EventLogicBlock>& blocks,
+    const QVector<ComponentItem*>& components,
+    int baseIndentSpaces,
+    CustomComponentItem* owner = nullptr,
+    const QHash<ComponentItem*, QString>* sanitizedMap = nullptr,
+    QMap<QString, int>* eepromOffsets = nullptr,
+    int* nextEepromOffset = nullptr,
+    const QString& signatureArgs = "",
+    const QString& argType = "",
+    const QString& argName = "",
+    const QString& prefixCode = "",
+    const QString& suffixCode = ""
+) {
+    if (blocks.isEmpty()) return "";
+    
+    QString eventBody = compileBlocks(blocks, components, baseIndentSpaces + 4, owner, sanitizedMap, eepromOffsets, nextEepromOffset);
+    if (eventBody.trimmed().isEmpty() && prefixCode.trimmed().isEmpty() && suffixCode.trimmed().isEmpty()) return "";
+    
+    QString code;
+    bool hasDelay = blocksHaveDelay(blocks);
+    QString outerIndent(baseIndentSpaces, ' ');
+    QString innerIndent(baseIndentSpaces + 4, ' ');
+    
+    if (hasDelay) {
+        QString taskName = fnName + "_task";
+        
+        code += QString("%1void %2(void* pvParameters) {\n").arg(outerIndent).arg(taskName);
+        if (!argName.isEmpty()) {
+            if (argType == "int") {
+                code += QString("%1    int %2 = (int)pvParameters;\n").arg(innerIndent).arg(argName);
+            } else if (argType == "String") {
+                code += QString("%1    String %2 = *(String*)pvParameters;\n").arg(innerIndent).arg(argName);
+                code += QString("%1    delete (String*)pvParameters;\n").arg(innerIndent);
+            }
+        }
+        if (!prefixCode.isEmpty()) {
+            code += prefixCode;
+        }
+        code += eventBody;
+        if (!suffixCode.isEmpty()) {
+            code += suffixCode;
+        }
+        code += QString("%1    vTaskDelete(NULL);\n").arg(innerIndent);
+        code += QString("%1}\n").arg(outerIndent);
+        
+        code += QString("%1void %2(%3) {\n").arg(outerIndent).arg(fnName).arg(signatureArgs);
+        QString label = fnName.left(15);
+        if (!argName.isEmpty()) {
+            if (argType == "int") {
+                code += QString("%1    xTaskCreate(%2, \"%3\", 2048, (void*)%4, 1, NULL);\n")
+                    .arg(innerIndent).arg(taskName).arg(label).arg(argName);
+            } else if (argType == "String") {
+                code += QString("%1    String* pVal = new String(%2);\n").arg(innerIndent).arg(argName);
+                code += QString("%1    xTaskCreate(%2, \"%3\", 2048, (void*)pVal, 1, NULL);\n")
+                    .arg(innerIndent).arg(taskName).arg(label);
+            }
+        } else {
+            code += QString("%1    xTaskCreate(%2, \"%3\", 2048, NULL, 1, NULL);\n").arg(innerIndent).arg(taskName).arg(label);
+        }
+        code += QString("%1}\n\n").arg(outerIndent);
+    } else {
+        code += QString("%1void %2(%3) {\n").arg(outerIndent).arg(fnName).arg(signatureArgs);
+        if (!prefixCode.isEmpty()) {
+            code += prefixCode;
+        }
+        code += eventBody;
+        if (!suffixCode.isEmpty()) {
+            code += suffixCode;
+        }
+        code += QString("%1}\n\n").arg(outerIndent);
+    }
+    
+    return code;
 }
 
 static bool isPowerRailPin(const QString& pinName) {
@@ -1183,12 +1239,6 @@ QString CodeGenerator::generateArduinoCode(
     g_eepromKeys.clear();
     g_eepromKeyTypes.clear();
     
-    QStringList localHelpers;
-    QStringList localPrototypes;
-    g_helperFunctions = &localHelpers;
-    g_helperPrototypes = &localPrototypes;
-    g_globalDelayPartCounter = 0;
-    
     // First, scan all CREATE_VAR blocks to pre-populate g_eepromKeyTypes with variable types!
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
         for (const auto& b : it.value()) {
@@ -1443,32 +1493,6 @@ QString CodeGenerator::generateArduinoCode(
         code += "\n";
     }
 
-    code += "// ── AGENDADOR DE TAREFAS ASSÍNCRONAS (NÃO-BLOQUEANTE) ──\n";
-    code += "struct AsyncTask {\n";
-    code += "    unsigned long executeTime;\n";
-    code += "    void (*callback)();\n";
-    code += "};\n";
-    code += "#define MAX_ASYNC_TASKS 32\n";
-    code += "AsyncTask asyncTasks[MAX_ASYNC_TASKS];\n";
-    code += "int asyncTaskCount = 0;\n\n";
-    code += "void scheduleAsyncTask(unsigned long delayMs, void (*callback)()) {\n";
-    code += "    if (asyncTaskCount < MAX_ASYNC_TASKS) {\n";
-    code += "        asyncTasks[asyncTaskCount++] = { millis() + delayMs, callback };\n";
-    code += "    }\n";
-    code += "}\n\n";
-    code += "void runAsyncTasks() {\n";
-    code += "    unsigned long now = millis();\n";
-    code += "    for (int i = 0; i < asyncTaskCount; ++i) {\n";
-    code += "        if (now >= asyncTasks[i].executeTime) {\n";
-    code += "            void (*cb)() = asyncTasks[i].callback;\n";
-    code += "            asyncTasks[i] = asyncTasks[--asyncTaskCount];\n";
-    code += "            i--;\n";
-    code += "            cb();\n";
-    code += "        }\n";
-    code += "    }\n";
-    code += "}\n\n";
-    code += "/* DELAY_PROTOTYPES_PLACEHOLDER */\n";
-
     // Precompute sanitized identifiers per component to avoid repeated computation
     QHash<ComponentItem*, QString> sanitized;
     for (auto* comp : components) sanitized[comp] = sanitizeIdentifier(comp->name());
@@ -1693,9 +1717,7 @@ QString CodeGenerator::generateArduinoCode(
                     continue;
                 }
                 code += QString("  // Slot de Evento: %1\n").arg(ev.name);
-                code += QString("  void %1_%2() {\n").arg(compName).arg(ev.callback);
-                code += compileBlocks(eventBlockStorage[eventKey], components, 6, custom, &sanitized, &eepromOffsets, &nextEepromOffset);
-                code += "  }\n";
+                code += emitEventFunction(QString("%1_%2").arg(compName).arg(ev.callback), eventBlockStorage[eventKey], components, 2, custom, &sanitized, &eepromOffsets, &nextEepromOffset);
             }
 
             // 2b. Monitores para eventos customizados (gerar como funções separadas)
@@ -1747,16 +1769,14 @@ QString CodeGenerator::generateArduinoCode(
             {
                 QString eventKey = QString("%1:aoClicar").arg(comp->id());
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    if (!eventBody.trimmed().isEmpty()) {
+                    QString fnName = QString("%1_eventAoClicar").arg(sanitizeIdentifier(comp->name()));
+                    QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                    if (!eventFunc.isEmpty()) {
                         if (!hasNativeHandlers) {
                             code += "// ── EVENTOS PADRÃO (BOTÃO/LED) ───────────────────────\n";
                             hasNativeHandlers = true;
                         }
-                        QString fnName = QString("%1_eventAoClicar").arg(sanitizeIdentifier(comp->name()));
-                        code += QString("void %1() {\n").arg(fnName);
-                        code += eventBody;
-                        code += "}\n\n";
+                        code += eventFunc;
                     }
                 }
             }
@@ -1764,16 +1784,14 @@ QString CodeGenerator::generateArduinoCode(
             {
                 QString eventKey = QString("%1:aoPressionar").arg(comp->id());
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    if (!eventBody.trimmed().isEmpty()) {
+                    QString fnName = QString("%1_eventAoPressionar").arg(sanitizeIdentifier(comp->name()));
+                    QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                    if (!eventFunc.isEmpty()) {
                         if (!hasNativeHandlers) {
                             code += "// ── EVENTOS PADRÃO (BOTÃO/LED) ───────────────────────\n";
                             hasNativeHandlers = true;
                         }
-                        QString fnName = QString("%1_eventAoPressionar").arg(sanitizeIdentifier(comp->name()));
-                        code += QString("void %1() {\n").arg(fnName);
-                        code += eventBody;
-                        code += "}\n\n";
+                        code += eventFunc;
                     }
                 }
             }
@@ -1781,82 +1799,69 @@ QString CodeGenerator::generateArduinoCode(
             {
                 QString eventKey = QString("%1:aoSoltar").arg(comp->id());
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    if (!eventBody.trimmed().isEmpty()) {
+                    QString fnName = QString("%1_eventAoSoltar").arg(sanitizeIdentifier(comp->name()));
+                    QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                    if (!eventFunc.isEmpty()) {
                         if (!hasNativeHandlers) {
                             code += "// ── EVENTOS PADRÃO (BOTÃO/LED) ───────────────────────\n";
                             hasNativeHandlers = true;
                         }
-                        QString fnName = QString("%1_eventAoSoltar").arg(sanitizeIdentifier(comp->name()));
-                        code += QString("void %1() {\n").arg(fnName);
-                        code += eventBody;
-                        code += "}\n\n";
+                        code += eventFunc;
                     }
                 }
             }
         } else if (comp->componentType() == "led") {
             QString eventKey = QString("%1:aoLigar").arg(comp->id());
             if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                if (eventBody.trimmed().isEmpty()) {
-                    continue;
-                }
-                if (!hasNativeHandlers) {
-                    code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
-                    hasNativeHandlers = true;
-                }
                 QString fnName = QString("%1_eventAoLigar").arg(sanitizeIdentifier(comp->name()));
-                code += QString("void %1() {\n").arg(fnName);
-                code += eventBody;
-                code += "}\n\n";
+                QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                if (!eventFunc.isEmpty()) {
+                    if (!hasNativeHandlers) {
+                        code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
+                        hasNativeHandlers = true;
+                    }
+                    code += eventFunc;
+                }
             }
         } else if (comp->componentType() == "potentiometer") {
             QString eventKey = QString("%1:aoGirar").arg(comp->id());
             if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                if (eventBody.trimmed().isEmpty()) {
-                    continue;
-                }
-                if (!hasNativeHandlers) {
-                    code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
-                    hasNativeHandlers = true;
-                }
                 QString fnName = QString("%1_eventAoGirar").arg(sanitizeIdentifier(comp->name()));
-                code += QString("void %1() {\n").arg(fnName);
-                code += eventBody;
-                code += "}\n\n";
+                QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                if (!eventFunc.isEmpty()) {
+                    if (!hasNativeHandlers) {
+                        code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
+                        hasNativeHandlers = true;
+                    }
+                    code += eventFunc;
+                }
             }
         } else if (comp->componentType() == "buzzer") {
             QString eventKey = QString("%1:aoTocar").arg(comp->id());
             if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                if (eventBody.trimmed().isEmpty()) {
-                    continue;
-                }
-                if (!hasNativeHandlers) {
-                    code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
-                    hasNativeHandlers = true;
-                }
                 QString fnName = QString("%1_eventAoTocar").arg(sanitizeIdentifier(comp->name()));
-                code += QString("void %1() {\n").arg(fnName);
-                code += eventBody;
-                code += "}\n\n";
+                QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                if (!eventFunc.isEmpty()) {
+                    if (!hasNativeHandlers) {
+                        code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
+                        hasNativeHandlers = true;
+                    }
+                    code += eventFunc;
+                }
             }
         } else if (comp->componentType() == "dht22") {
             // aoCalcularUmidade
             {
                 QString eventKey = QString("%1:aoCalcularUmidade").arg(comp->id());
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    if (!eventBody.trimmed().isEmpty()) {
+                    QString fnName = QString("%1_eventAoCalcularUmidade").arg(sanitizeIdentifier(comp->name()));
+                    QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                    if (!eventFunc.isEmpty()) {
                         if (!hasNativeHandlers) {
                             code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
                             hasNativeHandlers = true;
                         }
-                        QString fnName = QString("%1_eventAoCalcularUmidade").arg(sanitizeIdentifier(comp->name()));
-                        code += QString("void %1() {\n").arg(fnName);
-                        code += eventBody;
-                        code += "}\n\n";
+                        code += eventFunc;
                     }
                 }
             }
@@ -1864,16 +1869,14 @@ QString CodeGenerator::generateArduinoCode(
             {
                 QString eventKey = QString("%1:aoCalcularTemperatura").arg(comp->id());
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    if (!eventBody.trimmed().isEmpty()) {
+                    QString fnName = QString("%1_eventAoCalcularTemperatura").arg(sanitizeIdentifier(comp->name()));
+                    QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                    if (!eventFunc.isEmpty()) {
                         if (!hasNativeHandlers) {
                             code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
                             hasNativeHandlers = true;
                         }
-                        QString fnName = QString("%1_eventAoCalcularTemperatura").arg(sanitizeIdentifier(comp->name()));
-                        code += QString("void %1() {\n").arg(fnName);
-                        code += eventBody;
-                        code += "}\n\n";
+                        code += eventFunc;
                     }
                 }
             }
@@ -1882,16 +1885,14 @@ QString CodeGenerator::generateArduinoCode(
             {
                 QString eventKey = QString("%1:aoMedir").arg(comp->id());
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    if (!eventBody.trimmed().isEmpty()) {
+                    QString fnName = QString("%1_eventAoMedir").arg(sanitizeIdentifier(comp->name()));
+                    QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                    if (!eventFunc.isEmpty()) {
                         if (!hasNativeHandlers) {
                             code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
                             hasNativeHandlers = true;
                         }
-                        QString fnName = QString("%1_eventAoMedir").arg(sanitizeIdentifier(comp->name()));
-                        code += QString("void %1() {\n").arg(fnName);
-                        code += eventBody;
-                        code += "}\n\n";
+                        code += eventFunc;
                     }
                 }
             }
@@ -2138,36 +2139,57 @@ QString CodeGenerator::generateArduinoCode(
             if (type == "Button") {
                 QString eventKey = QString("%1:aoClicar").arg(id);
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    if (!eventBody.trimmed().isEmpty()) {
-                        code += QString("void %1_eventAoClicar() {\n").arg(id);
-                        code += eventBody;
-                        code += "}\n\n";
-                    }
+                    code += emitEventFunction(
+                        QString("%1_eventAoClicar").arg(id),
+                        eventBlockStorage[eventKey],
+                        components,
+                        0,
+                        nullptr,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset
+                    );
                 }
             } else if (type == "Text") {
                 QString eventKey = QString("%1:aoAtualizar").arg(id);
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
                     // Create a hidden global string for this text
                     code += QString("String val_%1 = \"\";\n").arg(id);
-                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    if (!eventBody.trimmed().isEmpty()) {
-                        code += QString("void %1_eventAoAtualizar() {\n").arg(id);
-                        code += QString("    String %1 = val_%1;\n").arg(id);
-                        code += eventBody;
-                        code += QString("    val_%1 = %1;\n").arg(id);
-                        code += "}\n\n";
-                    }
+                    QString prefix = QString("    String %1 = val_%1;\n").arg(id);
+                    QString suffix = QString("    val_%1 = %1;\n").arg(id);
+                    code += emitEventFunction(
+                        QString("%1_eventAoAtualizar").arg(id),
+                        eventBlockStorage[eventKey],
+                        components,
+                        0,
+                        nullptr,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset,
+                        "", // signatureArgs
+                        "", // argType
+                        "", // argName
+                        prefix,
+                        suffix
+                    );
                 }
             } else if (type == "Input" || type == "Slider") {
                 QString eventKey = QString("%1:aoAlterar").arg(id);
                 if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
-                    QString eventBody = compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    if (!eventBody.trimmed().isEmpty()) {
-                        code += QString("void %1_eventAoAlterar(%2 %1) {\n").arg(id).arg(type == "Slider" ? "int" : "String");
-                        code += eventBody;
-                        code += "}\n\n";
-                    }
+                    QString sigArgs = QString("%1 %2").arg(type == "Slider" ? "int" : "String").arg(id);
+                    code += emitEventFunction(
+                        QString("%1_eventAoAlterar").arg(id),
+                        eventBlockStorage[eventKey],
+                        components,
+                        0,
+                        nullptr,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset,
+                        sigArgs,
+                        type == "Slider" ? "int" : "String",
+                        id
+                    );
                 }
                 if (type == "Slider") {
                     QString eventKeyOff = QString("%1:aoZerar").arg(id);
@@ -2175,13 +2197,21 @@ QString CodeGenerator::generateArduinoCode(
                         eventKeyOff = QString("%1:aoDesligar").arg(id);
                     }
                     if (eventBlockStorage.contains(eventKeyOff) && !eventBlockStorage[eventKeyOff].isEmpty()) {
-                        QString eventBody = compileBlocks(eventBlockStorage[eventKeyOff], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-                        if (!eventBody.trimmed().isEmpty()) {
-                            code += QString("void %1_eventAoZerar() {\n").arg(id);
-                            code += QString("    String %1 = \"0\";\n").arg(id);
-                            code += eventBody;
-                            code += "}\n\n";
-                        }
+                        QString prefix = QString("    String %1 = \"0\";\n").arg(id);
+                        code += emitEventFunction(
+                            QString("%1_eventAoZerar").arg(id),
+                            eventBlockStorage[eventKeyOff],
+                            components,
+                            0,
+                            nullptr,
+                            &sanitized,
+                            &eepromOffsets,
+                            &nextEepromOffset,
+                            "", // signatureArgs
+                            "", // argType
+                            "", // argName
+                            prefix
+                        );
                     }
                 }
             }
@@ -2617,7 +2647,6 @@ QString CodeGenerator::generateArduinoCode(
 
     // 5. Loop function (handling Button click events and LED triggers)
     code += "void loop() {\n";
-    code += "    runAsyncTasks(); // Executa tarefas assíncronas agendadas\n";
     if (webPageData.value("enabled").toBool()) {
         code += "    server.handleClient(); // Processa requisições do Web Dashboard\n";
         
@@ -2829,26 +2858,6 @@ QString CodeGenerator::generateArduinoCode(
 
     code += "}\n";
 
-    g_helperFunctions = nullptr;
-    g_helperPrototypes = nullptr;
-
-    QString prototypesStr;
-    if (!localPrototypes.isEmpty()) {
-        prototypesStr += "// ── PROTÓTIPOS DE AUXILIARES DE DELAY ──────────────────\n";
-        for (const auto& proto : localPrototypes) {
-            prototypesStr += proto + "\n";
-        }
-        prototypesStr += "\n";
-    }
-    code.replace("/* DELAY_PROTOTYPES_PLACEHOLDER */\n", prototypesStr);
-
-    if (!localHelpers.isEmpty()) {
-        code += "\n// ── FUNÇÕES AUXILIARES DE DELAY ────────────────────────\n";
-        for (const auto& helper : localHelpers) {
-            code += helper;
-        }
-    }
-
     return code;
 }
 
@@ -2861,12 +2870,6 @@ QString CodeGenerator::compileComponentEvents(
 
     g_eepromKeys.clear();
     g_eepromKeyTypes.clear();
-
-    QStringList localHelpers;
-    QStringList localPrototypes;
-    g_helperFunctions = &localHelpers;
-    g_helperPrototypes = &localPrototypes;
-    g_globalDelayPartCounter = 0;
 
     // First, scan all CREATE_VAR blocks to pre-populate g_eepromKeyTypes with variable types!
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
@@ -2910,7 +2913,6 @@ QString CodeGenerator::compileComponentEvents(
     QString name = sanitized.value(comp, sanitizeIdentifier(comp->name()));
     QString type = comp->componentType();
     QString code;
-    code += "/* DELAY_PROTOTYPES_PLACEHOLDER */\n";
 
     // EEPROM offset tracking for variable blocks
     QMap<QString, int> eepromOffsets;
@@ -2959,9 +2961,16 @@ QString CodeGenerator::compileComponentEvents(
         bool hasPress = eventBlockStorage.contains(pressKey) && !eventBlockStorage[pressKey].isEmpty();
         if (hasPress) {
             code += "// Função executada quando o botão é pressionado (aoPressionar)\n";
-            code += QString("void %1_eventAoPressionar() {\n").arg(name);
-            code += compileBlocks(eventBlockStorage[pressKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-            code += "}\n\n";
+            code += emitEventFunction(
+                QString("%1_eventAoPressionar").arg(name),
+                eventBlockStorage[pressKey],
+                components,
+                0,
+                nullptr,
+                &sanitized,
+                &eepromOffsets,
+                &nextEepromOffset
+            );
         } else {
             code += "// Função executada quando o botão é pressionado (aoPressionar)\n"
                     "void aoPressionar() {\n"
@@ -2974,9 +2983,16 @@ QString CodeGenerator::compileComponentEvents(
         bool hasRelease = eventBlockStorage.contains(releaseKey) && !eventBlockStorage[releaseKey].isEmpty();
         if (hasRelease) {
             code += "// Função executada quando o botão é solto/liberado (aoSoltar)\n";
-            code += QString("void %1_eventAoSoltar() {\n").arg(name);
-            code += compileBlocks(eventBlockStorage[releaseKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-            code += "}\n\n";
+            code += emitEventFunction(
+                QString("%1_eventAoSoltar").arg(name),
+                eventBlockStorage[releaseKey],
+                components,
+                0,
+                nullptr,
+                &sanitized,
+                &eepromOffsets,
+                &nextEepromOffset
+            );
         } else {
             code += "// Função executada quando o botão é solto/liberado (aoSoltar)\n"
                     "void aoSoltar() {\n"
@@ -2989,9 +3005,16 @@ QString CodeGenerator::compileComponentEvents(
         bool hasClick = eventBlockStorage.contains(clickKey) && !eventBlockStorage[clickKey].isEmpty();
         if (hasClick) {
             code += "// Função executada após o ciclo completo de clique (aoClicar)\n";
-            code += QString("void %1_eventAoClicar() {\n").arg(name);
-            code += compileBlocks(eventBlockStorage[clickKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-            code += "}\n\n";
+            code += emitEventFunction(
+                QString("%1_eventAoClicar").arg(name),
+                eventBlockStorage[clickKey],
+                components,
+                0,
+                nullptr,
+                &sanitized,
+                &eepromOffsets,
+                &nextEepromOffset
+            );
         } else {
             code += "// Função executada após o ciclo completo de clique (aoClicar)\n"
                     "void aoClicar() {\n"
@@ -3073,9 +3096,16 @@ QString CodeGenerator::compileComponentEvents(
         bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
         if (hasEvent) {
             code += "// Função executada quando o LED liga de forma estável (aoLigar)\n";
-            code += QString("void %1_eventAoLigar() {\n").arg(name);
-            code += compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-            code += "}\n\n";
+            code += emitEventFunction(
+                QString("%1_eventAoLigar").arg(name),
+                eventBlockStorage[eventKey],
+                components,
+                0,
+                nullptr,
+                &sanitized,
+                &eepromOffsets,
+                &nextEepromOffset
+            );
         } else {
             code += "// Função executada quando o LED liga de forma estável (aoLigar)\n"
                     "void aoLigar() {\n"
@@ -3109,9 +3139,19 @@ QString CodeGenerator::compileComponentEvents(
         if (hasEvent) {
             code += "// Função executada continuamente quando o potenciômetro é girado (aoGirar)\n"
                     "// O parâmetro 'valor' contém a leitura analógica quantizada no ADC (0 a 4095)\n";
-            code += QString("void %1_eventAoGirar(int valor) {\n").arg(name);
-            code += compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-            code += "}\n\n";
+            code += emitEventFunction(
+                QString("%1_eventAoGirar").arg(name),
+                eventBlockStorage[eventKey],
+                components,
+                0,
+                nullptr,
+                &sanitized,
+                &eepromOffsets,
+                &nextEepromOffset,
+                "int valor", // signatureArgs
+                "int",       // argType
+                "valor"      // argName
+            );
         } else {
             code += "// Função executada continuamente quando o potenciômetro é girado (aoGirar)\n"
                     "// O parâmetro 'valor' contém a leitura analógica quantizada no ADC (0 a 4095)\n"
@@ -3145,9 +3185,16 @@ QString CodeGenerator::compileComponentEvents(
         bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
         if (hasEvent) {
             code += "// Função executada quando o buzzer é ativado (aoTocar)\n";
-            code += QString("void %1_eventAoTocar() {\n").arg(name);
-            code += compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
-            code += "}\n\n";
+            code += emitEventFunction(
+                QString("%1_eventAoTocar").arg(name),
+                eventBlockStorage[eventKey],
+                components,
+                0,
+                nullptr,
+                &sanitized,
+                &eepromOffsets,
+                &nextEepromOffset
+            );
         } else {
             code += "// Função executada quando o buzzer é ativado (aoTocar)\n"
                     "void aoTocar() {\n"
@@ -3180,11 +3227,20 @@ QString CodeGenerator::compileComponentEvents(
             QString eventKey = QString("%1:aoCalcularUmidade").arg(comp->id());
             bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
             code += "// Função executada quando a umidade é calculada (aoCalcularUmidade)\n";
-            code += QString("void %1_eventAoCalcularUmidade() {\n").arg(name);
             if (hasEvent) {
-                code += compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                code += emitEventFunction(
+                    QString("%1_eventAoCalcularUmidade").arg(name),
+                    eventBlockStorage[eventKey],
+                    components,
+                    0,
+                    nullptr,
+                    &sanitized,
+                    &eepromOffsets,
+                    &nextEepromOffset
+                );
+            } else {
+                code += QString("void %1_eventAoCalcularUmidade() {\n}\n\n").arg(name);
             }
-            code += "}\n\n";
         }
 
         // aoCalcularTemperatura
@@ -3192,11 +3248,20 @@ QString CodeGenerator::compileComponentEvents(
             QString eventKey = QString("%1:aoCalcularTemperatura").arg(comp->id());
             bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
             code += "// Função executada quando a temperatura é calculada (aoCalcularTemperatura)\n";
-            code += QString("void %1_eventAoCalcularTemperatura() {\n").arg(name);
             if (hasEvent) {
-                code += compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                code += emitEventFunction(
+                    QString("%1_eventAoCalcularTemperatura").arg(name),
+                    eventBlockStorage[eventKey],
+                    components,
+                    0,
+                    nullptr,
+                    &sanitized,
+                    &eepromOffsets,
+                    &nextEepromOffset
+                );
+            } else {
+                code += QString("void %1_eventAoCalcularTemperatura() {\n}\n\n").arg(name);
             }
-            code += "}\n\n";
         }
 
     } else if (type == "hcsr04") {
@@ -3209,11 +3274,20 @@ QString CodeGenerator::compileComponentEvents(
             QString eventKey = QString("%1:aoMedir").arg(comp->id());
             bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
             code += "// Função executada ao medir a distância (aoMedir)\n";
-            code += QString("void %1_eventAoMedir() {\n").arg(name);
             if (hasEvent) {
-                code += compileBlocks(eventBlockStorage[eventKey], components, 4, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                code += emitEventFunction(
+                    QString("%1_eventAoMedir").arg(name),
+                    eventBlockStorage[eventKey],
+                    components,
+                    0,
+                    nullptr,
+                    &sanitized,
+                    &eepromOffsets,
+                    &nextEepromOffset
+                );
+            } else {
+                code += QString("void %1_eventAoMedir() {\n}\n\n").arg(name);
             }
-            code += "}\n\n";
         }
 
     } else if (type == "motor") {
@@ -3288,9 +3362,16 @@ QString CodeGenerator::compileComponentEvents(
                 if (hasEvent) {
                     code += QString("// Evento: %1\n"
                                     "// Gatilho: %2 (Debounce: %3ms)\n").arg(ev.name).arg(ev.triggerMode).arg(ev.debounceMs);
-                    code += QString("void %1_%2() {\n").arg(name).arg(ev.callback);
-                    code += compileBlocks(eventBlockStorage[eventKey], components, 4, custom, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    code += "}\n\n";
+                    code += emitEventFunction(
+                        QString("%1_%2").arg(name).arg(ev.callback),
+                        eventBlockStorage[eventKey],
+                        components,
+                        0,
+                        custom,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset
+                    );
                 } else {
                     code += QString("// Evento: %1\n"
                                     "// Gatilho: %2 (Debounce: %3ms)\n"
@@ -3330,10 +3411,16 @@ QString CodeGenerator::compileComponentEvents(
                 QString clickKey = QString("%1:aoClicar").arg(custom->id());
                 bool hasClick = eventBlockStorage.contains(clickKey) && !eventBlockStorage[clickKey].isEmpty();
                 if (hasClick) {
-                    code += "// Evento disparado no clique do componente\n";
-                    code += QString("void %1_eventAoClicar() {\n").arg(name);
-                    code += compileBlocks(eventBlockStorage[clickKey], components, 4, custom, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    code += "}\n\n";
+                    code += emitEventFunction(
+                        QString("%1_eventAoClicar").arg(name),
+                        eventBlockStorage[clickKey],
+                        components,
+                        0,
+                        custom,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset
+                    );
                 } else {
                     code += "// Evento disparado no clique do componente\n"
                             "void aoClicar() {\n"
@@ -3345,20 +3432,32 @@ QString CodeGenerator::compileComponentEvents(
                 QString pressKey = QString("%1:aoPressionar").arg(custom->id());
                 bool hasPress = eventBlockStorage.contains(pressKey) && !eventBlockStorage[pressKey].isEmpty();
                 if (hasPress) {
-                    code += "// Evento disparado quando pressionado\n";
-                    code += QString("void %1_eventAoPressionar() {\n").arg(name);
-                    code += compileBlocks(eventBlockStorage[pressKey], components, 4, custom, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    code += "}\n\n";
+                    code += emitEventFunction(
+                        QString("%1_eventAoPressionar").arg(name),
+                        eventBlockStorage[pressKey],
+                        components,
+                        0,
+                        custom,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset
+                    );
                 }
 
                 // aoSoltar
                 QString releaseKey = QString("%1:aoSoltar").arg(custom->id());
                 bool hasRelease = eventBlockStorage.contains(releaseKey) && !eventBlockStorage[releaseKey].isEmpty();
                 if (hasRelease) {
-                    code += "// Evento disparado quando solto\n";
-                    code += QString("void %1_eventAoSoltar() {\n").arg(name);
-                    code += compileBlocks(eventBlockStorage[releaseKey], components, 4, custom, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    code += "}\n\n";
+                    code += emitEventFunction(
+                        QString("%1_eventAoSoltar").arg(name),
+                        eventBlockStorage[releaseKey],
+                        components,
+                        0,
+                        custom,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset
+                    );
                 }
 
                 code += "// ========================================== \n"
@@ -3430,10 +3529,16 @@ QString CodeGenerator::compileComponentEvents(
                 QString eventKey = QString("%1:aoLigar").arg(custom->id());
                 bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
                 if (hasEvent) {
-                    code += "// Evento disparado quando o atuador digital liga\n";
-                    code += QString("void %1_eventAoLigar() {\n").arg(name);
-                    code += compileBlocks(eventBlockStorage[eventKey], components, 4, custom, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    code += "}\n\n";
+                    code += emitEventFunction(
+                        QString("%1_eventAoLigar").arg(name),
+                        eventBlockStorage[eventKey],
+                        components,
+                        0,
+                        custom,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset
+                    );
                 } else {
                     code += "// Evento disparado quando o atuador digital liga\n"
                             "void aoLigar() {\n"
@@ -3459,10 +3564,19 @@ QString CodeGenerator::compileComponentEvents(
                 QString eventKey = QString("%1:aoGirar").arg(custom->id());
                 bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
                 if (hasEvent) {
-                    code += "// Evento disparado quando a leitura analógica muda\n";
-                    code += QString("void %1_eventAoGirar(int valor) {\n").arg(name);
-                    code += compileBlocks(eventBlockStorage[eventKey], components, 4, custom, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    code += "}\n\n";
+                    code += emitEventFunction(
+                        QString("%1_eventAoGirar").arg(name),
+                        eventBlockStorage[eventKey],
+                        components,
+                        0,
+                        custom,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset,
+                        "int valor", // signatureArgs
+                        "int",       // argType
+                        "valor"      // argName
+                    );
                 } else {
                     code += "// Evento disparado quando a leitura analógica muda\n"
                             "void aoGirar(int valor) {\n"
@@ -3488,10 +3602,16 @@ QString CodeGenerator::compileComponentEvents(
                 QString eventKey = QString("%1:aoTocar").arg(custom->id());
                 bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
                 if (hasEvent) {
-                    code += "// Evento disparado quando o atuador ativo é acionado\n";
-                    code += QString("void %1_eventAoTocar() {\n").arg(name);
-                    code += compileBlocks(eventBlockStorage[eventKey], components, 4, custom, &sanitized, &eepromOffsets, &nextEepromOffset);
-                    code += "}\n\n";
+                    code += emitEventFunction(
+                        QString("%1_eventAoTocar").arg(name),
+                        eventBlockStorage[eventKey],
+                        components,
+                        0,
+                        custom,
+                        &sanitized,
+                        &eepromOffsets,
+                        &nextEepromOffset
+                    );
                 } else {
                     code += "// Evento disparado quando o atuador ativo é acionado\n"
                             "void aoTocar() {\n"
@@ -3525,26 +3645,6 @@ QString CodeGenerator::compileComponentEvents(
                 "// ========================================== \n\n"
                 "// Componentes passivos ou genéricos não executam códigos C++ de evento.\n"
                 "// Eles modificam fisicamente as tensões e correntes na simulação.\n";
-    }
-
-    g_helperFunctions = nullptr;
-    g_helperPrototypes = nullptr;
-
-    QString prototypesStr;
-    if (!localPrototypes.isEmpty()) {
-        prototypesStr += "// ── PROTÓTIPOS DE AUXILIARES DE DELAY ──────────────────\n";
-        for (const auto& proto : localPrototypes) {
-            prototypesStr += proto + "\n";
-        }
-        prototypesStr += "\n";
-    }
-    code.replace("/* DELAY_PROTOTYPES_PLACEHOLDER */\n", prototypesStr);
-
-    if (!localHelpers.isEmpty()) {
-        code += "\n// ── FUNÇÕES AUXILIARES DE DELAY ────────────────────────\n";
-        for (const auto& helper : localHelpers) {
-            code += helper;
-        }
     }
 
     return code;
