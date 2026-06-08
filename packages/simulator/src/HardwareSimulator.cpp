@@ -465,6 +465,60 @@ void HardwareSimulator::updateSensorVariables() {
             m_simVariables["temperatura" + suf] = dht->temperature();
         }
     }
+
+    // Propagate Relay states to connected loads (like Lamp)
+    for (auto* comp : m_scene->components()) {
+        if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
+            if (custom->definition().type == "lamp") {
+                // Determine if Lamp is connected to an active power source
+                bool powered = false;
+                
+                // Let's trace from all pins of the lamp to see if any connects to a live contact
+                for (const auto& pin : custom->pins()) {
+                    if (pin.name == "FASE" || pin.name == "P1" || pin.name == "L") {
+                        struct ConnectionHop { ComponentItem* comp; QString pinName; };
+                        QVector<ConnectionHop> frontier;
+                        QSet<QString> visited;
+                        
+                        frontier.push_back({custom, pin.name});
+                        
+                        while (!frontier.isEmpty()) {
+                            auto hop = frontier.takeFirst();
+                            QString key = QString("%1:%2").arg(hop.comp->id()).arg(hop.pinName);
+                            if (visited.contains(key)) continue;
+                            visited.insert(key);
+                            
+                            // Check if this hop is a Relay output pin
+                            if (auto* relay = dynamic_cast<RelayItem*>(hop.comp)) {
+                                if (hop.pinName == "NO" && relay->isOn()) {
+                                    powered = true;
+                                    break;
+                                }
+                                if (hop.pinName == "NC" && !relay->isOn()) {
+                                    powered = true;
+                                    break;
+                                }
+                            }
+                            
+                            // Traverse through cables
+                            for (auto* cable : m_scene->cables()) {
+                                if (cable->sourceComponent() == hop.comp && cable->sourcePinName() == hop.pinName) {
+                                    frontier.push_back({cable->targetComponent(), cable->targetPinName()});
+                                }
+                                if (cable->targetComponent() == hop.comp && cable->targetPinName() == hop.pinName) {
+                                    frontier.push_back({cable->sourceComponent(), cable->sourcePinName()});
+                                }
+                            }
+                        }
+                        if (powered) break;
+                    }
+                }
+                if (custom->isOn() != powered) {
+                    custom->setOn(powered);
+                }
+            }
+        }
+    }
 }
 
 void HardwareSimulator::triggerComponentEvent(const QString& compId, const QString& eventName) {
