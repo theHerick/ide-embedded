@@ -1,38 +1,172 @@
 [
-  {
-    "type": "lamp",
-    "name": "Lâmpada com Bocal",
-    "width": 85,
-    "height": 85,
-    "color": "#78716C",
-    "shape": "circle",
-    "category": "digital_actuator",
-    "labelText": "LÂMPADA",
-    "operatingVoltage": "110V",
-    "logicLevel": "AC",
-    "pins": [
-      {
-        "name": "FASE",
-        "side": "Left",
-        "color": "#EF4444",
-        "isOutput": false,
-        "generateCode": false,
-        "role": "signal",
-        "direction": "in",
-        "signalType": "digital",
-        "electricalType": "generic"
-      },
-      {
-        "name": "NEUTRO",
-        "side": "Right",
+    {
+        "actuatorType": "",
+        "cacheReadValue": false,
+        "capabilities": [
+        ],
+        "category": "digital_actuator",
+        "codeGlobals": "",
+        "codeIncludes": "",
+        "codeReadExpression": "",
+        "codeSetup": "",
+        "color": "#78716C",
+        "communicationType": "",
+        "currentConsumption": 0,
+        "customEvents": [
+        ],
+        "customFunctions": [
+        ],
+        "customLoop": "",
+        "handlesOwnPinSetup": false,
+        "height": 85,
+        "incompatibilities": [
+        ],
+        "labelText": "LÂMPADA",
+        "logicLevel": "AC",
+        "loopBlocks": [
+        ],
+        "loopDeclarations": [
+        ],
+        "maxValue": 100,
+        "measurementMethod": "adc",
+        "minValue": 0,
+        "name": "Lâmpada com Bocal",
+        "operatingVoltage": "110V",
+        "outputs": [
+        ],
+        "pinRelations": [
+        ],
+        "pins": [
+            {
+                "color": "#EF4444",
+                "direction": "in",
+                "electricalType": "generic",
+                "generateCode": false,
+                "isOutput": false,
+                "name": "FASE",
+                "role": "signal",
+                "side": "Left",
+                "signalType": "digital"
+            },
+            {
+                "color": "#3B82F6",
+                "direction": "in",
+                "electricalType": "generic",
+                "generateCode": false,
+                "isOutput": false,
+                "name": "NEUTRO",
+                "role": "ground",
+                "side": "Right",
+                "signalType": "digital"
+            }
+        ],
+        "protocol": "none",
+        "pulldownRequired": false,
+        "pullupRequired": false,
+        "readCost": 1,
+        "readType": "polling",
+        "requiredAdapters": [
+        ],
+        "requiresStateCache": false,
+        "sensorType": "",
+        "setupBlocks": [
+        ],
+        "shape": "circle",
+        "simBehavior": "static",
+        "simDefaultValue": 0,
+        "simWaveform": "none",
+        "technology": "",
+        "type": "lamp",
+        "updateIntervalMs": 0,
+        "updatePolicy": "on_demand",
+        "valueUnit": "",
+        "warnings": [
+        ],
+        "width": 85
+    },
+    {
+        "actuatorType": "",
+        "cacheReadValue": false,
+        "capabilities": [
+        ],
+        "category": "digital_trigger",
+        "codeGlobals": "",
+        "codeIncludes": "",
+        "codeReadExpression": "",
+        "codeSetup": "",
         "color": "#3B82F6",
-        "isOutput": false,
-        "generateCode": false,
-        "role": "ground",
-        "direction": "in",
-        "signalType": "digital",
-        "electricalType": "generic"
-      }
-    ]
-  }
+        "communicationType": "",
+        "currentConsumption": 0,
+        "customEvents": [
+        ],
+        "customFunctions": [
+        ],
+        "customLoop": "",
+        "handlesOwnPinSetup": false,
+        "height": 80,
+        "incompatibilities": [
+        ],
+        "labelText": "TESTE",
+        "logicLevel": "3V3",
+        "loopBlocks": [
+        ],
+        "loopDeclarations": [
+        ],
+        "maxValue": 100,
+        "measurementMethod": "adc",
+        "minValue": 0,
+        "name": "teste",
+        "operatingVoltage": "3V3",
+        "outputs": [
+        ],
+        "pinRelations": [
+        ],
+        "pins": [
+            {
+                "color": "#475569",
+                "direction": "bidir",
+                "electricalType": "generic",
+                "generateCode": true,
+                "isOutput": false,
+                "name": "SIG",
+                "role": "signal",
+                "side": "Left",
+                "signalType": "digital"
+            },
+            {
+                "color": "#475569",
+                "direction": "bidir",
+                "electricalType": "generic",
+                "generateCode": true,
+                "isOutput": false,
+                "name": "GND",
+                "role": "signal",
+                "side": "Right",
+                "signalType": "digital"
+            }
+        ],
+        "protocol": "none",
+        "pulldownRequired": false,
+        "pullupRequired": false,
+        "readCost": 1,
+        "readType": "polling",
+        "requiredAdapters": [
+        ],
+        "requiresStateCache": false,
+        "sensorType": "",
+        "setupBlocks": [
+        ],
+        "shape": "rectangle",
+        "simBehavior": "static",
+        "simDefaultValue": 0,
+        "simWaveform": "none",
+        "technology": "",
+        "type": "teste",
+        "updateIntervalMs": 0,
+        "updatePolicy": "on_demand",
+        "valueUnit": "",
+        "warnings": [
+        ],
+        "width": 80
+    }
 ]

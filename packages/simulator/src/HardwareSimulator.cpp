@@ -1578,29 +1578,19 @@ void HardwareSimulator::executeBlockChainInternal(const QVector<EventLogicBlock>
             emit serialPrint(output);
         }
         else if (shouldExecute && block.type == LogicBlockType::EEPROM_OP) {
-            QString keyName = block.actionTarget;
-            QString targetVar = block.assignTarget;
+            QString keyName = block.actionTarget.trimmed();
             if (keyName.isEmpty()) keyName = "config_default";
 
             if (block.actionCommand == "SAVE") {
                 QVariant valToSave;
-                QString targetVarTrimmed = targetVar.trimmed();
                 
-                bool isString = (targetVarTrimmed.startsWith("\"") && targetVarTrimmed.endsWith("\"")) || 
-                                (targetVarTrimmed.startsWith("'") && targetVarTrimmed.endsWith("'"));
-                if (isString) {
-                    valToSave = targetVarTrimmed.mid(1, targetVarTrimmed.length() - 2);
-                } else if (m_simVariables.contains(targetVarTrimmed)) {
-                    valToSave = m_simVariables[targetVarTrimmed];
-                } else if (evaluateExpression(targetVar)) {
-                    valToSave = 1.0;
+                ComponentItem* comp = findComponent(keyName);
+                if (comp) {
+                    valToSave = getComponentSimValue(keyName);
+                } else if (m_simVariables.contains(keyName)) {
+                    valToSave = m_simVariables[keyName];
                 } else {
-                    double num = evaluateNumericExpression(targetVarTrimmed);
-                    if (num != 0 || targetVarTrimmed == "0" || targetVarTrimmed.contains(QRegularExpression("^\\s*0\\s*$"))) {
-                        valToSave = num;
-                    } else {
-                        valToSave = targetVar; // Fallback to raw string for literals like HIGH/LOW
-                    }
+                    valToSave = 0.0;
                 }
 
                 m_eeprom[keyName] = valToSave; 
@@ -1609,10 +1599,38 @@ void HardwareSimulator::executeBlockChainInternal(const QVector<EventLogicBlock>
                 emit serialMessage(QString("EEPROM: Salvo '%1' na chave '%2'.").arg(stateStr).arg(keyName), "INFO");
             } else {
                 QVariant val = m_eeprom.value(keyName, 0.0);
-                m_simVariables[targetVar.trimmed()] = val;
                 m_simVariables[keyName] = val;
+                
+                ComponentItem* comp = findComponent(keyName);
+                if (comp) {
+                    bool isOn = val.toBool();
+                    if (comp->componentType() == "led") {
+                        auto* led = static_cast<LEDItem*>(comp);
+                        led->setOn(isOn);
+                        emit pinStateChanged(comp->id(), "Anode", isOn);
+                    } else if (comp->componentType() == "relay") {
+                        auto* relay = static_cast<RelayItem*>(comp);
+                        relay->setOn(isOn);
+                        emit pinStateChanged(comp->id(), "IN", isOn);
+                    } else if (comp->componentType() == "buzzer") {
+                        auto* buzzer = static_cast<BuzzerItem*>(comp);
+                        buzzer->setActive(isOn);
+                        emit pinStateChanged(comp->id(), "1", isOn);
+                    } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
+                        if (custom->category() == "digital_actuator") {
+                            custom->setOn(isOn);
+                            QString oscPin = custom->pins().isEmpty() ? "OUT" : custom->pins().first().name;
+                            emit pinStateChanged(comp->id(), oscPin, isOn);
+                        } else if (custom->category() == "active_actuator") {
+                            custom->setActive(isOn);
+                            QString oscPin = custom->pins().isEmpty() ? "OUT" : custom->pins().first().name;
+                            emit pinStateChanged(comp->id(), oscPin, isOn);
+                        }
+                    }
+                }
+                
                 QString stateStr = val.toString();
-                emit serialMessage(QString("EEPROM: Lida chave '%1' (valor: %2) para variável '%3'.").arg(keyName).arg(stateStr).arg(targetVar), "INFO");
+                emit serialMessage(QString("EEPROM: Lida chave '%1' (valor: %2).").arg(keyName).arg(stateStr), "INFO");
             }
         }
         else if (shouldExecute && block.type == LogicBlockType::ACTION) {

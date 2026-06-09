@@ -1782,6 +1782,9 @@ QWidget* BlockEditor::createBlockWidget(int index, const EventLogicBlock& block,
 
         connect(slotEdit, &QLineEdit::textChanged, this, saveParams);
 
+        lay->addWidget(label);
+        lay->addWidget(slotEdit);
+
     } else if (block.type == LogicBlockType::EVENT_CREATE) {
         auto* nameEdit = new QLineEdit(w);
         nameEdit->setPlaceholderText("aoClicar");

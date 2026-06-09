@@ -266,6 +266,88 @@ static bool blocksHaveDelay(const QVector<EventLogicBlock>& blocks) {
     return false;
 }
 
+static void prePopulateEepromRegistry(
+    const QVector<ComponentItem*>& components,
+    const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage,
+    const QHash<ComponentItem*, QString>& sanitized,
+    const QHash<QString, ComponentItem*>& idMap
+) {
+    g_eepromKeys.clear();
+    g_eepromKeyTypes.clear();
+
+    // 1. Scan CREATE_VAR blocks to pre-populate g_eepromKeyTypes
+    for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
+        QStringList parts = it.key().split(":");
+        QString componentId = parts.isEmpty() ? "" : parts[0];
+        ComponentItem* compOwner = idMap.value(componentId, nullptr);
+        CustomComponentItem* owner = dynamic_cast<CustomComponentItem*>(compOwner);
+
+        for (const auto& b : it.value()) {
+            if (b.type == LogicBlockType::CREATE_VAR) {
+                QString name = b.createVarName.trimmed();
+                name = replaceAllComponentNames(name, sanitized, true);
+                if (owner) {
+                    name = replaceCustomComponentPlaceholders(name, owner);
+                }
+                for (auto* c : components) {
+                    if (c == owner) continue;
+                    if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
+                        name = replaceCustomComponentPlaceholders(name, custom);
+                    }
+                }
+                name.remove(" ");
+                name = sanitizeIdentifier(name);
+
+                if (!name.isEmpty()) {
+                    if (b.createVarType == VarType::STRING) {
+                        g_eepromKeyTypes[name] = "String";
+                    } else if (b.createVarType == VarType::FLOAT) {
+                        g_eepromKeyTypes[name] = "float";
+                    } else if (b.createVarType == VarType::BOOL) {
+                        g_eepromKeyTypes[name] = "bool";
+                    } else {
+                        g_eepromKeyTypes[name] = "int";
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Scan EEPROM_OP blocks to populate g_eepromKeys
+    for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
+        QStringList parts = it.key().split(":");
+        QString componentId = parts.isEmpty() ? "" : parts[0];
+        ComponentItem* compOwner = idMap.value(componentId, nullptr);
+        CustomComponentItem* owner = dynamic_cast<CustomComponentItem*>(compOwner);
+
+        for (const auto& b : it.value()) {
+            if (b.type == LogicBlockType::EEPROM_OP) {
+                QString key = b.actionTarget.trimmed();
+                key = replaceAllComponentNames(key, sanitized, true);
+                if (owner) {
+                    key = replaceCustomComponentPlaceholders(key, owner);
+                }
+                for (auto* c : components) {
+                    if (c == owner) continue;
+                    if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
+                        key = replaceCustomComponentPlaceholders(key, custom);
+                    }
+                }
+                key.remove(" ");
+
+                if (key.isEmpty()) key = "config_default";
+
+                if (!key.isEmpty()) {
+                    g_eepromKeys.insert(key);
+                    if (!g_eepromKeyTypes.contains(key)) {
+                        g_eepromKeyTypes[key] = "int";
+                    }
+                }
+            }
+        }
+    }
+}
+
 static QString compileBlocks(
     const QVector<EventLogicBlock>& blocks,
     const QVector<ComponentItem*>& components,
@@ -467,8 +549,7 @@ static QString compileBlocks(
             }
         }
         else if (block.type == LogicBlockType::EEPROM_OP) {
-            QString keyName = block.actionTarget.trimmed();
-            keyName = replaceAllComponentNames(keyName, localSanitized, true);
+            QString keyName = actionTgt.trimmed();
             keyName.remove(" ");
             
             if (keyName.isEmpty()) keyName = "config_default";
@@ -1127,12 +1208,46 @@ static QString emitStateVariables(
     }
 
     // ── DECLARAÇÃO DOS REGISTROS EEPROM COMO VARIÁVEIS GLOBAIS ──
+    QHash<QString, ComponentItem*> idMap;
+    for (auto* c : components) {
+        idMap[c->id()] = c;
+    }
+
     QSet<QString> eepromKeys;
     for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
+        QStringList parts = it.key().split(":");
+        QString componentId = parts.isEmpty() ? "" : parts[0];
+        ComponentItem* compOwner = idMap.value(componentId, nullptr);
+        CustomComponentItem* owner = dynamic_cast<CustomComponentItem*>(compOwner);
+
         for (const auto& b : it.value()) {
             if (b.type == LogicBlockType::EEPROM_OP && b.actionCommand == "SAVE") {
-                QString key = b.actionTarget.trimmed().remove(" ");
-                if (!key.isEmpty()) {
+                QString key = b.actionTarget.trimmed();
+                key = replaceAllComponentNames(key, sanitized, true);
+                if (owner) {
+                    key = replaceCustomComponentPlaceholders(key, owner);
+                }
+                for (auto* c : components) {
+                    if (c == owner) continue;
+                    if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
+                        key = replaceCustomComponentPlaceholders(key, custom);
+                    }
+                }
+                key.remove(" ");
+
+                if (key.isEmpty()) key = "config_default";
+
+                // Only insert if it is not a physical component
+                bool isComp = false;
+                for (auto* c : components) {
+                    QString sName = sanitized[c];
+                    if (key == sName || key == "PIN_" + sName) {
+                        isComp = true;
+                        break;
+                    }
+                }
+
+                if (!isComp && !key.isEmpty()) {
                     eepromKeys.insert(key);
                 }
             }
@@ -1146,6 +1261,10 @@ static QString emitStateVariables(
                 QString type = g_eepromKeyTypes.value(key, "int");
                 if (type == "String") {
                     code += QString("String %1 = \"\";\n").arg(key);
+                } else if (type == "float") {
+                    code += QString("float %1 = 0.0;\n").arg(key);
+                } else if (type == "bool") {
+                    code += QString("bool %1 = false;\n").arg(key);
                 } else {
                     code += QString("int %1 = 0;\n").arg(key);
                 }
@@ -1236,48 +1355,19 @@ QString CodeGenerator::generateArduinoCode(
     const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage,
     const QJsonObject& webPageData
 ) {
-    g_eepromKeys.clear();
-    g_eepromKeyTypes.clear();
-    
-    // First, scan all CREATE_VAR blocks to pre-populate g_eepromKeyTypes with variable types!
-    for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
-        for (const auto& b : it.value()) {
-            if (b.type == LogicBlockType::CREATE_VAR) {
-                QString name = b.createVarName.trimmed().remove(" ");
-                if (!name.isEmpty()) {
-                    if (b.createVarType == VarType::STRING) {
-                        g_eepromKeyTypes[name] = "String";
-                    } else if (b.createVarType == VarType::FLOAT) {
-                        g_eepromKeyTypes[name] = "float";
-                    } else if (b.createVarType == VarType::BOOL) {
-                        g_eepromKeyTypes[name] = "bool";
-                    } else {
-                        g_eepromKeyTypes[name] = "int";
-                    }
-                }
-            }
-        }
-    }
+    QHash<ComponentItem*, QString> sanitized;
+    for (auto* comp : components) sanitized[comp] = sanitizeIdentifier(comp->name());
 
-    for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
-        for (const auto& b : it.value()) {
-            if (b.type == LogicBlockType::EEPROM_OP) {
-                QString key = b.actionTarget.trimmed().remove(" ");
-                if (!key.isEmpty()) {
-                    g_eepromKeys.insert(key);
-                    if (!g_eepromKeyTypes.contains(key)) {
-                        g_eepromKeyTypes[key] = "int";
-                    }
-                }
-            }
-        }
-    }
-
-    // ── VALIDATION OF MANDATORY POWER AND GND CONNECTIONS FOR PERIPHERALS ──
-    ComponentItem* esp32 = nullptr;
     QHash<QString, ComponentItem*> idMap;
     for (auto* c : components) {
         idMap[c->id()] = c;
+    }
+
+    prePopulateEepromRegistry(components, eventBlockStorage, sanitized, idMap);
+    
+    // ── VALIDATION OF MANDATORY POWER AND GND CONNECTIONS FOR PERIPHERALS ──
+    ComponentItem* esp32 = nullptr;
+    for (auto* c : components) {
         if (c->componentType() == "esp32") {
             esp32 = c;
         }
@@ -1493,9 +1583,7 @@ QString CodeGenerator::generateArduinoCode(
         code += "\n";
     }
 
-    // Precompute sanitized identifiers per component to avoid repeated computation
-    QHash<ComponentItem*, QString> sanitized;
-    for (auto* comp : components) sanitized[comp] = sanitizeIdentifier(comp->name());
+    // sanitized is already populated at the start of the function
 
     // Initialize EEPROM address mapping registry for this generation
     QMap<QString, int> eepromOffsets;
@@ -2868,47 +2956,17 @@ QString CodeGenerator::compileComponentEvents(
 ) {
     if (!comp) return QString();
 
-    g_eepromKeys.clear();
-    g_eepromKeyTypes.clear();
-
-    // First, scan all CREATE_VAR blocks to pre-populate g_eepromKeyTypes with variable types!
-    for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
-        for (const auto& b : it.value()) {
-            if (b.type == LogicBlockType::CREATE_VAR) {
-                QString name = b.createVarName.trimmed().remove(" ");
-                if (!name.isEmpty()) {
-                    if (b.createVarType == VarType::STRING) {
-                        g_eepromKeyTypes[name] = "String";
-                    } else if (b.createVarType == VarType::FLOAT) {
-                        g_eepromKeyTypes[name] = "float";
-                    } else if (b.createVarType == VarType::BOOL) {
-                        g_eepromKeyTypes[name] = "bool";
-                    } else {
-                        g_eepromKeyTypes[name] = "int";
-                    }
-                }
-            }
-        }
-    }
-
-    for (auto it = eventBlockStorage.begin(); it != eventBlockStorage.end(); ++it) {
-        for (const auto& b : it.value()) {
-            if (b.type == LogicBlockType::EEPROM_OP) {
-                QString key = b.actionTarget.trimmed().remove(" ");
-                if (!key.isEmpty()) {
-                    g_eepromKeys.insert(key);
-                    if (!g_eepromKeyTypes.contains(key)) {
-                        g_eepromKeyTypes[key] = "int";
-                    }
-                }
-            }
-        }
-    }
-
     QHash<ComponentItem*, QString> sanitized;
     for (auto* c : components) {
         sanitized[c] = sanitizeIdentifier(c->name());
     }
+
+    QHash<QString, ComponentItem*> idMap;
+    for (auto* c : components) {
+        idMap[c->id()] = c;
+    }
+
+    prePopulateEepromRegistry(components, eventBlockStorage, sanitized, idMap);
 
     QString name = sanitized.value(comp, sanitizeIdentifier(comp->name()));
     QString type = comp->componentType();
