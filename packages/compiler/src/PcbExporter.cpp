@@ -91,30 +91,11 @@ QImage PcbExporter::generateLaserImage(const QVector<ComponentItem*>& components
     double lineWidthPx   = lineWidthMil / 10.0;
     double outerPadRadius = 18.0 / 2.0; 
     
-    // GND Tracing
-    QSet<ConnectionCable*> gndCables;
-    QSet<QPair<ComponentItem*, QString>> gndPins;
-    for (auto* comp : components) if (comp && comp->componentType() == "gnd") gndPins.insert({comp, "GND"});
-    bool changed = true;
-    while (changed) {
-        changed = false;
-        for (auto* cable : cables) {
-            if (!cable || gndCables.contains(cable)) continue;
-            bool srcIsGnd = gndPins.contains({cable->sourceComponent(), cable->sourcePinName()});
-            bool tgtIsGnd = gndPins.contains({cable->targetComponent(), cable->targetPinName()});
-            if (srcIsGnd || tgtIsGnd) {
-                gndCables.insert(cable);
-                if (!srcIsGnd && cable->sourceComponent()) { gndPins.insert({cable->sourceComponent(), cable->sourcePinName()}); changed = true; }
-                if (!tgtIsGnd && cable->targetComponent()) { gndPins.insert({cable->targetComponent(), cable->targetPinName()}); changed = true; }
-            }
-        }
-    }
-
     // A - Draw main tracks
     QPen mainTrackPen(fgColor, trackWidthPx, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     painter.setPen(mainTrackPen);
     for (auto* cable : cables) {
-        if (!cable || cable->path().isEmpty() || gndCables.contains(cable)) continue;
+        if (!cable || cable->path().isEmpty()) continue;
         QPainterPath p = cable->path();
         if (cable->sourceComponent()) {
             for (const auto& pin : cable->sourceComponent()->pins()) {
@@ -151,7 +132,6 @@ QImage PcbExporter::generateLaserImage(const QVector<ComponentItem*>& components
             painter.drawRoundedRect(QRectF(-tpSize/2.0, -tpSize/2.0, tpSize, tpSize), 0.5, 0.5); painter.restore();
         }
         for (const auto& pin : comp->pins()) {
-            if (gndPins.contains({comp, pin.name})) continue;
             QPointF realPos = getRealPinScenePos(comp, pin);
             if (isC3Wroom) {
                 if (!pin.name.startsWith("GND.EPAD")) {
@@ -184,7 +164,7 @@ QImage PcbExporter::generateLaserImage(const QVector<ComponentItem*>& components
     double innerDrillRadius = 0.8 * 3.937 / 2.0;
     QPen whitePen(Qt::white, coreTrackWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     for (auto* cable : cables) {
-        if (!cable || cable->path().isEmpty() || gndCables.contains(cable)) continue;
+        if (!cable || cable->path().isEmpty()) continue;
         QPainterPath p = cable->path();
         if (cable->sourceComponent()) {
             for (const auto& pin : cable->sourceComponent()->pins()) {
@@ -212,7 +192,6 @@ QImage PcbExporter::generateLaserImage(const QVector<ComponentItem*>& components
     for (auto* comp : components) {
         if (!comp || comp->componentType() == "gnd") continue;
         for (const auto& pin : comp->pins()) {
-            if (gndPins.contains({comp, pin.name})) continue;
             QPointF realPos = getRealPinScenePos(comp, pin);
             if (!comp->property("isSMD").toBool()) painter.drawEllipse(realPos, corePadRadius, corePadRadius);
         }
@@ -224,7 +203,6 @@ QImage PcbExporter::generateLaserImage(const QVector<ComponentItem*>& components
         for (auto* comp : components) {
             if (!comp || comp->componentType() == "gnd") continue;
             for (const auto& pin : comp->pins()) {
-                if (gndPins.contains({comp, pin.name})) continue;
                 if (!comp->property("isSMD").toBool()) painter.drawEllipse(getRealPinScenePos(comp, pin), innerDrillRadius, innerDrillRadius);
             }
         }
