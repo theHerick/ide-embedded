@@ -404,7 +404,7 @@ bool WorkspaceView::eventFilter(QObject* watched, QEvent* event) {
                 QCompleter* completer = edit->completer();
                 if (completer && completer->popup() && completer->popup()->isVisible()) {
                     if (completer->popup()->geometry().contains(QCursor::pos())) {
-                        return false; // Ignore focus out so user can click/select popup items
+                        return true; // Intercept focus out to prevent line edit from hiding popup on click
                     }
                 }
             }
