@@ -824,7 +824,7 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
         VariableDef def;
         if (compId.startsWith("ldr", Qt::CaseInsensitive)) {
             def.name = "luminosidade";
-            def.description = "Luminosidade analógica lida pelo LDR (0 a 4095)";
+            def.description = "Luminosidade lida pelo sensor (0 a 100%)";
         } else {
             def.name = "valor";
             def.description = "Valor analógico lido pelo sensor (0 a 4095)";

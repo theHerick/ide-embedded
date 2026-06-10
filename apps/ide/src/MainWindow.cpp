@@ -6214,14 +6214,14 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 13: Digitar luminosidade < 1500
+    // Passo 13: Digitar luminosidade < 10
     steps.append({
-        "13. Digite a condição 'luminosidade < 1500' na expressão condicional",
-        "Se a luminosidade lida pelo LDR (0-4095) for menor que 1500, significa que o ambiente está escuro.\n\n"
+        "13. Digite a condição 'luminosidade < 10' na expressão condicional",
+        "Se a luminosidade lida pelo LDR (0-100%) for menor que 10%, significa que o ambiente está escuro.\n\n"
         "No campo de texto do bloco de condição, digite exatamente:\n"
-        "luminosidade < 1500\n\n"
-        "(Nota: O parâmetro 'luminosidade' é injetado pelo evento e representa a luminosidade física lida pelo LDR).",
-        "Digite 'luminosidade < 1500' na Expressão Condicional!",
+        "luminosidade < 10\n\n"
+        "(Nota: O parâmetro 'luminosidade' é injetado pelo evento e representa a intensidade de luz de 0 a 100%).",
+        "Digite 'luminosidade < 10' na Expressão Condicional!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
@@ -6457,7 +6457,8 @@ void MainWindow::checkBlockEditorTutorialSteps() {
                         elseCount++;
                     } else {
                         condCount++;
-                        if (b.conditionExpression.contains("luminosidade < 1500") || b.conditionExpression.contains("luminosidade <1500") || b.conditionExpression.contains("luminosidade<1500") ||
+                        if (b.conditionExpression.contains("luminosidade < 10") || b.conditionExpression.contains("luminosidade <10") || b.conditionExpression.contains("luminosidade<10") ||
+                            b.conditionExpression.contains("luminosidade < 1500") || b.conditionExpression.contains("luminosidade <1500") || b.conditionExpression.contains("luminosidade<1500") ||
                             b.conditionExpression.contains("valor < 1500") || b.conditionExpression.contains("valor <1500") || b.conditionExpression.contains("valor<1500")) {
                             condFilled++;
                         }

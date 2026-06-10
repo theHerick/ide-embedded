@@ -538,6 +538,7 @@ void HardwareSimulator::triggerComponentEvent(const QString& compId, const QStri
             m_simVariables["valor"] = pot->value() * 40.95;
         } else if (comp->componentType() == "ldr") {
             auto* ldr = static_cast<LdrItem*>(comp);
+            m_simVariables["luminosidade"] = ldr->value();
             m_simVariables["valor"] = ldr->value() * 40.95;
         } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
             if (custom->category() == "analog_input") {
