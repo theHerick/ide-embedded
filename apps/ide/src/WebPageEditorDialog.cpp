@@ -401,6 +401,12 @@ bool WebPageEditorDialog::eventFilter(QObject* watched, QEvent* event) {
         } else if (event->type() == QEvent::FocusOut) {
             QLineEdit* edit = qobject_cast<QLineEdit*>(watched);
             if (edit) {
+                QCompleter* completer = edit->completer();
+                if (completer && completer->popup() && completer->popup()->isVisible()) {
+                    if (completer->popup()->geometry().contains(QCursor::pos())) {
+                        return false; // Ignore focus out so user can click/select popup items
+                    }
+                }
                 QPointer<QLineEdit> guardedEdit(edit);
                 QTimer::singleShot(150, this, [guardedEdit]() {
                     if (guardedEdit) guardedEdit->deleteLater();

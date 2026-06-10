@@ -403,9 +403,8 @@ bool WorkspaceView::eventFilter(QObject* watched, QEvent* event) {
             if (edit) {
                 QCompleter* completer = edit->completer();
                 if (completer && completer->popup() && completer->popup()->isVisible()) {
-                    QWidget* nextFocus = QApplication::focusWidget();
-                    if (nextFocus && (nextFocus == completer->popup() || completer->popup()->isAncestorOf(nextFocus))) {
-                        return false; // Ignore focus out so user can click or scroll popup
+                    if (completer->popup()->geometry().contains(QCursor::pos())) {
+                        return false; // Ignore focus out so user can click/select popup items
                     }
                 }
             }
