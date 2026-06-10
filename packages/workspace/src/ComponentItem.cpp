@@ -1884,9 +1884,9 @@ void PotentiometerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
 // ─────────────────────────────────────────────────────────────────────────────
 LdrItem::LdrItem(const QString& id, const QString& name, QGraphicsItem* parent)
     : ComponentItem(id, name, "ldr", parent), m_value(50.0) {
-    m_pins.append({"1", QPointF(-20, 30), false, "", "", QColor(59, 130, 246)});
-    m_pins.append({"2", QPointF(  0, 30), false, "", "", QColor(234, 179, 8)});
-    m_pins.append({"3", QPointF( 20, 30), false, "", "", QColor(75, 85, 99)});
+    m_pins.append({"1", QPointF(-20, 30), false, "", "", QColor(239, 68, 68)}); // VCC (+) -> Red
+    m_pins.append({"2", QPointF(  0, 30), false, "", "", QColor(245, 158, 11)}); // Signal (S) -> Orange/Yellow
+    m_pins.append({"3", QPointF( 20, 30), false, "", "", QColor(75, 85, 99)});  // GND (-) -> Gray
     m_name = QString("Sensor LDR 50%");
 }
 
@@ -1923,12 +1923,13 @@ void LdrItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
     painter->drawLine(  0, 10,   0, 30);
     painter->drawLine( 20, 10,  20, 30);
 
-    // Gold pads
-    painter->setBrush(QColor(234, 179, 8));
-    painter->setPen(QPen(QColor(161, 98, 7), 1));
-    painter->drawEllipse(QPointF(-20, 30), 3, 3);
-    painter->drawEllipse(QPointF(  0, 30), 3, 3);
-    painter->drawEllipse(QPointF( 20, 30), 3, 3);
+    // Draw connection pad circles with colors matching other components
+    for (const auto& pin : m_pins) {
+        painter->setBrush(pin.color.isValid() ? pin.color : QColor(234, 179, 8));
+        QColor borderCol = pin.color.isValid() ? pin.color.darker(115) : QColor(161, 98, 7);
+        painter->setPen(QPen(borderCol, 1));
+        painter->drawEllipse(pin.localPos, 3, 3);
+    }
 
     // Module PCB body (Emerald dark green PCB)
     QLinearGradient bodyGrad(-20, -20, 20, 10);
@@ -1955,15 +1956,15 @@ void LdrItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
     path.lineTo(6, -3);
     painter->drawPath(path);
 
-    // Pin labels (+, S, -)
+    // Pin labels (+, S, -) placed inside the dark green PCB body for high contrast & clarity
     painter->setPen(QColor(241, 245, 249));
     QFont fPinLabel = painter->font();
-    fPinLabel.setPointSize(5);
+    fPinLabel.setPointSize(7);
     fPinLabel.setBold(true);
     painter->setFont(fPinLabel);
-    painter->drawText(QRectF(-25, 12, 10, 10), Qt::AlignCenter, "+");
-    painter->drawText(QRectF(-5,  12, 10, 10), Qt::AlignCenter, "S");
-    painter->drawText(QRectF( 15, 12, 10, 10), Qt::AlignCenter, "-");
+    painter->drawText(QRectF(-25, 0, 10, 10), Qt::AlignCenter, "+");
+    painter->drawText(QRectF(-5,  0, 10, 10), Qt::AlignCenter, "S");
+    painter->drawText(QRectF( 15,  0, 10, 10), Qt::AlignCenter, "-");
 
     // Name Label
     painter->setPen(QColor(241, 245, 249));
