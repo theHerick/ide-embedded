@@ -598,6 +598,12 @@ void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint&
     };
 
     connect(completer, static_cast<void(QCompleter::*)(const QString&)>(&QCompleter::activated), searchEdit, handleAddition);
+
+    connect(completer->popup(), &QAbstractItemView::clicked, searchEdit, [completer, handleAddition](const QModelIndex& index) {
+        QString textVal = completer->popup()->model()->data(index, Qt::DisplayRole).toString();
+        handleAddition(textVal);
+    });
+
     connect(searchEdit, &QLineEdit::returnPressed, searchEdit, [handleAddition, searchEdit]() {
         handleAddition(searchEdit->text());
     });

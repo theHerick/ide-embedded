@@ -2307,6 +2307,11 @@ void BlockEditor::spawnSearchBox(const QPoint& pos, const QString& initialText, 
     });
 
     connect(completer, QOverload<const QString&>::of(&QCompleter::activated), this, handleSelection);
+
+    connect(completer->popup(), &QAbstractItemView::clicked, this, [completer, handleSelection](const QModelIndex& index) {
+        QString textVal = completer->popup()->model()->data(index, Qt::DisplayRole).toString();
+        handleSelection(textVal);
+    });
 }
 
 void BlockEditor::clearAllBlocks() {

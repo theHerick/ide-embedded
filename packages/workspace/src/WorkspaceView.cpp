@@ -388,6 +388,11 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
     connect(completer, QOverload<const QString&>::of(&QCompleter::activated), this, [handleAddition](const QString& textVal) {
         handleAddition(textVal);
     });
+
+    connect(completer->popup(), &QAbstractItemView::clicked, this, [completer, handleAddition](const QModelIndex& index) {
+        QString textVal = completer->popup()->model()->data(index, Qt::DisplayRole).toString();
+        handleAddition(textVal);
+    });
 }
 
 bool WorkspaceView::eventFilter(QObject* watched, QEvent* event) {
