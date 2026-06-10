@@ -10,6 +10,7 @@
 #include <QTimer>
 #include <cmath>
 #include <QSortFilterProxyModel>
+#include <QApplication>
 #include <QStringListModel>
 #include <QHash>
 
@@ -378,7 +379,18 @@ bool WorkspaceView::eventFilter(QObject* watched, QEvent* event) {
                 return true;
             }
         } else if (event->type() == QEvent::FocusOut) {
-            watched->deleteLater();
+            QLineEdit* edit = qobject_cast<QLineEdit*>(watched);
+            if (edit) {
+                QCompleter* completer = edit->completer();
+                if (completer && completer->popup() && completer->popup()->isVisible()) {
+                    QWidget* nextFocus = QApplication::focusWidget();
+                    if (nextFocus && (nextFocus == completer->popup() || completer->popup()->isAncestorOf(nextFocus))) {
+                        return false; // Ignore focus out so user can click or scroll popup
+                    }
+                }
+            }
+            // Delay deletion slightly so that mouse click selection on popup completes first
+            QTimer::singleShot(150, watched, &QObject::deleteLater);
             return true;
         }
     }
