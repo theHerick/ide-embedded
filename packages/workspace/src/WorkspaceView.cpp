@@ -153,7 +153,8 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
     QStringList componentsList;
     componentsList << "LED" << "LED RGB" << "Botão" << "Resistor" << "Capacitor" << "Potenciômetro" << "Sensor LDR (Luz)" << "Buzzer 5V" << "Motor Genérico" << "Terra (GND)"
                    << "Sensor Temperatura/Umidade DHT22"
-                   << "Sensor Ultrassônico HC-SR04";
+                   << "Sensor Ultrassônico HC-SR04"
+                   << "Lâmpada com Bocal" << "Lâmpada" << "Lampada" << "Lamp";
 
     // Add registered custom modeled components
     for (const auto& def : CustomComponentManager::instance().registeredComponents()) {
@@ -225,6 +226,9 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
         if (textLower.contains("relé") || textLower.contains("rele") || textLower.contains("relay")) {
             WorkspaceScene* wScene = qobject_cast<WorkspaceScene*>(scene());
             if (wScene) wScene->addComponent("relay", "Módulo Relé", scenePos);
+        } else if (textLower.contains("lampada") || textLower.contains("lâmpada") || textLower.contains("lamp")) {
+            type = "lamp";
+            name = "Lâmpada com Bocal";
         } else if (textLower.contains("bot") || textLower.contains("pulsador") || textLower.contains("btn") || textLower.contains("button") || textLower.contains("click")) {
             type = "button";
             name = "Botão Gatilho";

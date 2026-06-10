@@ -433,7 +433,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             auto* ldr = static_cast<LdrItem*>(comp);
             this->editLdrValue(ldr);
             if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 4) {
-                if (m_tutorialOverlay->currentStep() == 20) {
+                if (m_tutorialOverlay->currentStep() == 22) {
                     m_tutorialOverlay->advance();
                 }
             }
@@ -520,10 +520,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             if      (step == 1 && (type == "sg90" || type == "servo" || type == "motor"))
                 m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 4) {
-            // Tutorial 4: LDR (step 1), Relay (step 5)
+            // Tutorial 4: LDR (step 1), Relay (step 5), Lamp (step 9)
             if      (step == 1 && (type == "ldr" || type == "light_sensor"))
                 m_tutorialOverlay->advance();
             else if (step == 5 && (type == "relay" || type == "rele"))
+                m_tutorialOverlay->advance();
+            else if (step == 9 && (type == "lamp" || type == "lampada" || type == "lâmpada"))
                 m_tutorialOverlay->advance();
         }
     });
@@ -545,8 +547,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             if (step == 2 || step == 3 || step == 4)
                 m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 4) {
-            // Tutorial 4: connection steps 2, 3, 4, 6, 7, 8
-            if (step == 2 || step == 3 || step == 4 || step == 6 || step == 7 || step == 8)
+            // Tutorial 4: connection steps 2, 3, 4, 6, 7, 8, 10
+            if (step == 2 || step == 3 || step == 4 || step == 6 || step == 7 || step == 8 || step == 10)
                 m_tutorialOverlay->advance();
         }
     });
@@ -557,7 +559,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         if ((m_activeTutorial == 1 && step == 12) ||
             (m_activeTutorial == 2 && step == 20) ||
             (m_activeTutorial == 3 && step == 15) ||
-            (m_activeTutorial == 4 && step == 18))
+            (m_activeTutorial == 4 && step == 20))
             m_tutorialOverlay->advance();
     });
 
@@ -567,7 +569,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         if ((m_activeTutorial == 1 && step == 13) ||
             (m_activeTutorial == 2 && step == 21) ||
             (m_activeTutorial == 3 && step == 16) ||
-            (m_activeTutorial == 4 && step == 19))
+            (m_activeTutorial == 4 && step == 21))
             m_tutorialOverlay->advance();
     });
 
@@ -1240,9 +1242,12 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
     m_blockEditor->show();
     m_blockEditor->setEnabled(true);
 
-    if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_tutorialOverlay->currentStep() == 9) {
-        m_tutorialOverlay->advance();
-        checkBlockEditorTutorialSteps();
+    if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
+        int step = m_tutorialOverlay->currentStep();
+        if ((m_activeTutorial == 1 && step == 9) || (m_activeTutorial == 4 && step == 11)) {
+            m_tutorialOverlay->advance();
+            checkBlockEditorTutorialSteps();
+        }
     }
 }
 
@@ -6169,9 +6174,29 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 9: Right click LDR -> Ao Alterar
+    // Passo 9: Adicionar Lâmpada
     steps.append({
-        "9. Clique com botão direito no LDR e escolha 'Ao Alterar'",
+        "9. Dê dois cliques no workspace e adicione uma Lâmpada",
+        "Adicione a lâmpada que será controlada pelo relé.\n\n"
+        "1. Dê DOIS CLIQUES no workspace.\n"
+        "2. Digite \"lâmpada\" ou \"lampada\" na busca e adicione-a.",
+        "Dê duplo clique no workspace e adicione a Lâmpada!",
+        m_view, QRect(), TutorialStep::Up, false
+    });
+
+    // Passo 10: Conectar Relé NO -> Lâmpada FASE
+    steps.append({
+        "10. Conecte o pino NO do Relé ao pino FASE da Lâmpada",
+        "Conecte a saída normalmente aberta (NO) do relé à lâmpada para acioná-la.\n\n"
+        "1. Dê um clique no pino NO do Relé.\n"
+        "2. Mova o mouse e clique no pino FASE da Lâmpada.",
+        "Conecte o NO do Relé ao pino FASE da Lâmpada!",
+        m_view, QRect(), TutorialStep::Up, false
+    });
+
+    // Passo 11: Right click LDR -> Ao Alterar
+    steps.append({
+        "11. Clique com botão direito no LDR e escolha 'Ao Alterar'",
         "Vamos abrir a área de programação para dar comportamento ao circuito.\n\n"
         "1. Clique com o BOTÃO DIREITO sobre o LDR no workspace.\n"
         "2. Selecione o evento \"Ao Alterar\" no menu flutuante.",
@@ -6179,9 +6204,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 10: Adicionar bloco Condicional (SE)
+    // Passo 12: Adicionar bloco Condicional (SE)
     steps.append({
-        "10. Dê dois cliques no editor de blocos e adicione um Condicional (SE)",
+        "12. Dê dois cliques no editor de blocos e adicione um Condicional (SE)",
         "Vamos criar uma regra baseada na intensidade de luz.\n\n"
         "1. Dê DOIS CLIQUES na área cinza do editor de blocos à direita.\n"
         "2. Digite \"se\" ou \"condicional\" e adicione o bloco.",
@@ -6189,19 +6214,20 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 11: Digitar valor < 1500
+    // Passo 13: Digitar valor < 1500
     steps.append({
-        "11. Digite a condição 'valor < 1500' na expressão condicional",
+        "13. Digite a condição 'valor < 1500' na expressão condicional",
         "Se o valor lido pelo LDR (0-4095) for menor que 1500, significa que o ambiente está escuro.\n\n"
         "No campo de texto do bloco de condição, digite exatamente:\n"
-        "valor < 1500",
+        "valor < 1500\n\n"
+        "(Nota: O parâmetro 'valor' é injetado pelo evento e representa a luminosidade física lida pelo LDR).",
         "Digite 'valor < 1500' na Expressão Condicional!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 12: Adicionar bloco Ação
+    // Passo 14: Adicionar bloco Ação
     steps.append({
-        "12. Dê dois cliques no editor e adicione um bloco de Ação",
+        "14. Dê dois cliques no editor e adicione um bloco de Ação",
         "Agora vamos programar o relé para ligar a lâmpada.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione uma AÇÃO na lista.",
@@ -6209,9 +6235,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 13: Arrastar variável do Relé para o Alvo
+    // Passo 15: Arrastar variável do Relé para o Alvo
     steps.append({
-        "13. Arraste a variável RELE_1 da paleta ao campo Alvo da Ação",
+        "15. Arraste a variável RELE_1 da paleta ao campo Alvo da Ação",
         "Configure o relé como alvo deste acionamento.\n\n"
         "1. Na paleta à esquerda em 'PINOS E ATUADORES', clique e segure o bloco rosa 'RELE_1 [GPIO2]'.\n"
         "2. Arraste e solte-o no campo 'Alvo' do bloco de Ação.",
@@ -6219,9 +6245,9 @@ void MainWindow::startLdrRelayTutorial() {
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // Passo 14: Adicionar bloco Senão (else)
+    // Passo 16: Adicionar bloco Senão (else)
     steps.append({
-        "14. Dê dois cliques no editor e adicione um bloco Senão (else)",
+        "16. Dê dois cliques no editor e adicione um bloco Senão (else)",
         "Agora criaremos o caso alternativo (quando o ambiente estiver claro).\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Digite \"senão\" ou \"else\" e adicione o bloco.",
@@ -6229,9 +6255,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 15: Adicionar bloco Ação (LOW)
+    // Passo 17: Adicionar bloco Ação (LOW)
     steps.append({
-        "15. Dê dois cliques no editor e adicione mais um bloco de Ação",
+        "17. Dê dois cliques no editor e adicione mais um bloco de Ação",
         "Esta nova ação será usada para desligar o relé.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione outra AÇÃO.",
@@ -6239,54 +6265,54 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 16: Arrastar variável do Relé para a segunda Ação
+    // Passo 18: Arrastar variável do Relé para a segunda Ação
     steps.append({
-        "16. Arraste a variável RELE_1 ao campo 'Alvo' desta nova Ação",
+        "18. Arraste a variável RELE_1 ao campo 'Alvo' desta nova Ação",
         "Indique que essa segunda ação também controla o mesmo relé.\n\n"
         "Arraste a variável 'RELE_1' da paleta esquerda ao campo 'Alvo' do novo bloco.",
         "Arraste a variável RELE_1 para o campo Alvo!",
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // Passo 17: Mudar comando para LOW
+    // Passo 19: Mudar comando para LOW
     steps.append({
-        "17. Mude o estado do bloco de Ação para LOW",
+        "19. Mude o estado do bloco de Ação para LOW",
         "Como este bloco trata o ambiente claro, mude o comando para desligar a lâmpada.\n\n"
         "Clique no campo destacado da segunda Ação e mude de HIGH para LOW.",
         "Mude o comando de HIGH para LOW!",
         nullptr, QRect(), TutorialStep::Right, true, "actionCmdCombo"
     });
 
-    // Passo 18: Build
+    // Passo 20: Build
     steps.append({
-        "18. Clique no botão de Build no topo para compilar",
+        "20. Clique no botão de Build no topo para compilar",
         "Com o circuito e a lógica prontos, clique no ícone de ferramentas na barra superior para compilar o código.",
         "Clique no botão de Build no topo para compilar!",
         buildWidget, QRect(), TutorialStep::Up
     });
 
-    // Passo 19: Play
+    // Passo 21: Play
     steps.append({
-        "19. Clique em Play para iniciar a simulação",
+        "21. Clique em Play para iniciar a simulação",
         "Com a compilação finalizada, inicie a simulação em tempo real!",
         "Clique no botão de Play no topo para iniciar a simulação!",
         playWidget, QRect(), TutorialStep::Up
     });
 
-    // Passo 20: Dê dois cliques no LDR
+    // Passo 22: Dê dois cliques no LDR
     steps.append({
-        "20. Dê dois cliques no LDR e mude a luminosidade",
+        "22. Dê dois cliques no LDR e mude a luminosidade",
         "O simulador está rodando!\n\n"
         "1. Dê DOIS CLIQUES no LDR no workspace para abrir a tela de propriedades.\n"
-        "2. Arraste a barra de luminosidade para baixo de 1500 (ambiente escuro) para ver o relé ativar (luz acende), e para cima de 1500 para desligar.",
+        "2. Arraste a barra de luminosidade para baixo de 1500 (ambiente escuro) para ver o relé ativar (a lâmpada acenderá), e para cima de 1500 para desligar.",
         "Dê dois cliques no LDR e altere a luminosidade simulada!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 21: Done
+    // Passo 23: Done
     steps.append({
         "Parabéns! Sua Luz Automática está concluída!",
-        "Você acabou de criar um circuito inteligente de controle de iluminação usando LDR e Relé!\n\n"
+        "Você acabou de criar um circuito inteligente de controle de iluminação usando LDR, Relé e Lâmpada!\n\n"
         "Experimente alterar a luz do sensor e veja a lâmpada acender e apagar dinamicamente.\n\n"
         "Divirta-se criando novos projetos!",
         "Clique em 'Concluir' para fechar o tutorial.",
@@ -6295,8 +6321,8 @@ void MainWindow::startLdrRelayTutorial() {
 
     m_activeTutorial = 4;
     m_tutorialOverlay->clearVariableDragSteps();
-    m_tutorialOverlay->addVariableDragStep(13, "RELE"); // drag RELE to action target (HIGH)
-    m_tutorialOverlay->addVariableDragStep(16, "RELE"); // drag RELE to action target (LOW)
+    m_tutorialOverlay->addVariableDragStep(15, "RELE"); // drag RELE to action target (HIGH)
+    m_tutorialOverlay->addVariableDragStep(18, "RELE"); // drag RELE to action target (LOW)
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -6440,36 +6466,36 @@ void MainWindow::checkBlockEditorTutorialSteps() {
                 }
             }
 
-            // Step 10: Add CONDITION block
-            if (step == 10 && condCount >= 1) {
+            // Step 12: Add CONDITION block
+            if (step == 12 && condCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 11: Type condition (valor < 1500)
-            else if (step == 11 && condFilled >= 1) {
+            // Step 13: Type condition (valor < 1500)
+            else if (step == 13 && condFilled >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 12: Add ACTION block
-            else if (step == 12 && actionCount >= 1) {
+            // Step 14: Add ACTION block
+            else if (step == 14 && actionCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 13: Drag RELE_1 to action target
-            else if (step == 13 && filledCount >= 1) {
+            // Step 15: Drag RELE_1 to action target
+            else if (step == 15 && filledCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 14: Add SENÃO block
-            else if (step == 14 && elseCount >= 1) {
+            // Step 16: Add SENÃO block
+            else if (step == 16 && elseCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 15: Add second ACTION block
-            else if (step == 15 && actionCount >= 2) {
+            // Step 17: Add second ACTION block
+            else if (step == 17 && actionCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 16: Drag RELE_1 to second action target
-            else if (step == 16 && filledCount >= 2) {
+            // Step 18: Drag RELE_1 to second action target
+            else if (step == 18 && filledCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 17: Change state to LOW
-            else if (step == 17 && lowCount >= 1) {
+            // Step 19: Change state to LOW
+            else if (step == 19 && lowCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
         }

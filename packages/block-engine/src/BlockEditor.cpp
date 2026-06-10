@@ -819,6 +819,17 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
         m_hardwareScopeVariables.append(def);
     }
 
+    // Inject local event variables for hardware triggers
+    if (eventName == "aoAlterar" || eventName == "aoGirar") {
+        VariableDef def;
+        def.name = "valor";
+        def.type = VarType::INT;
+        def.scope = VarScope::LOCAL_EVENT;
+        def.initialValue = "0";
+        def.description = "Valor analógico lido pelo sensor (0 a 4095)";
+        m_hardwareScopeVariables.append(def);
+    }
+
     QString key = QString("%1:%2").arg(compId).arg(eventName);
     if (eventName == "aoZerar" || eventName == "aoDesligar") {
         QString keyZerar = QString("%1:aoZerar").arg(compId);
