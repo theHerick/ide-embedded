@@ -3289,7 +3289,7 @@ QString CodeGenerator::compileComponentEvents(
         bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
         if (hasEvent) {
             code += "// Função executada quando a luminosidade do LDR é alterada (aoAlterar)\n"
-                    "// O parâmetro 'valor' contém a leitura analógica (0 a 4095)\n";
+                    "// O parâmetro 'luminosidade' contém a leitura analógica (0 a 4095)\n";
             code += emitEventFunction(
                 QString("%1_eventAoAlterar").arg(name),
                 eventBlockStorage[eventKey],
@@ -3299,14 +3299,14 @@ QString CodeGenerator::compileComponentEvents(
                 &sanitized,
                 &eepromOffsets,
                 &nextEepromOffset,
-                "int valor", // signatureArgs
-                "int",       // argType
-                "valor"      // argName
+                "int luminosidade", // signatureArgs
+                "int",              // argType
+                "luminosidade"      // argName
             );
         } else {
             code += "// Função executada quando a luminosidade do LDR é alterada (aoAlterar)\n"
-                    "// O parâmetro 'valor' contém a leitura analógica (0 a 4095)\n"
-                    "void aoAlterar(int valor) {\n"
+                    "// O parâmetro 'luminosidade' contém a leitura analógica (0 a 4095)\n"
+                    "void aoAlterar(int luminosidade) {\n"
                     "    // Insira seu código de controle aqui\n"
                     "}\n\n";
         }

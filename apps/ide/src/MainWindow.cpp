@@ -6214,14 +6214,14 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 13: Digitar valor < 1500
+    // Passo 13: Digitar luminosidade < 1500
     steps.append({
-        "13. Digite a condição 'valor < 1500' na expressão condicional",
-        "Se o valor lido pelo LDR (0-4095) for menor que 1500, significa que o ambiente está escuro.\n\n"
+        "13. Digite a condição 'luminosidade < 1500' na expressão condicional",
+        "Se a luminosidade lida pelo LDR (0-4095) for menor que 1500, significa que o ambiente está escuro.\n\n"
         "No campo de texto do bloco de condição, digite exatamente:\n"
-        "valor < 1500\n\n"
-        "(Nota: O parâmetro 'valor' é injetado pelo evento e representa a luminosidade física lida pelo LDR).",
-        "Digite 'valor < 1500' na Expressão Condicional!",
+        "luminosidade < 1500\n\n"
+        "(Nota: O parâmetro 'luminosidade' é injetado pelo evento e representa a luminosidade física lida pelo LDR).",
+        "Digite 'luminosidade < 1500' na Expressão Condicional!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
@@ -6457,7 +6457,8 @@ void MainWindow::checkBlockEditorTutorialSteps() {
                         elseCount++;
                     } else {
                         condCount++;
-                        if (b.conditionExpression.contains("valor < 1500") || b.conditionExpression.contains("valor <1500") || b.conditionExpression.contains("valor<1500")) {
+                        if (b.conditionExpression.contains("luminosidade < 1500") || b.conditionExpression.contains("luminosidade <1500") || b.conditionExpression.contains("luminosidade<1500") ||
+                            b.conditionExpression.contains("valor < 1500") || b.conditionExpression.contains("valor <1500") || b.conditionExpression.contains("valor<1500")) {
                             condFilled++;
                         }
                     }
@@ -7060,8 +7061,8 @@ void MainWindow::showComponentModeling(ComponentItem* comp) {
             "// FUNÇÕES DE EVENTOS DO SENSOR LDR (Sensor de Luz)\n"
             "// ========================================== \n\n"
             "// Função executada quando a luminosidade do LDR é alterada (aoAlterar)\n"
-            "// O parâmetro 'valor' contém a leitura analógica (0 a 4095)\n"
-            "void aoAlterar(int valor) {\n"
+            "// O parâmetro 'luminosidade' contém a leitura analógica (0 a 4095)\n"
+            "void aoAlterar(int luminosidade) {\n"
             "    // Insira seu código de controle aqui\n"
             "}\n";
 

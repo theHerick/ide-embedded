@@ -820,13 +820,26 @@ void BlockEditor::loadEventLogic(const QString& compId, const QString& eventName
     }
 
     // Inject local event variables for hardware triggers
-    if (eventName == "aoAlterar" || eventName == "aoGirar") {
+    if (eventName == "aoAlterar") {
+        VariableDef def;
+        if (compId.startsWith("ldr", Qt::CaseInsensitive)) {
+            def.name = "luminosidade";
+            def.description = "Luminosidade analógica lida pelo LDR (0 a 4095)";
+        } else {
+            def.name = "valor";
+            def.description = "Valor analógico lido pelo sensor (0 a 4095)";
+        }
+        def.type = VarType::INT;
+        def.scope = VarScope::LOCAL_EVENT;
+        def.initialValue = "0";
+        m_hardwareScopeVariables.append(def);
+    } else if (eventName == "aoGirar") {
         VariableDef def;
         def.name = "valor";
         def.type = VarType::INT;
         def.scope = VarScope::LOCAL_EVENT;
         def.initialValue = "0";
-        def.description = "Valor analógico lido pelo sensor (0 a 4095)";
+        def.description = "Valor analógico lido pelo potenciômetro (0 a 4095)";
         m_hardwareScopeVariables.append(def);
     }
 
