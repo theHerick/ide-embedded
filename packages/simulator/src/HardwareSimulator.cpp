@@ -531,6 +531,20 @@ void HardwareSimulator::updateSensorVariables() {
 void HardwareSimulator::triggerComponentEvent(const QString& compId, const QString& eventName) {
     if (!m_isRunning || !m_scene) return;
 
+    ComponentItem* comp = findComponent(compId);
+    if (comp) {
+        if (comp->componentType() == "potentiometer") {
+            auto* pot = static_cast<PotentiometerItem*>(comp);
+            m_simVariables["valor"] = pot->value() * 40.95;
+        } else if (comp->componentType() == "ldr") {
+            auto* ldr = static_cast<LdrItem*>(comp);
+            m_simVariables["valor"] = ldr->value() * 40.95;
+        } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
+            if (custom->category() == "analog_input") {
+                m_simVariables["valor"] = custom->value() * 40.95;
+            }
+        }
+    }
 
     QString key = QString("%1:%2").arg(compId).arg(eventName);
     if (m_eventStorage.contains(key)) {
@@ -1884,11 +1898,16 @@ bool HardwareSimulator::evaluatePotCondition(const QString& compId, const QStrin
     ComponentItem* comp = findComponent(compId);
     if (comp) {
         bool isPot = (comp->componentType() == "potentiometer");
+        bool isLdr = (comp->componentType() == "ldr");
         double potVal = 0.0;
         bool matched = false;
         if (isPot) {
             auto* pot = static_cast<PotentiometerItem*>(comp);
             potVal = pot->value();
+            matched = true;
+        } else if (isLdr) {
+            auto* ldr = static_cast<LdrItem*>(comp);
+            potVal = ldr->value();
             matched = true;
         } else {
             if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {

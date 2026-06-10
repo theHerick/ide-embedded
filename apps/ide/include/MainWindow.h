@@ -68,6 +68,7 @@ private slots:
     void startInteractiveTutorial();
     void startDistanceSensorTutorial();
     void startMotorIoTTutorial();
+    void startLdrRelayTutorial();
     void platformIOConfigTriggered();
 
 private:
