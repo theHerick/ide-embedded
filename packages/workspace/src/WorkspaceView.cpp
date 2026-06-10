@@ -9,6 +9,61 @@
 #include <QAbstractItemView>
 #include <QTimer>
 #include <cmath>
+#include <QSortFilterProxyModel>
+#include <QStringListModel>
+#include <QHash>
+
+namespace {
+class AccentInsensitiveCompleterProxyModel : public QSortFilterProxyModel {
+public:
+    explicit AccentInsensitiveCompleterProxyModel(QLineEdit* lineEdit, QObject* parent = nullptr)
+        : QSortFilterProxyModel(parent), m_lineEdit(lineEdit) {}
+
+    void invalidate() {
+        invalidateFilter();
+    }
+
+protected:
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override {
+        if (!m_lineEdit) return true;
+        QString pattern = m_lineEdit->text().trimmed().toLower();
+        pattern = removeAccents(pattern);
+
+        QModelIndex index = sourceModel()->index(source_row, 0, source_parent);
+        QString data = sourceModel()->data(index, Qt::DisplayRole).toString().toLower();
+        data = removeAccents(data);
+
+        return data.contains(pattern);
+    }
+
+private:
+    QLineEdit* m_lineEdit;
+
+    static QString removeAccents(QString str) {
+        static const QHash<QChar, QString> map = {
+            {QChar(0x00E1), "a"}, {QChar(0x00E0), "a"}, {QChar(0x00E2), "a"}, {QChar(0x00E3), "a"}, {QChar(0x00E4), "a"},
+            {QChar(0x00E9), "e"}, {QChar(0x00E8), "e"}, {QChar(0x00EA), "e"}, {QChar(0x00EB), "e"},
+            {QChar(0x00ED), "i"}, {QChar(0x00EC), "i"}, {QChar(0x00EE), "i"}, {QChar(0x00EF), "i"},
+            {QChar(0x00F3), "o"}, {QChar(0x00F2), "o"}, {QChar(0x00F4), "o"}, {QChar(0x00F5), "o"}, {QChar(0x00F6), "o"},
+            {QChar(0x00FA), "u"}, {QChar(0x00F9), "u"}, {QChar(0x00FB), "u"}, {QChar(0x00FC), "u"},
+            {QChar(0x00E7), "c"},
+            {QChar(0x00C1), "a"}, {QChar(0x00C0), "a"}, {QChar(0x00C2), "a"}, {QChar(0x00C3), "a"}, {QChar(0x00C4), "a"},
+            {QChar(0x00C9), "e"}, {QChar(0x00C8), "e"}, {QChar(0x00CA), "e"}, {QChar(0x00CB), "e"},
+            {QChar(0x00CD), "i"}, {QChar(0x00CC), "i"}, {QChar(0x00CE), "i"}, {QChar(0x00CF), "i"},
+            {QChar(0x00D3), "o"}, {QChar(0x00D2), "o"}, {QChar(0x00D4), "o"}, {QChar(0x00D5), "o"}, {QChar(0x00D6), "o"},
+            {QChar(0x00DA), "u"}, {QChar(0x00D9), "u"}, {QChar(0x00DB), "u"}, {QChar(0x00DC), "u"},
+            {QChar(0x00C7), "c"}
+        };
+        QString result;
+        for (QChar c : str) {
+            if (map.contains(c)) result += map[c];
+            else result += c;
+        }
+        return result;
+    }
+};
+} // namespace
+
 
 WorkspaceView::WorkspaceView(QWidget* parent) : QGraphicsView(parent) {
     setRenderHint(QPainter::Antialiasing);
@@ -154,7 +209,7 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
     componentsList << "LED" << "LED RGB" << "Botão" << "Resistor" << "Capacitor" << "Potenciômetro" << "Sensor LDR (Luz)" << "Buzzer 5V" << "Motor Genérico" << "Terra (GND)"
                    << "Sensor Temperatura/Umidade DHT22"
                    << "Sensor Ultrassônico HC-SR04"
-                   << "Lâmpada com Bocal" << "Lâmpada" << "Lampada" << "Lamp";
+                   << "Lâmpada com Bocal";
 
     // Add registered custom modeled components
     for (const auto& def : CustomComponentManager::instance().registeredComponents()) {
@@ -167,10 +222,21 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
     // Add "+ Modelar" option to search
     componentsList << "+ Modelar (Criar Novo Componente)";
 
-    QCompleter* completer = new QCompleter(componentsList, searchEdit);
+    // Remove duplicates safely
+    componentsList.removeDuplicates();
+
+    // Create models for accent-insensitive search completer
+    QStringListModel* sourceModel = new QStringListModel(componentsList, searchEdit);
+    AccentInsensitiveCompleterProxyModel* proxyModel = new AccentInsensitiveCompleterProxyModel(searchEdit, searchEdit);
+    proxyModel->setSourceModel(sourceModel);
+
+    QCompleter* completer = new QCompleter(searchEdit);
+    completer->setModel(proxyModel);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     completer->setFilterMode(Qt::MatchContains);
     completer->setCompletionMode(QCompleter::PopupCompletion);
+
+    connect(searchEdit, &QLineEdit::textChanged, proxyModel, &AccentInsensitiveCompleterProxyModel::invalidate);
 
     completer->popup()->setStyleSheet(
         "QListView { "
