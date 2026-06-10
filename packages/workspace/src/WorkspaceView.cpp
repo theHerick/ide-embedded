@@ -267,9 +267,29 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
     );
     searchEdit->setCompleter(completer);
 
+    auto adjustPopupSize = [completer]() {
+        if (!completer) return;
+        QAbstractItemView* popup = completer->popup();
+        if (!popup) return;
+        int count = completer->completionCount();
+        if (count == 0) return;
+        int maxVisible = completer->maxVisibleItems();
+        int visibleCount = qMin(count, maxVisible);
+        int itemHeight = 28;
+        int totalHeight = visibleCount * itemHeight;
+        int frameHeight = popup->frameWidth() * 2;
+        int padding = 10;
+        popup->setFixedHeight(totalHeight + frameHeight + padding);
+    };
+
+    connect(searchEdit, &QLineEdit::textChanged, searchEdit, [adjustPopupSize]() {
+        QTimer::singleShot(10, adjustPopupSize);
+    });
+
     // Force showing the list immediately so the user knows exactly what they can choose from!
-    QTimer::singleShot(50, searchEdit, [completer]() {
+    QTimer::singleShot(50, searchEdit, [completer, adjustPopupSize]() {
         completer->complete();
+        adjustPopupSize();
     });
 
     auto handleAddition = [this, searchEdit, viewPos](const QString& textVal) {
@@ -391,7 +411,7 @@ bool WorkspaceView::eventFilter(QObject* watched, QEvent* event) {
             }
             // Delay deletion slightly so that mouse click selection on popup completes first
             QTimer::singleShot(150, watched, &QObject::deleteLater);
-            return true;
+            return false;
         }
     }
     return QGraphicsView::eventFilter(watched, event);

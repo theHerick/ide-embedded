@@ -552,8 +552,28 @@ void WebPageEditorDialog::showQuickSearch(const QPointF& scenePos, const QPoint&
     );
     searchEdit->setCompleter(completer);
 
-    QTimer::singleShot(50, searchEdit, [completer]() {
+    auto adjustPopupSize = [completer]() {
+        if (!completer) return;
+        QAbstractItemView* popup = completer->popup();
+        if (!popup) return;
+        int count = completer->completionCount();
+        if (count == 0) return;
+        int maxVisible = completer->maxVisibleItems();
+        int visibleCount = qMin(count, maxVisible);
+        int itemHeight = 31;
+        int totalHeight = visibleCount * itemHeight;
+        int frameHeight = popup->frameWidth() * 2;
+        int padding = 10;
+        popup->setFixedHeight(totalHeight + frameHeight + padding);
+    };
+
+    connect(searchEdit, &QLineEdit::textChanged, searchEdit, [adjustPopupSize]() {
+        QTimer::singleShot(10, adjustPopupSize);
+    });
+
+    QTimer::singleShot(50, searchEdit, [completer, adjustPopupSize]() {
         completer->complete();
+        adjustPopupSize();
     });
 
     auto handleAddition = [this, searchEdit, scenePos](const QString& textVal) {
