@@ -23,6 +23,7 @@ class DHT22Item;
 class HCSR04Item;
 class CapacitorItem;
 class LEDItem;
+class LdrItem;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -42,6 +43,7 @@ private slots:
     void editCapacitorProperties(CapacitorItem* capacitor);
     void editLEDProperties(LEDItem* led);
     void editPotentiometerValue(PotentiometerItem* potentiometer);
+    void editLdrValue(LdrItem* ldr);
     void editMotorProperties(MotorItem* motor);
     void editCustomPotentiometerValue(CustomComponentItem* custom);
     void editDHT22Properties(DHT22Item* dht);

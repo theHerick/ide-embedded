@@ -414,6 +414,13 @@ void HardwareSimulator::triggerPeriodicEvents() {
                 triggerComponentEvent(comp->id(), "aoGirar");
                 m_executingLoop[eventKey] = false;
             }
+        } else if (comp->componentType() == "ldr") {
+            QString eventKey = comp->id() + ":aoAlterar";
+            if (!m_executingLoop.value(eventKey, false)) {
+                m_executingLoop[eventKey] = true;
+                triggerComponentEvent(comp->id(), "aoAlterar");
+                m_executingLoop[eventKey] = false;
+            }
         } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
             if (custom->category() == "analog_input" || custom->category() == "digital_sensor") {
                 QString eventKey = custom->id() + ":aoMudarValor";
@@ -941,7 +948,7 @@ bool HardwareSimulator::evaluateExpression(const QString& expr) {
 
         if (lowExpr.contains(id) || lowExpr.contains(name) || lowExpr.contains(sName) || lowExpr.contains(pinName)) {
             auto* customCast = dynamic_cast<CustomComponentItem*>(comp);
-            if (comp->componentType() == "potentiometer" || (customCast && customCast->category() == "analog_input")) {
+            if (comp->componentType() == "potentiometer" || comp->componentType() == "ldr" || (customCast && customCast->category() == "analog_input")) {
                 QString op = ">";
                 double val = 500.0;
                 if (lowExpr.contains("<")) op = "<";
@@ -1224,6 +1231,10 @@ double HardwareSimulator::getComponentSimValue(const QString& nameOrId) {
             if (comp->componentType() == "potentiometer") {
                 auto* pot = static_cast<PotentiometerItem*>(comp);
                 return pot->value();
+            }
+            if (comp->componentType() == "ldr") {
+                auto* ldr = static_cast<LdrItem*>(comp);
+                return ldr->value();
             }
             if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
                 if (custom->category() == "analog_input") {
@@ -1549,7 +1560,12 @@ void HardwareSimulator::executeBlockChainInternal(const QVector<EventLogicBlock>
                             for (auto* c : m_scene->components()) {
                                 if (c->name() == part || c->id() == part) {
                                     if (c->componentType() == "potentiometer") {
-                                        output += QString::number(evaluatePotCondition(c->id(), "> -1") ? 100 : 0); // Very naive
+                                        auto* pot = static_cast<PotentiometerItem*>(c);
+                                        output += QString::number(pot->value());
+                                        found = true; break;
+                                    } else if (c->componentType() == "ldr") {
+                                        auto* ldr = static_cast<LdrItem*>(c);
+                                        output += QString::number(ldr->value());
                                         found = true; break;
                                     } else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
                                         if (custom->category() == "analog_input") {

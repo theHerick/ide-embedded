@@ -429,6 +429,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         } else if (comp->componentType() == "potentiometer") {
             auto* pot = static_cast<PotentiometerItem*>(comp);
             this->editPotentiometerValue(pot);
+        } else if (comp->componentType() == "ldr") {
+            auto* ldr = static_cast<LdrItem*>(comp);
+            this->editLdrValue(ldr);
         } else if (comp->componentType() == "motor") {
             auto* motor = static_cast<MotorItem*>(comp);
             this->editMotorProperties(motor);
@@ -1194,7 +1197,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
         QString entry = c->name() + "|" + gpio;
 
         if (c->componentType() == "led" || c->componentType() == "rgb_led" || c->componentType() == "relay") avLeds.append(entry);
-        else if (c->componentType() == "potentiometer") avPots.append(entry);
+        else if (c->componentType() == "potentiometer" || c->componentType() == "ldr") avPots.append(entry);
         else if (c->componentType() == "buzzer") avBuzzers.append(entry);
         else if (c->componentType() == "motor") avMotors.append(entry);
         else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
@@ -1236,7 +1239,7 @@ void MainWindow::openWebEventEditor(const QString& compId, const QString& eventN
         if (c->componentType() == "dht22") avDhts.append(c->name());
         else if (c->componentType() == "hcsr04") avHcsrs.append(c->name());
         else if (c->componentType() == "led" || c->componentType() == "rgb_led" || c->componentType() == "relay") avLeds.append(c->name());
-        else if (c->componentType() == "potentiometer") avPots.append(c->name());
+        else if (c->componentType() == "potentiometer" || c->componentType() == "ldr") avPots.append(c->name());
         else if (c->componentType() == "buzzer") avBuzzers.append(c->name());
         else if (c->componentType() == "motor") avMotors.append(c->name());
         else if (auto* custom = dynamic_cast<CustomComponentItem*>(c)) {
@@ -1542,6 +1545,20 @@ void MainWindow::showComponentContextMenu(ComponentItem* comp, const QPointF& gl
         connect(actEdit, &QAction::triggered, this, [this, comp]() {
             auto* pot = static_cast<PotentiometerItem*>(comp);
             this->editPotentiometerValue(pot);
+        });
+    } else if (comp->componentType() == "ldr") {
+        QAction* actAlterar = menu.addAction("Evento: Ao Alterar (aoAlterar)");
+        connect(actAlterar, &QAction::triggered, this, [this, comp]() {
+            m_scene->clearSelection();
+            comp->setSelected(true);
+            m_selectedComponent = comp;
+            openEventEditor(comp, "aoAlterar");
+        });
+
+        QAction* actEdit = menu.addAction("Ajustar Nível de Luz...");
+        connect(actEdit, &QAction::triggered, this, [this, comp]() {
+            auto* ldr = static_cast<LdrItem*>(comp);
+            this->editLdrValue(ldr);
         });
     } else if (comp->componentType() == "buzzer") {
         QAction* act = menu.addAction("Evento: Ao Tocar (aoTocar)");
@@ -3242,6 +3259,103 @@ void MainWindow::editPotentiometerValue(PotentiometerItem* potentiometer) {
     }
 }
 
+void MainWindow::editLdrValue(LdrItem* ldr) {
+    if (!ldr) return;
+
+    QDialog dialog(this);
+    dialog.setWindowTitle("Ajustar Luminosidade");
+    dialog.setMinimumWidth(320);
+    dialog.setStyleSheet(
+        "QDialog { background: #FFFFFF; border: 1px solid #E6EEF3; }"
+        "QLabel { color: #0F172A; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }"
+        "QSpinBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-weight: bold; selection-background-color: #DBEAFE; }"
+        "QSpinBox:focus { border-color: #93C5FD; }"
+        "QSlider::groove:horizontal { border: 1px solid #E6EEF3; height: 6px; background: #F8FAFC; border-radius: 3px; }"
+        "QSlider::sub-page:horizontal { background: #10B981; border-radius: 3px; }"
+        "QSlider::handle:horizontal { background: #047857; border: 1px solid #A7F3D0; width: 14px; margin-top: -4px; margin-bottom: -4px; border-radius: 7px; }"
+        "QSlider::handle:horizontal:hover { background: #065F46; }"
+        "QPushButton { background: #10B981; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
+        "QPushButton:hover { background: #065F46; }"
+        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
+        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
+    );
+
+    auto* layout = new QVBoxLayout(&dialog);
+    layout->setSpacing(16);
+    layout->setContentsMargins(20, 20, 20, 20);
+
+    auto* titleLabel = new QLabel("Nível de Luz do LDR (0 - 100%):", &dialog);
+    layout->addWidget(titleLabel);
+
+    auto* sliderLay = new QHBoxLayout();
+    sliderLay->setSpacing(10);
+
+    auto* slider = new QSlider(Qt::Horizontal, &dialog);
+    slider->setRange(0, 100);
+    slider->setValue(static_cast<int>(ldr->value()));
+
+    auto* spinBox = new QSpinBox(&dialog);
+    spinBox->setRange(0, 100);
+    spinBox->setSuffix(" %");
+    spinBox->setValue(static_cast<int>(ldr->value()));
+    spinBox->setFixedWidth(80);
+
+    sliderLay->addWidget(slider);
+    sliderLay->addWidget(spinBox);
+    layout->addLayout(sliderLay);
+
+    // Sync Slider and SpinBox
+    connect(slider, &QSlider::valueChanged, spinBox, &QSpinBox::setValue);
+    connect(spinBox, qOverload<int>(&QSpinBox::valueChanged), slider, &QSlider::setValue);
+
+    // Quick presets: 10% (Escuro), 50% (Ambiente), 90% (Claro)
+    auto* quickLabel = new QLabel("Predefinições:", &dialog);
+    layout->addWidget(quickLabel);
+
+    auto* quickBtnLayout = new QHBoxLayout();
+    quickBtnLayout->setSpacing(6);
+
+    auto* btnEscuro = new QPushButton("Escuro (10%)", &dialog);
+    btnEscuro->setObjectName("cancelBtn");
+    connect(btnEscuro, &QPushButton::clicked, [slider]() { slider->setValue(10); });
+
+    auto* btnAmbiente = new QPushButton("Ambiente (50%)", &dialog);
+    btnAmbiente->setObjectName("cancelBtn");
+    connect(btnAmbiente, &QPushButton::clicked, [slider]() { slider->setValue(50); });
+
+    auto* btnClaro = new QPushButton("Claro (90%)", &dialog);
+    btnClaro->setObjectName("cancelBtn");
+    connect(btnClaro, &QPushButton::clicked, [slider]() { slider->setValue(90); });
+
+    quickBtnLayout->addWidget(btnEscuro);
+    quickBtnLayout->addWidget(btnAmbiente);
+    quickBtnLayout->addWidget(btnClaro);
+    layout->addLayout(quickBtnLayout);
+
+    // Action buttons
+    auto* buttonLayout = new QHBoxLayout();
+    buttonLayout->setSpacing(10);
+
+    auto* cancelBtn = new QPushButton("Cancelar", &dialog);
+    cancelBtn->setObjectName("cancelBtn");
+    connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+    auto* saveBtn = new QPushButton("Salvar", &dialog);
+    connect(saveBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+
+    buttonLayout->addWidget(cancelBtn);
+    buttonLayout->addWidget(saveBtn);
+    layout->addLayout(buttonLayout);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        int newValue = slider->value();
+        ldr->setValue(newValue);
+        // Force compile update in real-time
+        compileCode();
+        statusBar()->showMessage(QString("Luminosidade do LDR %1 atualizada para %2%").arg(ldr->id()).arg(newValue), 3000);
+    }
+}
+
 void MainWindow::editDHT22Properties(DHT22Item* dht) {
     if (!dht) return;
 
@@ -3499,6 +3613,13 @@ void MainWindow::onComponentAdded(ComponentItem* comp) {
                 m_simulator->triggerComponentEvent(comp->id(), "aoGirar");
             }
         });
+    } else if (comp->componentType() == "ldr") {
+        connect(static_cast<LdrItem*>(comp), &LdrItem::valueChanged, this, [this, comp](double) {
+            compileCode();
+            if (m_simulator && m_simulator->isRunning()) {
+                m_simulator->triggerComponentEvent(comp->id(), "aoAlterar");
+            }
+        });
     } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
         if (custom->category() == "analog_input") {
             connect(custom, &CustomComponentItem::valueChanged, this, [this, custom](double) {
@@ -3607,6 +3728,8 @@ void MainWindow::loadToolboxItems() {
     gndItem->setData(Qt::UserRole, "gnd");
     auto* potItem = new QListWidgetItem("Potenciômetro", m_toolboxList);
     potItem->setData(Qt::UserRole, "potentiometer");
+    auto* ldrItem = new QListWidgetItem("Sensor LDR (Luz)", m_toolboxList);
+    ldrItem->setData(Qt::UserRole, "ldr");
     auto* buzItem = new QListWidgetItem("Buzzer 5V", m_toolboxList);
     buzItem->setData(Qt::UserRole, "buzzer");
     auto* relayItem = new QListWidgetItem("Módulo Relé", m_toolboxList);
@@ -3630,7 +3753,7 @@ void MainWindow::onToolboxContextMenu(const QPoint& pos) {
     QString typeId = item->data(Qt::UserRole).toString();
 
     // Check if it's a native component
-    QStringList builtIns = {"led", "button", "resistor", "capacitor", "potentiometer", "buzzer", "esp32", "relay", "dht22", "hcsr04"};
+    QStringList builtIns = {"led", "button", "resistor", "capacitor", "potentiometer", "ldr", "buzzer", "esp32", "relay", "dht22", "hcsr04"};
     if (builtIns.contains(typeId)) return; // Don't allow deleting native components
 
     QMenu menu(this);
@@ -6539,6 +6662,24 @@ void MainWindow::showComponentModeling(ComponentItem* comp) {
             "// O parâmetro 'valor' contém a leitura analógica quantizada no ADC (0 a 4095)\n"
             "void aoGirar(int valor) {\n"
             "    // Converte a leitura (0-4095) para tensão física aproximada (0-3.3V)\n"
+            "}\n";
+
+    } else if (type == "ldr") {
+        html += "<h1>Sensor de Luz LDR</h1>";
+        html += "<span class=\"badge\">Entrada Analógica / Sensor de Luminosidade</span>";
+        html += "<table>";
+        html += "<tr><th>Evento Lógico</th><th>Condição de Disparo</th><th>Faixa de Tensão</th></tr>";
+        html += "<tr><td><b>aoAlterar</b></td><td>Mudança no nível de luminosidade além do limite de histerese.</td><td>Leitura analógica de 0 a 100% de luminosidade.</td></tr>";
+        html += "</table>";
+
+        code = 
+            "// ========================================== \n"
+            "// FUNÇÕES DE EVENTOS DO SENSOR LDR (Sensor de Luz)\n"
+            "// ========================================== \n\n"
+            "// Função executada quando a luminosidade do LDR é alterada (aoAlterar)\n"
+            "// O parâmetro 'valor' contém a leitura analógica (0 a 4095)\n"
+            "void aoAlterar(int valor) {\n"
+            "    // Insira seu código de controle aqui\n"
             "}\n";
 
     } else if (type == "buzzer") {

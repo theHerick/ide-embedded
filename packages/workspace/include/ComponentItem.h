@@ -209,6 +209,27 @@ private:
     double m_value = 0.0;
 };
 
+// LDR (Light Dependent Resistor) Item
+class LdrItem : public ComponentItem {
+    Q_OBJECT
+public:
+    LdrItem(const QString& id, const QString& name, QGraphicsItem* parent = nullptr);
+    QRectF boundingRect() const override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+    double value() const { return m_value; }
+    void setValue(double val);
+
+signals:
+    void valueChanged(double newValue);
+
+protected:
+    void wheelEvent(QGraphicsSceneWheelEvent* event) override;
+
+private:
+    double m_value = 50.0;
+};
+
 // Buzzer Item
 class BuzzerItem : public ComponentItem {
     Q_OBJECT

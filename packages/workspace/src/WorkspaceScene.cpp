@@ -169,6 +169,7 @@ ComponentItem* WorkspaceScene::addComponent(const QString& type, const QString& 
     else if (type == "resistor")      item = new ResistorItem(id, compName);
     else if (type == "capacitor")     item = new CapacitorItem(id, compName);
     else if (type == "potentiometer") item = new PotentiometerItem(id, compName);
+    else if (type == "ldr")           item = new LdrItem(id, compName);
     else if (type == "buzzer")        item = new BuzzerItem(id, compName);
     else if (type == "motor")         item = new MotorItem(id, compName);
     else if (type == "relay")         item = new RelayItem(id, compName);
@@ -859,7 +860,7 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         connectPins(newComp, "1", esp32, gpio, {}, false);
         connectToGnd(newComp, "2", QPointF(20, 50));
 
-    } else if (type == "potentiometer") {
+    } else if (type == "potentiometer" || type == "ldr") {
         QString gpio = getFreeGpio();
         if (!checkGpioAndWarn(gpio)) { m_undoStack->endMacro(); return; }
 

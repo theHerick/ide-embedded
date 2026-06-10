@@ -151,7 +151,7 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
 
     // Setup premium, highly responsive autocomplete list
     QStringList componentsList;
-    componentsList << "LED" << "LED RGB" << "Botão" << "Resistor" << "Capacitor" << "Potenciômetro" << "Buzzer 5V" << "Motor Genérico" << "Terra (GND)"
+    componentsList << "LED" << "LED RGB" << "Botão" << "Resistor" << "Capacitor" << "Potenciômetro" << "Sensor LDR (Luz)" << "Buzzer 5V" << "Motor Genérico" << "Terra (GND)"
                    << "Sensor Temperatura/Umidade DHT22"
                    << "Sensor Ultrassônico HC-SR04";
 
@@ -237,6 +237,9 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
         } else if (textLower.contains("rgb") || textLower.contains("led rgb")) {
             type = "rgb_led";
             name = "LED RGB";
+        } else if (textLower.contains("ldr") || textLower.contains("luminosidade")) {
+            type = "ldr";
+            name = "Sensor LDR (Luz)";
         } else if (textLower.contains("led") || textLower.contains("emissor") || textLower.contains("luz")) {
             type = "led";
             name = "LED Status";

@@ -1207,6 +1207,17 @@ static QString emitStateVariables(
         code += QString("%1 %2 = %3;\n").arg(it.value()).arg(it.key()).arg(initial);
     }
 
+    bool hasLdr = false;
+    for (auto* c : components) {
+        if (c->componentType() == "ldr") {
+            hasLdr = true;
+            break;
+        }
+    }
+    if (hasLdr) {
+        code += "int iluminosidade = 0;\n";
+    }
+
     // ── DECLARAÇÃO DOS REGISTROS EEPROM COMO VARIÁVEIS GLOBAIS ──
     QHash<QString, ComponentItem*> idMap;
     for (auto* c : components) {
@@ -1298,6 +1309,12 @@ static QString emitStateVariables(
             }
         } else if (comp->componentType() == "potentiometer") {
             QString clickKey = QString("%1:aoGirar").arg(comp->id());
+            if (eventBlockStorage.contains(clickKey) && !eventBlockStorage[clickKey].isEmpty()) {
+                QString name = sanitized[comp];
+                code += QString("int lastVal_%1 = -999;\n").arg(name);
+            }
+        } else if (comp->componentType() == "ldr") {
+            QString clickKey = QString("%1:aoAlterar").arg(comp->id());
             if (eventBlockStorage.contains(clickKey) && !eventBlockStorage[clickKey].isEmpty()) {
                 QString name = sanitized[comp];
                 code += QString("int lastVal_%1 = -999;\n").arg(name);
@@ -1915,6 +1932,19 @@ QString CodeGenerator::generateArduinoCode(
             QString eventKey = QString("%1:aoGirar").arg(comp->id());
             if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
                 QString fnName = QString("%1_eventAoGirar").arg(sanitizeIdentifier(comp->name()));
+                QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                if (!eventFunc.isEmpty()) {
+                    if (!hasNativeHandlers) {
+                        code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
+                        hasNativeHandlers = true;
+                    }
+                    code += eventFunc;
+                }
+            }
+        } else if (comp->componentType() == "ldr") {
+            QString eventKey = QString("%1:aoAlterar").arg(comp->id());
+            if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
+                QString fnName = QString("%1_eventAoAlterar").arg(sanitizeIdentifier(comp->name()));
                 QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
                 if (!eventFunc.isEmpty()) {
                     if (!hasNativeHandlers) {
@@ -2670,6 +2700,8 @@ QString CodeGenerator::generateArduinoCode(
             code += QString("    pinMode(%1, INPUT_PULLUP); // Resistor interno pullup\n").arg(pinMacro);
         } else if (comp->componentType() == "potentiometer") {
             code += QString("    pinMode(%1, INPUT); // Entrada analógica\n").arg(pinMacro);
+        } else if (comp->componentType() == "ldr") {
+            code += QString("    pinMode(%1, INPUT); // Entrada analógica LDR\n").arg(pinMacro);
         } else if (comp->componentType() == "buzzer") {
             code += QString("    pinMode(%1, OUTPUT);\n").arg(pinMacro);
             code += QString("    digitalWrite(%1, LOW); // Inicia silenciado\n").arg(pinMacro);
@@ -2857,6 +2889,20 @@ QString CodeGenerator::generateArduinoCode(
             if (eventBlockStorage.contains(clickKey) && !eventBlockStorage[clickKey].isEmpty()) {
                 QString name = sanitizeIdentifier(comp->name());
                 QString call = QString("monitor_%1_eventAoGirar()").arg(name);
+                if (!alreadyCalled.contains(call)) {
+                    code += QString("    %1;\n").arg(call);
+                }
+            }
+        }
+    }
+
+    // Monitor analógico (Ao Alterar) para LDR
+    for (auto* comp : components) {
+        if (comp->componentType() == "ldr") {
+            QString clickKey = QString("%1:aoAlterar").arg(comp->id());
+            if (eventBlockStorage.contains(clickKey) && !eventBlockStorage[clickKey].isEmpty()) {
+                QString name = sanitizeIdentifier(comp->name());
+                QString call = QString("monitor_%1_eventAoAlterar()").arg(name);
                 if (!alreadyCalled.contains(call)) {
                     code += QString("    %1;\n").arg(call);
                 }
@@ -3232,6 +3278,54 @@ QString CodeGenerator::compileComponentEvents(
             "    }\n"
             "}\n"
         ).arg(name).arg(hasEvent ? name + "_eventAoGirar" : "aoGirar");
+
+    } else if (type == "ldr") {
+        code += "// ========================================== \n"
+                "// FUNÇÕES DE EVENTOS DO SENSOR LDR (Sensor de Luz)\n"
+                "// ========================================== \n\n";
+
+        // aoAlterar
+        QString eventKey = QString("%1:aoAlterar").arg(comp->id());
+        bool hasEvent = eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty();
+        if (hasEvent) {
+            code += "// Função executada quando a luminosidade do LDR é alterada (aoAlterar)\n"
+                    "// O parâmetro 'valor' contém a leitura analógica (0 a 4095)\n";
+            code += emitEventFunction(
+                QString("%1_eventAoAlterar").arg(name),
+                eventBlockStorage[eventKey],
+                components,
+                0,
+                nullptr,
+                &sanitized,
+                &eepromOffsets,
+                &nextEepromOffset,
+                "int valor", // signatureArgs
+                "int",       // argType
+                "valor"      // argName
+            );
+        } else {
+            code += "// Função executada quando a luminosidade do LDR é alterada (aoAlterar)\n"
+                    "// O parâmetro 'valor' contém a leitura analógica (0 a 4095)\n"
+                    "void aoAlterar(int valor) {\n"
+                    "    // Insira seu código de controle aqui\n"
+                    "}\n\n";
+        }
+
+        code += "// ========================================== \n"
+                "// MONITORES DE EVENTOS DO HARDWARE (FÍSICO)\n"
+                "// ========================================== \n\n";
+
+        code += QString(
+            "// Monitor físico para amostragem do LDR com histerese\n"
+            "void monitor_%1_eventAoAlterar() {\n"
+            "    int currentVal_%1 = analogRead(PIN_%1);\n"
+            "    if (lastVal_%1 == -999 || abs(currentVal_%1 - lastVal_%1) > 20) {\n"
+            "        iluminosidade = map(currentVal_%1, 0, 4095, 0, 100);\n"
+            "        %2(currentVal_%1);\n"
+            "        lastVal_%1 = currentVal_%1;\n"
+            "    }\n"
+            "}\n"
+        ).arg(name).arg(hasEvent ? name + "_eventAoAlterar" : "aoAlterar");
 
     } else if (type == "buzzer") {
         code += "// ========================================== \n"
