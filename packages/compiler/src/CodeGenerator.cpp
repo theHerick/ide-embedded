@@ -1932,7 +1932,19 @@ QString CodeGenerator::generateArduinoCode(
             QString eventKey = QString("%1:aoGirar").arg(comp->id());
             if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
                 QString fnName = QString("%1_eventAoGirar").arg(sanitizeIdentifier(comp->name()));
-                QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                QString eventFunc = emitEventFunction(
+                    fnName,
+                    eventBlockStorage[eventKey],
+                    components,
+                    0,
+                    nullptr,
+                    &sanitized,
+                    &eepromOffsets,
+                    &nextEepromOffset,
+                    "int valor", // signatureArgs
+                    "int",       // argType
+                    "valor"      // argName
+                );
                 if (!eventFunc.isEmpty()) {
                     if (!hasNativeHandlers) {
                         code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
@@ -1945,7 +1957,19 @@ QString CodeGenerator::generateArduinoCode(
             QString eventKey = QString("%1:aoAlterar").arg(comp->id());
             if (eventBlockStorage.contains(eventKey) && !eventBlockStorage[eventKey].isEmpty()) {
                 QString fnName = QString("%1_eventAoAlterar").arg(sanitizeIdentifier(comp->name()));
-                QString eventFunc = emitEventFunction(fnName, eventBlockStorage[eventKey], components, 0, nullptr, &sanitized, &eepromOffsets, &nextEepromOffset);
+                QString eventFunc = emitEventFunction(
+                    fnName,
+                    eventBlockStorage[eventKey],
+                    components,
+                    0,
+                    nullptr,
+                    &sanitized,
+                    &eepromOffsets,
+                    &nextEepromOffset,
+                    "int luminosidade", // signatureArgs
+                    "int",              // argType
+                    "luminosidade"      // argName
+                );
                 if (!eventFunc.isEmpty()) {
                     if (!hasNativeHandlers) {
                         code += "// ── EVENTOS PADRÃO (NATIVOS) ──────────────────────────\n";
@@ -2166,7 +2190,7 @@ QString CodeGenerator::generateArduinoCode(
                     code += QString("    int currentVal_%1 = analogRead(%2);\n").arg(name).arg(pinMacro);
                 }
                 code += QString("    if (lastVal_%1 == -999 || abs(currentVal_%1 - lastVal_%1) > 5) {\n").arg(name).arg(name).arg(name);
-                code += QString("        %1_eventAoGirar();\n").arg(name);
+                code += QString("        %1_eventAoGirar(currentVal_%2);\n").arg(name).arg(name);
                 code += QString("        lastVal_%1 = currentVal_%2;\n").arg(name).arg(name);
                 code += "    }\n";
                 code += "}\n\n";
