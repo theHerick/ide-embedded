@@ -346,5 +346,20 @@ public:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 };
 
+// Lamp (Lâmpada com Bocal) Item
+class LampItem : public ComponentItem {
+    Q_OBJECT
+public:
+    LampItem(const QString& id, const QString& name, QGraphicsItem* parent = nullptr);
+    QRectF boundingRect() const override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+    bool isOn() const { return m_isOn; }
+    void setOn(bool on) { m_isOn = on; update(); }
+
+private:
+    bool m_isOn = false;
+};
+
 
 

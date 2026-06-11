@@ -2673,3 +2673,139 @@ void RGBLEDItem::updateLayoutForSMD(const QString& smdSize) {
     m_pins[3].localPos = QPointF( w * 0.425,  h * 0.3);
     update();
 }
+
+// =======================================================
+// LAMP ITEM IMPLEMENTATION
+// =======================================================
+LampItem::LampItem(const QString& id, const QString& name, QGraphicsItem* parent)
+    : ComponentItem(id, name, "lamp", parent), m_isOn(false) {
+    // Red FASE pin on Left, Blue NEUTRO pin on Right
+    m_pins.append({"FASE",   QPointF(-40, 20), false, "", "", QColor(239, 68, 68)});
+    m_pins.append({"NEUTRO", QPointF(40,  20), false, "", "", QColor(59, 130, 246)});
+    
+    QString idx = extractIndexFromId(id);
+    m_name = "Lâmpada-" + (idx.isEmpty() ? "1" : idx);
+}
+
+QRectF LampItem::boundingRect() const {
+    return QRectF(-45, -52, 90, 104);
+}
+
+void LampItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*) {
+    painter->setRenderHint(QPainter::Antialiasing);
+
+    // Selected border highlight
+    if (option->state & QStyle::State_Selected) {
+        painter->setPen(QPen(QColor(99, 102, 241, 150), 3, Qt::SolidLine));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(-43, -49, 86, 98, 8, 8);
+    }
+
+    // Shadow
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(15, 23, 42, 35));
+    painter->drawEllipse(QRectF(-27, -37, 60, 60)); // Bulb shadow
+    painter->drawRoundedRect(QRectF(-15, 13, 30, 26), 4, 4); // Socket shadow
+
+    // Outer Glow Effect when lamp is on
+    if (m_isOn) {
+        painter->save();
+        painter->setPen(Qt::NoPen);
+        QRadialGradient glowGrad(0, -10, 65);
+        glowGrad.setColorAt(0.0, QColor(253, 224, 71, 140)); // Semi-transparent yellow
+        glowGrad.setColorAt(0.5, QColor(253, 224, 71, 45));
+        glowGrad.setColorAt(1.0, QColor(253, 224, 71, 0));
+        painter->setBrush(glowGrad);
+        painter->drawEllipse(-65, -75, 130, 130);
+        painter->restore();
+    }
+
+    // Bocal/Socket base (Metallic screw thread)
+    QLinearGradient metalGrad(-20, 0, 20, 0);
+    metalGrad.setColorAt(0.0, QColor(100, 116, 139)); // Slate 500
+    metalGrad.setColorAt(0.5, QColor(226, 232, 240)); // Slate 200 highlight
+    metalGrad.setColorAt(1.0, QColor(71, 85, 105));   // Slate 600
+    
+    painter->setPen(QPen(QColor(51, 65, 85), 1.5));
+    painter->setBrush(metalGrad);
+    
+    // Draw 3 horizontal ridges for screw thread
+    painter->drawRoundedRect(-18, 10, 36, 8, 2, 2);
+    painter->drawRoundedRect(-18, 18, 36, 8, 2, 2);
+    painter->drawRoundedRect(-18, 26, 36, 8, 2, 2);
+    
+    // Black base insulator
+    painter->setBrush(QColor(30, 41, 59));
+    painter->drawRect(-12, 34, 24, 6);
+
+    // Glass Bulb body
+    QRadialGradient bulbGrad(0, -10, 30);
+    if (m_isOn) {
+        bulbGrad.setColorAt(0.0, QColor(254, 240, 138)); // Yellow 100
+        bulbGrad.setColorAt(0.8, QColor(234, 179, 8));   // Yellow 500
+        bulbGrad.setColorAt(1.0, QColor(202, 138, 4));   // Yellow 600
+    } else {
+        bulbGrad.setColorAt(0.0, QColor(255, 255, 255, 200)); // White glass
+        bulbGrad.setColorAt(0.8, QColor(241, 245, 249, 130)); // Slanted glass
+        bulbGrad.setColorAt(1.0, QColor(203, 213, 225, 160)); // Outline glass
+    }
+
+    QPainterPath bulbPath;
+    bulbPath.addEllipse(QRectF(-30, -40, 60, 60)); // Sphere
+    bulbPath.addRect(QRectF(-18, -10, 36, 20));   // Neck
+    
+    painter->setPen(QPen(m_isOn ? QColor(202, 138, 4) : QColor(148, 163, 184), 2));
+    painter->setBrush(bulbGrad);
+    painter->drawPath(bulbPath.simplified());
+
+    // Internal Filament
+    painter->setPen(QPen(m_isOn ? QColor(254, 243, 199) : QColor(100, 116, 139), 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+    QPainterPath filament;
+    filament.moveTo(-8, 5);
+    filament.lineTo(-6, -12);
+    filament.lineTo(-3, -15);
+    filament.lineTo(0, -12);
+    filament.lineTo(3, -15);
+    filament.lineTo(6, -12);
+    filament.lineTo(8, 5);
+    painter->drawPath(filament);
+
+    if (m_isOn) {
+        painter->setPen(QPen(QColor(255, 255, 255), 2.0));
+        painter->drawLine(-3, -15, 0, -12);
+        painter->drawLine(0, -12, 3, -15);
+    }
+
+    // Connection lines from pins to bocal
+    painter->setPen(QPen(QColor(100, 116, 139), 1.5));
+    painter->drawLine(-40, 20, -18, 20);
+    painter->drawLine(40, 20, 18, 20);
+
+    // Draw Pins and their Text labels next to them
+    for (const auto& pin : m_pins) {
+        painter->setPen(QPen(pin.color.darker(150), 1.5));
+        painter->setBrush(pin.color);
+        painter->drawEllipse(pin.localPos, 3.5, 3.5);
+
+        painter->setPen(QColor(148, 163, 184)); // Slate 400
+        QFont pinLabelFont = painter->font();
+        pinLabelFont.setPointSize(4);
+        pinLabelFont.setBold(true);
+        painter->setFont(pinLabelFont);
+
+        if (pin.name == "FASE") {
+            painter->drawText(QRectF(pin.localPos.x() + 6, pin.localPos.y() - 5, 30, 10), Qt::AlignLeft | Qt::AlignVCenter, pin.name);
+        } else {
+            painter->drawText(QRectF(pin.localPos.x() - 36, pin.localPos.y() - 5, 30, 10), Qt::AlignRight | Qt::AlignVCenter, pin.name);
+        }
+    }
+
+    // Component Name Label at the top
+    painter->setPen(QColor(148, 163, 184)); // Slate 400
+    QFont labelFont = painter->font();
+    labelFont.setPointSize(5);
+    labelFont.setBold(true);
+    painter->setFont(labelFont);
+    painter->drawText(QRectF(-40, -50, 80, 10), Qt::AlignCenter, m_name.toUpper());
+}

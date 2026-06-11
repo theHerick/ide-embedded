@@ -176,6 +176,7 @@ ComponentItem* WorkspaceScene::addComponent(const QString& type, const QString& 
     else if (type == "dht22")         item = new DHT22Item(id, compName);
     else if (type == "hcsr04")        item = new HCSR04Item(id, compName);
     else if (type == "gnd")           item = new GndItem(id, compName);
+    else if (type == "lamp")          item = new LampItem(id, compName);
     else {
         for (const auto& def : CustomComponentManager::instance().registeredComponents()) {
             if (def.type == type) {

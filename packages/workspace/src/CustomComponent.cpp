@@ -424,22 +424,7 @@ void CustomComponentItem::paint(QPainter* painter, const QStyleOptionGraphicsIte
     QColor baseColor = QColor(m_def.color);
     bool glowing = m_isOn || m_isPressed || m_isActive;
     if (glowing) {
-        if (m_def.type == "lamp") {
-            baseColor = QColor("#FBBF24"); // Warm glowing yellow
-            
-            // Draw light glow effect (outer transparent yellow circle)
-            painter->save();
-            painter->setPen(Qt::NoPen);
-            QRadialGradient glowGrad(0, 0, W * 0.9);
-            glowGrad.setColorAt(0.0, QColor(251, 191, 36, 100));
-            glowGrad.setColorAt(0.5, QColor(251, 191, 36, 30));
-            glowGrad.setColorAt(1.0, QColor(251, 191, 36, 0));
-            painter->setBrush(glowGrad);
-            painter->drawEllipse(QRectF(-W * 0.9, -H * 0.9, W * 1.8, H * 1.8));
-            painter->restore();
-        } else {
-            baseColor = baseColor.lighter(120);
-        }
+        baseColor = baseColor.lighter(120);
     }
 
     QLinearGradient bodyGrad(-W/2.0, -H/2.0, W/2.0, H/2.0);

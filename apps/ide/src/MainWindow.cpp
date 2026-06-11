@@ -271,6 +271,8 @@ static QJsonObject serializeComponentItem(ComponentItem* comp) {
         state["temperature"] = dht->temperature();
     } else if (auto* hc = dynamic_cast<HCSR04Item*>(comp)) {
         state["distance"] = hc->distance();
+    } else if (auto* lamp = dynamic_cast<LampItem*>(comp)) {
+        state["on"] = lamp->isOn();
     } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
         state["category"] = custom->category();
         state["on"] = custom->isOn();
@@ -341,6 +343,8 @@ static void applyComponentState(ComponentItem* comp, const QJsonObject& state) {
         if (state.contains("temperature")) dht->setTemperature(state["temperature"].toDouble());
     } else if (auto* hc = dynamic_cast<HCSR04Item*>(comp)) {
         if (state.contains("distance")) hc->setDistance(state["distance"].toDouble());
+    } else if (auto* lamp = dynamic_cast<LampItem*>(comp)) {
+        lamp->setOn(state["on"].toBool(lamp->isOn()));
     } else if (auto* custom = dynamic_cast<CustomComponentItem*>(comp)) {
         custom->setOn(state["on"].toBool(custom->isOn()));
         custom->setPressed(state["pressed"].toBool(custom->isPressed()));
