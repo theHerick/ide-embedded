@@ -197,8 +197,27 @@ private:
     void distributePins();
 };
 
+#include <QCoreApplication>
+
 class CustomComponentManager {
 public:
+    static QString getRegistryPath() {
+        QString appDir = QCoreApplication::applicationDirPath();
+        QString path = appDir + "/custom_components.json";
+        if (QFile::exists(path)) return path;
+
+        path = appDir + "/../custom_components.json";
+        if (QFile::exists(path)) return path;
+
+        path = appDir + "/../packages/workspace/src/custom_components.json";
+        if (QFile::exists(path)) return path;
+
+        path = appDir + "/packages/workspace/src/custom_components.json";
+        if (QFile::exists(path)) return path;
+
+        return "packages/workspace/src/custom_components.json";
+    }
+
     static CustomComponentManager& instance() {
         static CustomComponentManager inst;
         return inst;
@@ -227,12 +246,10 @@ public:
 
     bool loadFromFile() {
         m_registry.clear();
-        QFile file("custom_components.json");
+        QString path = getRegistryPath();
+        QFile file(path);
         if (!file.open(QIODevice::ReadOnly)) {
-            file.setFileName("packages/workspace/src/custom_components.json");
-            if (!file.open(QIODevice::ReadOnly)) {
-                return false;
-            }
+            return false;
         }
 
         QByteArray data = file.readAll();
@@ -266,16 +283,21 @@ public:
         }
         QJsonDocument doc(arr);
 
-        QFile file("custom_components.json");
+        QString path = getRegistryPath();
+        QFile file(path);
         if (file.open(QIODevice::WriteOnly)) {
             file.write(doc.toJson());
             file.close();
         }
 
-        QFile backup("packages/workspace/src/custom_components.json");
-        if (backup.open(QIODevice::WriteOnly)) {
-            backup.write(doc.toJson());
-            backup.close();
+        QString appDir = QCoreApplication::applicationDirPath();
+        QString backupPath = appDir + "/../packages/workspace/src/custom_components.json";
+        if (backupPath != path) {
+            QFile backup(backupPath);
+            if (backup.open(QIODevice::WriteOnly)) {
+                backup.write(doc.toJson());
+                backup.close();
+            }
         }
     }
 
@@ -283,5 +305,6 @@ private:
     CustomComponentManager() {
         loadFromFile();
     }
+
     QVector<CustomComponentDef> m_registry;
 };
