@@ -237,7 +237,7 @@ void WorkspaceView::spawnSearchBox(const QPoint& viewPos, const QString& initial
     completer->setFilterMode(Qt::MatchContains);
     completer->setCompletionMode(QCompleter::PopupCompletion);
 
-    connect(searchEdit, &QLineEdit::textChanged, proxyModel, &AccentInsensitiveCompleterProxyModel::invalidate);
+    connect(searchEdit, &QLineEdit::textEdited, proxyModel, &AccentInsensitiveCompleterProxyModel::invalidate);
 
     completer->popup()->setStyleSheet(
         "QListView { "
