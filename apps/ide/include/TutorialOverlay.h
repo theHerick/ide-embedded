@@ -31,6 +31,7 @@ struct TutorialStep {
     enum ArrowDir { None, Up, Down, Left, Right } arrowDir = None;
     bool showHighlight = true; // If false, no blue pulsing glow or border is drawn (only the cutout hole)
     QString dynamicTargetId; // e.g. "actionCmdCombo"
+    bool hideNext = false;
 };
 
 class TutorialOverlay : public QWidget {

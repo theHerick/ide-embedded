@@ -433,6 +433,16 @@ void TutorialOverlay::showStep(int idx) {
         );
     }
 
+    bool shouldHide = step.hideNext;
+    if (!shouldHide && idx > 0 && idx < m_steps.size() - 1) {
+        shouldHide = true;
+        // Exception for Tutorial 3 Step 14 (dialog closed state transition)
+        if (m_steps.size() == 18 && idx == 14) {
+            shouldHide = false;
+        }
+    }
+    m_btnNext->setVisible(!shouldHide);
+
     m_card->adjustSize();
     positionCard(step);
     update();

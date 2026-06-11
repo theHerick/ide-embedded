@@ -1884,9 +1884,8 @@ void PotentiometerItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
 // ─────────────────────────────────────────────────────────────────────────────
 LdrItem::LdrItem(const QString& id, const QString& name, QGraphicsItem* parent)
     : ComponentItem(id, name, "ldr", parent), m_value(50.0) {
-    m_pins.append({"1", QPointF(-20, 30), false, "", "", QColor(239, 68, 68)}); // VCC (+) -> Red
-    m_pins.append({"2", QPointF(  0, 30), false, "", "", QColor(245, 158, 11)}); // Signal (S) -> Orange/Yellow
-    m_pins.append({"3", QPointF( 20, 30), false, "", "", QColor(75, 85, 99)});  // GND (-) -> Gray
+    m_pins.append({"1", QPointF(-8, 25), false, "", "", QColor(239, 68, 68)}); // Pin 1
+    m_pins.append({"2", QPointF( 8, 25), false, "", "", QColor(75, 85, 99)});  // Pin 2
     m_name = QString("Sensor LDR 50%");
 }
 
@@ -1914,66 +1913,48 @@ void LdrItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
     if (option->state & QStyle::State_Selected) {
         painter->setPen(QPen(QColor(99, 102, 241, 150), 2.5, Qt::SolidLine));
         painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(-22, -22, 44, 34, 5, 5);
+        painter->drawRoundedRect(-16, -21, 32, 50, 6, 6);
     }
 
     // Metal leads
-    painter->setPen(QPen(QColor(156, 163, 175), 2));
-    painter->drawLine(-20, 10, -20, 30);
-    painter->drawLine(  0, 10,   0, 30);
-    painter->drawLine( 20, 10,  20, 30);
+    painter->setPen(QPen(QColor(156, 163, 175), 2.0));
+    painter->drawLine(-8, 5, -8, 25);
+    painter->drawLine( 8, 5,  8, 25);
 
-    // Draw connection pad circles with colors matching other components
+    // Connection pads
     for (const auto& pin : m_pins) {
         painter->setBrush(pin.color.isValid() ? pin.color : QColor(234, 179, 8));
         QColor borderCol = pin.color.isValid() ? pin.color.darker(115) : QColor(161, 98, 7);
         painter->setPen(QPen(borderCol, 1));
-        painter->drawEllipse(pin.localPos, 3, 3);
+        painter->drawEllipse(pin.localPos, 3.5, 3.5);
     }
-
-    // Module PCB body (Emerald dark green PCB)
-    QLinearGradient bodyGrad(-20, -20, 20, 10);
-    bodyGrad.setColorAt(0.0, QColor(6, 95, 70));
-    bodyGrad.setColorAt(1.0, QColor(4, 120, 87));
-    painter->setBrush(bodyGrad);
-    painter->setPen(QPen(QColor(4, 120, 87), 1));
-    painter->drawRoundedRect(-20, -20, 40, 30, 4, 4);
 
     // LDR Sensor element (beige/orange disk)
     painter->setBrush(QColor(249, 115, 22));
     painter->setPen(QPen(QColor(194, 65, 12), 1.5));
-    painter->drawEllipse(QPointF(0, -6), 10, 10);
+    painter->drawEllipse(QPointF(0, -6), 12, 12);
 
     // Zig-zag photoresistor track
     painter->setPen(QPen(QColor(127, 29, 29), 1.5, Qt::SolidLine, Qt::FlatCap, Qt::RoundJoin));
     QPainterPath path;
-    path.moveTo(-6, -9);
-    path.lineTo(-3, -7);
-    path.lineTo(3, -9);
-    path.lineTo(-3, -5);
-    path.lineTo(3, -3);
-    path.lineTo(-3, -1);
-    path.lineTo(6, -3);
+    path.moveTo(-8, -9);
+    path.lineTo(-4, -7);
+    path.lineTo(4, -9);
+    path.lineTo(-4, -5);
+    path.lineTo(4, -3);
+    path.lineTo(-4, -1);
+    path.lineTo(8, -3);
     painter->drawPath(path);
 
-    // Pin labels (+, S, -) placed inside the dark green PCB body for high contrast & clarity
-    painter->setPen(QColor(241, 245, 249));
-    QFont fPinLabel = painter->font();
-    fPinLabel.setPointSize(7);
-    fPinLabel.setBold(true);
-    painter->setFont(fPinLabel);
-    painter->drawText(QRectF(-25, 0, 10, 10), Qt::AlignCenter, "+");
-    painter->drawText(QRectF(-5,  0, 10, 10), Qt::AlignCenter, "S");
-    painter->drawText(QRectF( 15,  0, 10, 10), Qt::AlignCenter, "-");
-
     // Name Label
-    painter->setPen(QColor(241, 245, 249));
+    painter->setPen(QColor(30, 41, 59));
     QFont fLabelIdx = painter->font();
-    fLabelIdx.setPointSize(5);
+    fLabelIdx.setPointSize(6);
     fLabelIdx.setBold(true);
     painter->setFont(fLabelIdx);
-    painter->drawText(QRectF(-25, -32, 50, 10), Qt::AlignCenter, m_name.toUpper());
+    painter->drawText(QRectF(-25, -34, 50, 10), Qt::AlignCenter, m_name.toUpper());
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BUZZER ITEM IMPLEMENTATION
