@@ -1,4 +1,4 @@
-#include "MainWindow.h"
+﻿#include "MainWindow.h"
 #include "CodeGenerator.h"
 #include "PcbExporter.h"
 #include "CustomComponent.h"
@@ -5673,25 +5673,25 @@ void MainWindow::startDistanceSensorTutorial() {
 
     // ── Passo 4: TRIG → GPIO ─────────────────────────────────────────────────
     steps.append({
-        "4. Conecte o pino TRIG do sensor a um pino GPIO da ESP32",
+        "4. Conecte o pino TRIG do sensor ao pino GPIO5 da ESP32",
         "O pino TRIG envia os pulsos que medem a distância.\n\n"
         "1. Dê um clique no pino TRIG do HC-SR04.\n"
-        "2. Mova o mouse e clique em um pino GPIO livre da ESP32 (ex: GPIO5).",
-        "Conecte o TRIG do HC-SR04 a um GPIO da ESP32!",
+        "2. Mova o mouse e clique no pino GPIO5 da placa ESP32.",
+        "Conecte o TRIG do HC-SR04 ao pino GPIO5 da ESP32!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 5: ECHO → GPIO ─────────────────────────────────────────────────
+    // â”€â”€ Passo 5: ECHO â†’ GPIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     steps.append({
-        "5. Conecte o pino ECHO do sensor a outro pino GPIO da ESP32",
+        "5. Conecte o pino ECHO do sensor ao pino GPIO4 da ESP32",
         "O pino ECHO recebe o eco do pulso e calcula a distância.\n\n"
         "1. Dê um clique no pino ECHO do HC-SR04.\n"
-        "2. Mova o mouse e clique em outro pino GPIO livre da ESP32 (ex: GPIO4).",
-        "Conecte o ECHO do HC-SR04 a outro GPIO da ESP32!",
+        "2. Mova o mouse e clique no pino GPIO4 da placa ESP32.",
+        "Conecte o ECHO do HC-SR04 ao pino GPIO4 da ESP32!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 6: Adicionar Buzzer ─────────────────────────────────────────────
+    // â”€â”€ Passo 6: Adicionar Buzzer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     steps.append({
         "6. Dê dois cliques no workspace e adicione um Buzzer",
         "O buzzer vai apitar quando algo se aproximar do sensor.\n\n"
@@ -5701,13 +5701,13 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 7: Buzzer + → GPIO ──────────────────────────────────────────────
+    // â”€â”€ Passo 7: Buzzer + â†’ GPIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     steps.append({
-        "7. Conecte o pino + (positivo) do Buzzer a um pino GPIO da ESP32",
+        "7. Conecte o pino + (positivo) do Buzzer ao pino GPIO2 da ESP32",
         "O pino positivo do buzzer será controlado pelo microcontrolador.\n\n"
         "1. Dê um clique no pino + do Buzzer.\n"
-        "2. Mova o mouse e clique em um pino GPIO livre da ESP32 (ex: GPIO2).",
-        "Clique no + do Buzzer e depois em um GPIO da ESP32!",
+        "2. Mova o mouse e clique no pino GPIO2 da placa ESP32.",
+        "Conecte o pino + do Buzzer ao pino GPIO2 da ESP32!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
@@ -5943,11 +5943,11 @@ void MainWindow::startMotorIoTTutorial() {
 
     // ── Passo 4: PWM → GPIO ──────────────────────────────────────────────────
     steps.append({
-        "4. Conecte o pino PWM (Sinal) a um pino GPIO da ESP32",
+        "4. Conecte o pino PWM (Sinal) ao pino GPIO2 da ESP32",
         "O pino PWM (laranja) envia o ângulo desejado para o motor.\n\n"
         "1. Dê um clique no pino PWM do Motor Genérico.\n"
-        "2. Mova o mouse e clique em um pino GPIO livre da ESP32.",
-        "Conecte o PWM do Motor a um GPIO da ESP32!",
+        "2. Mova o mouse e clique no pino GPIO2 da placa ESP32.",
+        "Conecte o PWM do Motor ao pino GPIO2 da ESP32!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
@@ -6132,11 +6132,11 @@ void MainWindow::startLdrRelayTutorial() {
 
     // Passo 4: LDR Pin 2 -> ESP32 GPIO35
     steps.append({
-        "4. Conecte o pino 2 do LDR ao pino GPIO35 da ESP32",
+        "4. Conecte o pino 2 do LDR ao pino GPIO3 da ESP32",
         "Ligue o sinal analógico do sensor LDR ao pino de leitura analógica.\n\n"
         "1. Dê um clique no pino 2 do LDR.\n"
-        "2. Mova o mouse e clique no pino GPIO35 da ESP32.",
-        "Conecte o pino 2 do LDR ao pino GPIO35 da ESP32!",
+        "2. Mova o mouse e clique no pino GPIO3 da ESP32.",
+        "Conecte o pino 2 do LDR ao pino GPIO3 da ESP32!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
