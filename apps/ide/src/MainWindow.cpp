@@ -1,4 +1,4 @@
-﻿#include "MainWindow.h"
+#include "MainWindow.h"
 #include "CodeGenerator.h"
 #include "PcbExporter.h"
 #include "CustomComponent.h"
@@ -437,7 +437,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             auto* ldr = static_cast<LdrItem*>(comp);
             this->editLdrValue(ldr);
             if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 4) {
-                if (m_tutorialOverlay->currentStep() == 26) {
+                if (m_tutorialOverlay->currentStep() == 27) {
                     m_tutorialOverlay->advance();
                 }
             }
@@ -509,10 +509,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         QString type = comp->componentType();
 
         if (m_activeTutorial == 1) {
-            // Tutorial 1: LED (step 1), Resistor (step 2), Button (step 6)
+            // Tutorial 1: LED (step 1), Resistor (step 2), Button (step 7)
             if      (step == 1 && type == "led")      m_tutorialOverlay->advance();
             else if (step == 2 && type == "resistor")  m_tutorialOverlay->advance();
-            else if (step == 6 && type == "button")    m_tutorialOverlay->advance();
+            else if (step == 7 && type == "button")    m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 2) {
             // Tutorial 2: HC-SR04 (step 1), Buzzer (step 6)
             if      (step == 1 && (type == "hcsr04" || type == "hc-sr04" || type == "ultrasonic"))
@@ -524,14 +524,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             if      (step == 1 && (type == "sg90" || type == "servo" || type == "motor"))
                 m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 4) {
-            // Tutorial 4: LDR (step 1), Resistor (step 2), Relay (step 7), Lamp (step 11)
+            // Tutorial 4: LDR (step 1), Resistor (step 2), Relay (step 8), Lamp (step 12)
             if      (step == 1 && (type == "ldr" || type == "light_sensor"))
                 m_tutorialOverlay->advance();
             else if (step == 2 && type == "resistor")
                 m_tutorialOverlay->advance();
-            else if (step == 7 && (type == "relay" || type == "rele"))
+            else if (step == 8 && (type == "relay" || type == "rele"))
                 m_tutorialOverlay->advance();
-            else if (step == 11 && (type == "lamp" || type == "lampada" || type == "lÃ¢mpada"))
+            else if (step == 12 && (type == "lamp" || type == "lampada" || type == "lÃ¢mpada"))
                 m_tutorialOverlay->advance();
         }
     });
@@ -541,8 +541,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         int step = m_tutorialOverlay->currentStep();
 
         if (m_activeTutorial == 1) {
-            // Tutorial 1: connection steps 3,4,5,7,8
-            if (step == 3 || step == 4 || step == 5 || step == 7 || step == 8)
+            // Tutorial 1: connection steps 4, 5, 6, 8, 9
+            if (step == 4 || step == 5 || step == 6 || step == 8 || step == 9)
                 m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 2) {
             // Tutorial 2: connection steps 2,3,4,5,7,8
@@ -553,8 +553,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             if (step == 2 || step == 3 || step == 4)
                 m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 4) {
-            // Tutorial 4: connection steps 3, 4, 5, 6, 8, 9, 10, 12
-            if (step == 3 || step == 4 || step == 5 || step == 6 || step == 8 || step == 9 || step == 10 || step == 12)
+            // Tutorial 4: connection steps 4, 5, 6, 7, 9, 10, 11, 13
+            if (step == 4 || step == 5 || step == 6 || step == 7 || step == 9 || step == 10 || step == 11 || step == 13)
                 m_tutorialOverlay->advance();
         }
     });
@@ -562,20 +562,20 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_buildAction, &QAction::triggered, this, [this]() {
         if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
         int step = m_tutorialOverlay->currentStep();
-        if ((m_activeTutorial == 1 && step == 12) ||
+        if ((m_activeTutorial == 1 && step == 13) ||
             (m_activeTutorial == 2 && step == 20) ||
             (m_activeTutorial == 3 && step == 15) ||
-            (m_activeTutorial == 4 && step == 24))
+            (m_activeTutorial == 4 && step == 25))
             m_tutorialOverlay->advance();
     });
 
     connect(m_playAction, &QAction::triggered, this, [this]() {
         if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
         int step = m_tutorialOverlay->currentStep();
-        if ((m_activeTutorial == 1 && step == 13) ||
+        if ((m_activeTutorial == 1 && step == 14) ||
             (m_activeTutorial == 2 && step == 21) ||
             (m_activeTutorial == 3 && step == 16) ||
-            (m_activeTutorial == 4 && step == 25))
+            (m_activeTutorial == 4 && step == 26))
             m_tutorialOverlay->advance();
     });
 
@@ -3171,6 +3171,15 @@ void MainWindow::editResistorValue(ResistorItem* resistor) {
     if (dialog.exec() == QDialog::Accepted) {
         double newValue = spinBox->value();
         resistor->setResistance(newValue);
+
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
+            int step = m_tutorialOverlay->currentStep();
+            if (m_activeTutorial == 1 && step == 3 && qAbs(newValue - 220.0) < 0.1) {
+                m_tutorialOverlay->advance();
+            } else if (m_activeTutorial == 4 && step == 3 && qAbs(newValue - 10000.0) < 0.1) {
+                m_tutorialOverlay->advance();
+            }
+        }
         
         bool newIsSMD = pkgCombo->currentData().toBool();
         QString newSmdSize = sizeCombo->currentText();
@@ -5490,9 +5499,20 @@ void MainWindow::startInteractiveTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Step 3: Connect LED to Resistor
+    // Step 3: Edit Resistor Value
     steps.append({
-        "3. Conecte a perna vermelha (anodo) do LED ao Resistor",
+        "3. Dê dois cliques no Resistor e mude seu valor para 220 Ω",
+        "Para proteger o LED, precisamos configurar o resistor para 220 ohms.\n\n"
+        "1. Dê DOIS CLIQUES no Resistor no workspace para abrir a janela de edição.\n"
+        "2. No campo de valor da resistência, digite 220 ou use o botão de atalho rápido '220 Ω'.\n"
+        "3. Clique em 'Salvar'.",
+        "Dê dois cliques no Resistor e configure seu valor para 220 Ω!",
+        m_view, QRect(), TutorialStep::Up, false
+    });
+
+    // Step 4: Connect LED to Resistor
+    steps.append({
+        "4. Conecte a perna vermelha (anodo) do LED ao Resistor",
         "Conecte a perna do LED ao resistor.\n\n"
         "1. Dê um único clique com o botão esquerdo na perna vermelha do LED (anodo).\n"
         "2. Mova o mouse (sem arrastar) e dê outro clique em uma das pernas do Resistor.",
@@ -5500,19 +5520,19 @@ void MainWindow::startInteractiveTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Step 4: Connect Resistor to GPIO2
+    // Step 5: Connect Resistor to GPIO2
     steps.append({
-        "4. Conecte a outra perna do Resistor ao pino GPIO2 da ESP32",
+        "5. Conecte a outra perna do Resistor ao pino GPIO2 da ESP32",
         "Ligue o resistor na porta de controle da placa.\n\n"
         "1. Dê um clique na outra perna livre do Resistor.\n"
-        "2. Mova o mouse e clique no pino GPIO2 da placa ESP32 para fazer a ligação.",
+        "2. Mova o mouse and clique no pino GPIO2 da placa ESP32 para fazer a ligação.",
         "Clique na perna do Resistor, mova o mouse e clique no GPIO2!",
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Step 5: Connect LED to GND
+    // Step 6: Connect LED to GND
     steps.append({
-        "5. Conecte a perna cinza (catodo) do LED ao pino GND da ESP32",
+        "6. Conecte a perna cinza (catodo) do LED ao pino GND da ESP32",
         "Feche o circuito de alimentação do LED.\n\n"
         "1. Dê um clique na perna cinza do LED (catodo).\n"
         "2. Mova o mouse e clique em um dos pinos GND da placa ESP32.",
@@ -5520,9 +5540,9 @@ void MainWindow::startInteractiveTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Step 6: Add Button
+    // Step 7: Add Button
     steps.append({
-        "6. Dê dois cliques no workspace e adicione um Botão",
+        "7. Dê dois cliques no workspace e adicione um Botão",
         "Agora que o LED está conectado, vamos adicionar um componente de entrada: um botão interativo.\n\n"
         "1. Dê DOIS CLIQUES no workspace.\n"
         "2. Busque por \"botão\" e adicione-o.",
@@ -5530,9 +5550,9 @@ void MainWindow::startInteractiveTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Step 7: Connect Button to GPIO3
+    // Step 8: Connect Button to GPIO3
     steps.append({
-        "7. Conecte uma das pernas do Botão ao pino GPIO3 da ESP32",
+        "8. Conecte uma das pernas do Botão ao pino GPIO3 da ESP32",
         "Ligue a entrada digital do botão à placa.\n\n"
         "1. Dê um clique em uma das pernas do Botão.\n"
         "2. Mova o mouse e clique no pino GPIO3 da placa ESP32.",
@@ -5540,9 +5560,9 @@ void MainWindow::startInteractiveTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Step 8: Connect Button to GND
+    // Step 9: Connect Button to GND
     steps.append({
-        "8. Conecte a outra perna do Botão a um pino GND livre da ESP32",
+        "9. Conecte a outra perna do Botão a um pino GND livre da ESP32",
         "Complete a conexão do botão com o terra do circuito.\n\n"
         "1. Dê um clique na outra perna livre do Botão.\n"
         "2. Mova o mouse e clique em um pino GND livre da placa ESP32.",
@@ -5550,9 +5570,9 @@ void MainWindow::startInteractiveTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Step 9: Right Click Button
+    // Step 10: Right Click Button
     steps.append({
-        "9. Clique com botão direito no Botão e escolha 'Ao Clicar'",
+        "10. Clique com botão direito no Botão e escolha 'Ao Clicar'",
         "Vamos abrir a área de programação para dar comportamento ao botão.\n\n"
         "1. Clique com o BOTÃO DIREITO sobre o Botão no workspace.\n"
         "2. Selecione o evento \"Ao Clicar\" no menu flutuante.",
@@ -5560,9 +5580,9 @@ void MainWindow::startInteractiveTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Step 10: Block Editor logic
+    // Step 11: Block Editor logic
     steps.append({
-        "10. Dê dois cliques no editor à direita e adicione uma Ação",
+        "11. Dê dois cliques no editor à direita e adicione uma Ação",
         "Agora vamos programar a ação do clique no botão.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos à direita.\n"
         "2. Adicione uma Ação para definir o estado do pino GPIO2 (LED) como LIGADO ou INVERTER.",
@@ -5570,9 +5590,9 @@ void MainWindow::startInteractiveTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Step 11: Drag LED to Action
+    // Step 12: Drag LED to Action
     steps.append({
-        "11. Arraste a variável LED_2 da paleta ao campo Alvo da Ação",
+        "12. Arraste a variável LED_2 da paleta ao campo Alvo da Ação",
         "Para definir que o LED é o alvo desta ação, arraste-o da paleta à esquerda:\n\n"
         "1. Clique e segure o bloco rosa 'LED_2 [GPIO2]' na paleta de 'PINOS E ATUADORES'.\n"
         "2. Arraste e solte-o no campo 'Alvo (Pino / Var)' do seu bloco de Ação.",
@@ -5580,23 +5600,23 @@ void MainWindow::startInteractiveTutorial() {
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // Step 12: Build
+    // Step 13: Build
     steps.append({
-        "12. Clique no botão de Build no topo para compilar",
+        "13. Clique no botão de Build no topo para compilar",
         "Clique no botão de Build (ícone de ferramentas na barra superior) para compilar a lógica e o hardware do seu circuito.",
         "Clique no botão de Build no topo para compilar!",
         buildWidget, QRect(), TutorialStep::Up
     });
 
-    // Step 13: Play Simulation
+    // Step 14: Play Simulation
     steps.append({
-        "13. Clique no botão de Play no topo para iniciar a simulação",
+        "14. Clique no botão de Play no topo para iniciar a simulação",
         "Com o código compilado com sucesso, clique no botão de Play no topo para rodar a simulação interativa!",
         "Clique no botão de Play no topo para iniciar a simulação!",
         playWidget, QRect(), TutorialStep::Up
     });
 
-    // Step 14: Done
+    // Step 15: Done
     steps.append({
         "Parabéns! O circuito está pronto e rodando!",
         "Você acabou de montar e programar seu circuito!\n\n"
@@ -5608,7 +5628,7 @@ void MainWindow::startInteractiveTutorial() {
 
     m_activeTutorial = 1;
     m_tutorialOverlay->clearVariableDragSteps();
-    m_tutorialOverlay->addVariableDragStep(11, "LED"); // step 11: drag LED variable to Alvo
+    m_tutorialOverlay->addVariableDragStep(12, "LED"); // step 12: drag LED variable to Alvo
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -6120,9 +6140,20 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 3: LDR Pin 1 -> ESP32 3V3
+    // Passo 3: Editar Resistência do Resistor
     steps.append({
-        "3. Conecte o pino 1 do LDR ao pino 3V3 da ESP32",
+        "3. Dê dois cliques no Resistor e mude seu valor para 10 kΩ",
+        "Para que o divisor de tensão com o LDR funcione corretamente, use um resistor de 10 kΩ (10000 Ω).\n\n"
+        "1. Dê DOIS CLIQUES no Resistor no workspace para abrir a janela de edição.\n"
+        "2. No campo de valor da resistência, digite 10000 ou clique no atalho rápido '10 kΩ'.\n"
+        "3. Clique em 'Salvar'.",
+        "Dê dois cliques no Resistor e configure seu valor para 10 kΩ!",
+        m_view, QRect(), TutorialStep::Up, false
+    });
+
+    // Passo 4: LDR Pin 1 -> ESP32 3V3
+    steps.append({
+        "4. Conecte o pino 1 do LDR ao pino 3V3 da ESP32",
         "Alimente um dos lados do sensor LDR com 3.3V.\n\n"
         "1. Dê um clique no pino 1 do LDR.\n"
         "2. Mova o mouse e clique no pino 3V3 da ESP32.",
@@ -6130,9 +6161,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 4: LDR Pin 2 -> ESP32 GPIO35
+    // Passo 5: LDR Pin 2 -> ESP32 GPIO3
     steps.append({
-        "4. Conecte o pino 2 do LDR ao pino GPIO3 da ESP32",
+        "5. Conecte o pino 2 do LDR ao pino GPIO3 da ESP32",
         "Ligue o sinal analógico do sensor LDR ao pino de leitura analógica.\n\n"
         "1. Dê um clique no pino 2 do LDR.\n"
         "2. Mova o mouse e clique no pino GPIO3 da ESP32.",
@@ -6140,9 +6171,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 5: Resistor Pin 1 -> LDR Pin 2
+    // Passo 6: Resistor Pin 1 -> LDR Pin 2
     steps.append({
-        "5. Conecte o pino 1 do Resistor ao pino 2 do LDR",
+        "6. Conecte o pino 1 do Resistor ao pino 2 do LDR",
         "Agora conecte um dos lados do resistor de pull-down ao mesmo nó de sinal do LDR.\n\n"
         "1. Dê um clique no pino 1 do Resistor.\n"
         "2. Mova o mouse e clique no pino 2 do LDR.",
@@ -6150,9 +6181,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 6: Resistor Pin 2 -> ESP32 GND
+    // Passo 7: Resistor Pin 2 -> ESP32 GND
     steps.append({
-        "6. Conecte o pino 2 do Resistor a um pino GND da ESP32",
+        "7. Conecte o pino 2 do Resistor a um pino GND da ESP32",
         "Aterre o outro lado do divisor de tensão para completar o circuito.\n\n"
         "1. Dê um clique no pino 2 do Resistor.\n"
         "2. Mova o mouse e clique em um pino GND da ESP32.",
@@ -6160,9 +6191,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 7: Adicionar Relé
+    // Passo 8: Adicionar Relé
     steps.append({
-        "7. Dê dois cliques no workspace e adicione um Relé",
+        "8. Dê dois cliques no workspace e adicione um Relé",
         "O módulo de relé permite controlar a lâmpada com segurança.\n\n"
         "1. Dê DOIS CLIQUES no workspace.\n"
         "2. Digite \"relé\" ou \"rele\" na busca e adicione-o.",
@@ -6170,9 +6201,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 8: Relé VCC -> 5V ou 3V3
+    // Passo 9: Relé VCC -> 5V ou 3V3
     steps.append({
-        "8. Conecte o pino VCC do Relé ao pino 5V ou 3V3 da ESP32",
+        "9. Conecte o pino VCC do Relé ao pino 5V ou 3V3 da ESP32",
         "Alimente o módulo de relé.\n\n"
         "1. Dê um clique no pino VCC do Relé.\n"
         "2. Mova o mouse e clique no pino 5V ou 3V3 da placa ESP32.",
@@ -6180,9 +6211,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 9: Relé GND -> GND
+    // Passo 10: Relé GND -> GND
     steps.append({
-        "9. Conecte o pino GND do Relé ao pino GND da ESP32",
+        "10. Conecte o pino GND do Relé ao pino GND da ESP32",
         "Feche o circuito de alimentação do Relé.\n\n"
         "1. Dê um clique no pino GND do Relé.\n"
         "2. Mova o mouse e clique em um pino GND livre da placa ESP32.",
@@ -6190,9 +6221,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 10: Relé IN -> GPIO2
+    // Passo 11: Relé IN -> GPIO2
     steps.append({
-        "10. Conecte o pino IN do Relé ao pino GPIO2 da ESP32",
+        "11. Conecte o pino IN do Relé ao pino GPIO2 da ESP32",
         "O pino IN receberá o sinal de controle (HIGH/LOW) do microcontrolador.\n\n"
         "1. Dê um clique no pino IN (Sinal) do Relé.\n"
         "2. Mova o mouse e clique no pino GPIO2 da ESP32.",
@@ -6200,9 +6231,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 11: Adicionar Lâmpada
+    // Passo 12: Adicionar Lâmpada
     steps.append({
-        "11. Dê dois cliques no workspace e adicione uma Lâmpada",
+        "12. Dê dois cliques no workspace e adicione uma Lâmpada",
         "Adicione a lâmpada que será controlada pelo relé.\n\n"
         "1. Dê DOIS CLIQUES no workspace.\n"
         "2. Digite \"lâmpada\" ou \"lampada\" na busca e adicione-a.",
@@ -6210,9 +6241,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 12: Conectar Relé NO -> Lâmpada FASE
+    // Passo 13: Conectar Relé NO -> Lâmpada FASE
     steps.append({
-        "12. Conecte o pino NO do Relé ao pino FASE da Lâmpada",
+        "13. Conecte o pino NO do Relé ao pino FASE da Lâmpada",
         "Conecte a saída normalmente aberta (NO) do relé à lâmpada para acioná-la.\n\n"
         "1. Dê um clique no pino NO do Relé.\n"
         "2. Mova o mouse e clique no pino FASE da Lâmpada.",
@@ -6220,9 +6251,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 13: Right click LDR -> Ao Alterar
+    // Passo 14: Right click LDR -> Ao Alterar
     steps.append({
-        "13. Clique com botão direito no LDR e escolha 'Ao Alterar'",
+        "14. Clique com botão direito no LDR e escolha 'Ao Alterar'",
         "Vamos abrir a área de programação para dar comportamento ao circuito.\n\n"
         "1. Clique com o BOTÃO DIREITO sobre o LDR no workspace.\n"
         "2. Selecione o evento \"Ao Alterar\" no menu flutuante.",
@@ -6230,9 +6261,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 14: Adicionar bloco Condicional (SE)
+    // Passo 15: Adicionar bloco Condicional (SE)
     steps.append({
-        "14. Dê dois cliques no editor de blocos e adicione um Condicional (SE)",
+        "15. Dê dois cliques no editor de blocos e adicione um Condicional (SE)",
         "Vamos criar uma regra baseada na intensidade de luz.\n\n"
         "1. Dê DOIS CLIQUES na área cinza do editor de blocos à direita.\n"
         "2. Digite \"se\" ou \"condicional\" e adicione o bloco.",
@@ -6240,9 +6271,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 15: Digitar luminosidade < 10
+    // Passo 16: Digitar luminosidade < 10
     steps.append({
-        "15. Digite a condição 'luminosidade < 10' na expressão condicional",
+        "16. Digite a condição 'luminosidade < 10' na expressão condicional",
         "Se a luminosidade lida pelo LDR (0-100%) for menor que 10%, significa que o ambiente está escuro.\n\n"
         "No campo de texto do bloco de condição, digite exatamente:\n"
         "luminosidade < 10\n\n"
@@ -6251,9 +6282,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 16: Adicionar bloco Ação
+    // Passo 17: Adicionar bloco Ação
     steps.append({
-        "16. Dê dois cliques no editor e adicione um bloco de Ação",
+        "17. Dê dois cliques no editor e adicione um bloco de Ação",
         "Agora vamos programar o relé para ligar a lâmpada.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione uma AÇÃO na lista.",
@@ -6261,9 +6292,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 17: Arrastar variável do Relé para o Alvo
+    // Passo 18: Arrastar variável do Relé para o Alvo
     steps.append({
-        "17. Arraste a variável RELE_1 da paleta ao campo Alvo da Ação",
+        "18. Arraste a variável RELE_1 da paleta ao campo Alvo da Ação",
         "Configure o relé como alvo deste acionamento.\n\n"
         "1. Na paleta à esquerda em 'PINOS E ATUADORES', clique e segure o bloco rosa 'RELE_1 [GPIO2]'.\n"
         "2. Arraste e solte-o no campo 'Alvo' do bloco de Ação.",
@@ -6271,18 +6302,18 @@ void MainWindow::startLdrRelayTutorial() {
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // Passo 18: Arrastar Ação para dentro do Condicional
+    // Passo 19: Arrastar Ação para dentro do Condicional
     steps.append({
-        "18. Arraste o bloco de Ação para dentro do bloco Condicional (SE)",
+        "19. Arraste o bloco de Ação para dentro do bloco Condicional (SE)",
         "Agora conecte a Ação ao fluxo da decisão condicional.\n\n"
         "Clique e segure na barra superior do bloco de Ação e arraste-o para cima, encaixando-o logo abaixo da linha do Condicional (SE) até que ele fique recuado para a direita.",
         "Arraste a Ação para dentro do bloco Condicional (SE)!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 19: Adicionar bloco Senão (else)
+    // Passo 20: Adicionar bloco Senão (else)
     steps.append({
-        "19. Dê dois cliques no editor e adicione um bloco Senão (else)",
+        "20. Dê dois cliques no editor e adicione um bloco Senão (else)",
         "Agora criaremos o caso alternativo (quando o ambiente estiver claro).\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Digite \"senão\" ou \"else\" e adicione o bloco.",
@@ -6290,9 +6321,9 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 20: Adicionar bloco Ação (LOW)
+    // Passo 21: Adicionar bloco Ação (LOW)
     steps.append({
-        "20. Dê dois cliques no editor e adicione mais um bloco de Ação",
+        "21. Dê dois cliques no editor e adicione mais um bloco de Ação",
         "Esta nova ação será usada para desligar o relé.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione outra AÇÃO.",
@@ -6300,52 +6331,52 @@ void MainWindow::startLdrRelayTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 21: Arrastar variável do Relé para a segunda Ação
+    // Passo 22: Arrastar variável do Relé para a segunda Ação
     steps.append({
-        "21. Arraste a variável RELE_1 ao campo 'Alvo' desta nova Ação",
+        "22. Arraste a variável RELE_1 ao campo 'Alvo' desta nova Ação",
         "Indique que essa segunda ação também controla o mesmo relé.\n\n"
         "Arraste a variável 'RELE_1' da paleta esquerda ao campo 'Alvo' do novo bloco.",
         "Arraste a variável RELE_1 para o campo Alvo!",
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // Passo 22: Mudar comando para LOW
+    // Passo 23: Mudar comando para LOW
     steps.append({
-        "22. Mude o estado do bloco de Ação para LOW",
+        "23. Mude o estado do bloco de Ação para LOW",
         "Como este bloco trata o ambiente claro, mude o comando para desligar a lâmpada.\n\n"
         "Clique no campo destacado da segunda Ação e mude de HIGH para LOW.",
         "Mude o comando de HIGH para LOW!",
         nullptr, QRect(), TutorialStep::Right, true, "actionCmdCombo"
     });
 
-    // Passo 23: Arrastar segunda Ação para dentro do Senão
+    // Passo 24: Arrastar segunda Ação para dentro do Senão (else)
     steps.append({
-        "23. Arraste a segunda Ação para dentro do bloco Senão (else)",
+        "24. Arraste a segunda Ação para dentro do bloco Senão (else)",
         "Agora conecte esta ação de desligar ao bloco alternativo.\n\n"
         "Clique e arraste o segundo bloco de Ação para cima, encaixando-o logo abaixo da linha do bloco Senão (else) até ficar recuado.",
         "Arraste a segunda Ação para dentro do bloco Senão!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // Passo 24: Build
+    // Passo 25: Build
     steps.append({
-        "24. Clique no botão de Build no topo para compilar",
+        "25. Clique no botão de Build no topo para compilar",
         "Com o circuito e a lógica prontos, clique no ícone de ferramentas na barra superior para compilar o código.",
         "Clique no botão de Build no topo para compilar!",
         buildWidget, QRect(), TutorialStep::Up
     });
 
-    // Passo 25: Play
+    // Passo 26: Play
     steps.append({
-        "25. Clique em Play para iniciar a simulação",
+        "26. Clique em Play para iniciar a simulação",
         "Com a compilação finalizada, inicie a simulação em tempo real!",
         "Clique no botão de Play no topo para iniciar a simulação!",
         playWidget, QRect(), TutorialStep::Up
     });
 
-    // Passo 26: Dê dois cliques no LDR
+    // Passo 27: Dê dois cliques no LDR
     steps.append({
-        "26. Dê dois cliques no LDR e mude a luminosidade",
+        "27. Dê dois cliques no LDR e mude a luminosidade",
         "O simulador está rodando!\n\n"
         "1. Dê DOIS CLIQUES no LDR no workspace para abrir a tela de propriedades.\n"
         "2. Arraste a barra de luminosidade para baixo de 1500 (ambiente escuro) para ver o relé ativar (a lâmpada acenderá), e para cima de 1500 para desligar.",
@@ -6353,7 +6384,7 @@ void MainWindow::startLdrRelayTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // Passo 27: Done
+    // Passo 28: Done
     steps.append({
         "Parabéns! Sua Luz Automática está concluída!",
         "Você acabou de criar um circuito inteligente de controle de iluminação usando LDR, Relé e Lâmpada!\n\n"
@@ -6365,8 +6396,8 @@ void MainWindow::startLdrRelayTutorial() {
 
     m_activeTutorial = 4;
     m_tutorialOverlay->clearVariableDragSteps();
-    m_tutorialOverlay->addVariableDragStep(17, "RELE"); // drag RELE to action target (HIGH)
-    m_tutorialOverlay->addVariableDragStep(21, "RELE"); // drag RELE to action target (LOW)
+    m_tutorialOverlay->addVariableDragStep(18, "RELE"); // drag RELE to action target (HIGH)
+    m_tutorialOverlay->addVariableDragStep(22, "RELE"); // drag RELE to action target (LOW)
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -6402,12 +6433,12 @@ void MainWindow::checkBlockEditorTutorialSteps() {
 
         if (m_activeTutorial == 1) {
             // Tutorial 1 — LED/Button
-            // Step 10: user added an action block (target may be empty)
-            if (step == 10 && actionCount >= 1) {
+            // Step 11: user added an action block (target may be empty)
+            if (step == 11 && actionCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 11: user dragged variable to target field
-            else if (step == 11 && filledCount >= 1) {
+            // Step 12: user dragged variable to target field
+            else if (step == 12 && filledCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
 
@@ -6513,24 +6544,24 @@ void MainWindow::checkBlockEditorTutorialSteps() {
                 }
             }
 
-            // Step 14: Add CONDITION block
-            if (step == 14 && condCount >= 1) {
+            // Step 15: Add CONDITION block
+            if (step == 15 && condCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 15: Type condition (valor < 1500)
-            else if (step == 15 && condFilled >= 1) {
+            // Step 16: Type condition (valor < 1500)
+            else if (step == 16 && condFilled >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 16: Add ACTION block
-            else if (step == 16 && actionCount >= 1) {
+            // Step 17: Add ACTION block
+            else if (step == 17 && actionCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 17: Drag RELE_1 to action target
-            else if (step == 17 && filledCount >= 1) {
+            // Step 18: Drag RELE_1 to action target
+            else if (step == 18 && filledCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 18: Drag first Action inside Condicional (SE)
-            else if (step == 18) {
+            // Step 19: Drag first Action inside Condicional (SE)
+            else if (step == 19) {
                 bool actionInsideCond = false;
                 int condIndex = -1;
                 int fimIndex = -1;
@@ -6556,24 +6587,24 @@ void MainWindow::checkBlockEditorTutorialSteps() {
                     m_tutorialOverlay->advance(); advanced = true;
                 }
             }
-            // Step 19: Add SENÃO block
-            else if (step == 19 && elseCount >= 1) {
+            // Step 20: Add SENÃO block
+            else if (step == 20 && elseCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 20: Add second ACTION block
-            else if (step == 20 && actionCount >= 2) {
+            // Step 21: Add second ACTION block
+            else if (step == 21 && actionCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 21: Drag RELE_1 to second action target
-            else if (step == 21 && filledCount >= 2) {
+            // Step 22: Drag RELE_1 to second action target
+            else if (step == 22 && filledCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 22: Change state to LOW
-            else if (step == 22 && lowCount >= 1) {
+            // Step 23: Change state to LOW
+            else if (step == 23 && lowCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 23: Drag second Action inside Senão (else)
-            else if (step == 23) {
+            // Step 24: Drag second Action inside Senão (else)
+            else if (step == 24) {
                 bool actionInsideElse = false;
                 int elseIndex = -1;
                 int fimIndex = -1;
