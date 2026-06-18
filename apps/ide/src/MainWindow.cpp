@@ -1027,10 +1027,10 @@ void MainWindow::buildToolbar() {
     menuSmartConnection->setCheckable(true);
     connect(menuSmartConnection, &QAction::toggled, m_scene, &WorkspaceScene::setSmartConnectionEnabled);
 
-    QAction* menuMultitask = helpMenu->addAction("Multitarefa (FreeRTOS)");
-    menuMultitask->setCheckable(true);
-    menuMultitask->setChecked(m_multitaskingEnabled);
-    connect(menuMultitask, &QAction::toggled, this, [this](bool enabled) {
+    m_multitaskAction = helpMenu->addAction("Multitarefa (FreeRTOS)");
+    m_multitaskAction->setCheckable(true);
+    m_multitaskAction->setChecked(m_multitaskingEnabled);
+    connect(m_multitaskAction, &QAction::toggled, this, [this](bool enabled) {
         m_multitaskingEnabled = enabled;
         CodeGenerator::setMultitaskingEnabled(enabled);
         compileCode(); // Regenerate C++ preview
@@ -5646,6 +5646,14 @@ void MainWindow::startInteractiveTutorial() {
 // TUTORIAL 2: SENSOR DE DISTÂNCIA HC-SR04 + BUZZER
 // ─────────────────────────────────────────────────────────────────────────────
 void MainWindow::startDistanceSensorTutorial() {
+    // Disable multitasking for Distance Sensor tutorial
+    m_multitaskingEnabled = false;
+    CodeGenerator::setMultitaskingEnabled(false);
+    if (m_multitaskAction) {
+        m_multitaskAction->setChecked(false);
+    }
+    compileCode();
+
     if (!m_tutorialOverlay) {
         m_tutorialOverlay = new TutorialOverlay(this);
     }
