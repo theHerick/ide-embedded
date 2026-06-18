@@ -169,6 +169,7 @@ void HardwareSimulator::startSimulation(WorkspaceScene* scene, const QMap<QStrin
 
 void HardwareSimulator::resetSimulation() {
     if (!m_isRunning || !m_scene) return;
+    m_activeExecutions = 0;
     
     emit serialMessage("--- ESP32 RESET (Hardware) ---", "INFO");
     
@@ -239,6 +240,7 @@ void HardwareSimulator::stopSimulation() {
     stopWebServer();
     m_soundThreadRunning = false;
     m_activeBuzzerFreq.store(0);
+    m_activeExecutions = 0;
     if (m_soundThread.joinable()) {
         m_soundThread.join();
     }
@@ -1268,6 +1270,10 @@ double HardwareSimulator::evaluateNumericExpression(const QString& expr) {
 }
 
 void HardwareSimulator::executeBlockChain(const QVector<EventLogicBlock>& blocks) {
+    if (!m_multitaskingEnabled && m_activeExecutions > 0) {
+        return;
+    }
+    m_activeExecutions++;
     QVector<LevelState> execStack;
     execStack.push_back({true, false, -1, "", 0, 0, ""}); // Root level
     executeBlockChainInternal(blocks, 0, execStack);
@@ -1855,11 +1861,17 @@ void HardwareSimulator::executeBlockChainInternal(const QVector<EventLogicBlock>
                     executeBlockChain(m_eventStorage[funcKey]);
                 }
             } else if (param == "RETURN") {
+                m_activeExecutions--;
+                if (m_activeExecutions < 0) m_activeExecutions = 0;
                 return; // Aborta e retorna da stack atual
             }
         }
 
         pc++;
+    }
+    if (pc >= blocks.size()) {
+        m_activeExecutions--;
+        if (m_activeExecutions < 0) m_activeExecutions = 0;
     }
 }
 

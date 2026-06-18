@@ -25,6 +25,8 @@ public:
     void resetSimulation();
     void updateEventStorage(const QMap<QString, QVector<EventLogicBlock>>& eventBlockStorage);
     bool isRunning() const { return m_isRunning; }
+    void setMultitaskingEnabled(bool enabled) { m_multitaskingEnabled = enabled; }
+    bool isMultitaskingEnabled() const { return m_multitaskingEnabled; }
     void triggerComponentEvent(const QString& compId, const QString& eventName);
     void triggerLoopEvents();
     void triggerPeriodicEvents();
@@ -48,6 +50,8 @@ private:
     WorkspaceScene* m_scene = nullptr;
     QTimer* m_simTimer = nullptr;
     bool m_isRunning = false;
+    bool m_multitaskingEnabled = true;
+    int m_activeExecutions = 0;
 
     // Component States
     QMap<QString, bool> m_ledStates;

@@ -1026,6 +1026,15 @@ void MainWindow::buildToolbar() {
     QAction* menuSmartConnection = helpMenu->addAction("Conexão inteligente");
     menuSmartConnection->setCheckable(true);
     connect(menuSmartConnection, &QAction::toggled, m_scene, &WorkspaceScene::setSmartConnectionEnabled);
+
+    QAction* menuMultitask = helpMenu->addAction("Multitarefa (FreeRTOS)");
+    menuMultitask->setCheckable(true);
+    menuMultitask->setChecked(m_multitaskingEnabled);
+    connect(menuMultitask, &QAction::toggled, this, [this](bool enabled) {
+        m_multitaskingEnabled = enabled;
+        CodeGenerator::setMultitaskingEnabled(enabled);
+        compileCode(); // Regenerate C++ preview
+    });
 }
 
 void MainWindow::applyTheme() {
@@ -1797,7 +1806,7 @@ void MainWindow::toggleSimulation() {
             logMessage("Simulacao Rápida (Interpretador) iniciada.", "SYSTEM");
             logMessage("Dica: Clique nos botoes pulsadores e ajuste os potenciometros para ver os eventos disparando em tempo real!", "INFO");
             
-            // Start running with the actual block engine storage
+            m_simulator->setMultitaskingEnabled(m_multitaskingEnabled);
             m_simulator->startSimulation(m_scene, m_blockEditor->getEventBlockStorage(), m_webPageData);
             
             // Hide block editor when simulation starts

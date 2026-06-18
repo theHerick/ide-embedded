@@ -97,6 +97,7 @@ private:
     QAction* m_pasteAction = nullptr;
     TutorialOverlay* m_tutorialOverlay = nullptr;
     int m_activeTutorial = 0; // 0=none, 1=LED/Button, 2=Distance Sensor
+    bool m_multitaskingEnabled = true;
 
     // Active tracking
     ComponentItem* m_selectedComponent = nullptr;

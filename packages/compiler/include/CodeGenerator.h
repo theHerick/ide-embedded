@@ -10,7 +10,13 @@ class ConnectionCable;
 
 
 class CodeGenerator {
+private:
+    static bool s_multitaskingEnabled;
+
 public:
+    static void setMultitaskingEnabled(bool enabled) { s_multitaskingEnabled = enabled; }
+    static bool isMultitaskingEnabled() { return s_multitaskingEnabled; }
+
     static QString generateArduinoCode(
         const QVector<ComponentItem*>& components,
         const QVector<ConnectionCable*>& cables,

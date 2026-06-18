@@ -7,6 +7,8 @@
 #include <QSet>
 #include <QRegularExpression>
 
+bool CodeGenerator::s_multitaskingEnabled = true;
+
 static QString compileMathFormula(QString formula) {
     // Replace pi using word boundaries to avoid matching inside other words (e.g. pin)
     formula.replace(QRegularExpression("\\bpi\\b", QRegularExpression::CaseInsensitiveOption), "3.14159265358979323846");
@@ -844,7 +846,7 @@ static QString emitEventFunction(
     QString outerIndent(baseIndentSpaces, ' ');
     QString innerIndent(baseIndentSpaces + 4, ' ');
     
-    if (hasDelay) {
+    if (CodeGenerator::isMultitaskingEnabled() && hasDelay) {
         QString taskName = fnName + "_task";
         
         code += QString("%1void %2(void* pvParameters) {\n").arg(outerIndent).arg(taskName);
