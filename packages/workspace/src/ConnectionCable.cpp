@@ -403,17 +403,12 @@ void ConnectionCable::hoverMoveEvent(QGraphicsSceneHoverEvent* event) {
 void ConnectionCable::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
     QMenu menu;
     QAction* setColAction = menu.addAction("Alterar Cor da Trilha");
-    QAction* deleteAction = menu.addAction("Excluir Trilha");
 
     QAction* selected = menu.exec(event->screenPos());
     if (selected == setColAction) {
         QColor newColor = QColorDialog::getColor(m_color, nullptr, "Escolher Cor da Trilha");
         if (newColor.isValid()) {
             setColor(newColor);
-        }
-    } else if (selected == deleteAction) {
-        if (auto* sc = dynamic_cast<WorkspaceScene*>(scene())) {
-            sc->deleteSelected();
         }
     }
     event->accept();
