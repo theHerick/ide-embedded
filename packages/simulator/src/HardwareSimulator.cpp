@@ -384,6 +384,21 @@ void HardwareSimulator::triggerPeriodicEvents() {
                 }
             }
         }
+        
+        // Trigger aoAtualizar event for all WebPage Text elements
+        QJsonArray webElems = m_webPageData.value("elements").toArray();
+        for (const QJsonValue& val : webElems) {
+            QJsonObject el = val.toObject();
+            if (el.value("type").toString() == "Text") {
+                QString id = el.value("id").toString();
+                QString eventKey = id + ":aoAtualizar";
+                if (!m_executingLoop.value(eventKey, false)) {
+                    m_executingLoop[eventKey] = true;
+                    triggerComponentEvent(id, "aoAtualizar");
+                    m_executingLoop[eventKey] = false;
+                }
+            }
+        }
     }
     
     if (now - m_lastDht >= 2000) {
