@@ -459,7 +459,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             auto* hcsr = static_cast<HCSR04Item*>(comp);
             this->editHCSR04Properties(hcsr);
             if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 2) {
-                if (m_tutorialOverlay->currentStep() == 26) {
+                if (m_tutorialOverlay->currentStep() == 23) {
                     m_tutorialOverlay->advance();
                 }
             }
@@ -514,10 +514,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             else if (step == 2 && type == "resistor")  m_tutorialOverlay->advance();
             else if (step == 7 && type == "button")    m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 2) {
-            // Tutorial 2: HC-SR04 (step 1), Buzzer (step 6)
-            if      (step == 1 && (type == "hcsr04" || type == "hc-sr04" || type == "ultrasonic"))
+            // Tutorial 2: HC-SR04 (step 2), Buzzer (step 7)
+            if      (step == 2 && (type == "hcsr04" || type == "hc-sr04" || type == "ultrasonic"))
                 m_tutorialOverlay->advance();
-            else if (step == 6 && type == "buzzer")
+            else if (step == 7 && type == "buzzer")
                 m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 3) {
             // Tutorial 3: Servomotor (step 1)
@@ -545,8 +545,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             if (step == 4 || step == 5 || step == 6 || step == 8 || step == 9)
                 m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 2) {
-            // Tutorial 2: connection steps 2,3,4,5,7,8
-            if (step == 2 || step == 3 || step == 4 || step == 5 || step == 7 || step == 8)
+            // Tutorial 2: connection steps 3,4,5,6,8,9
+            if (step == 3 || step == 4 || step == 5 || step == 6 || step == 8 || step == 9)
                 m_tutorialOverlay->advance();
         } else if (m_activeTutorial == 3) {
             // Tutorial 3: connection steps 2, 3, 4
@@ -563,7 +563,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
         int step = m_tutorialOverlay->currentStep();
         if ((m_activeTutorial == 1 && step == 13) ||
-            (m_activeTutorial == 2 && step == 20) ||
+            (m_activeTutorial == 2 && step == 21) ||
             (m_activeTutorial == 3 && step == 15) ||
             (m_activeTutorial == 4 && step == 25))
             m_tutorialOverlay->advance();
@@ -573,7 +573,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         if (!m_tutorialOverlay || !m_tutorialOverlay->isVisible()) return;
         int step = m_tutorialOverlay->currentStep();
         if ((m_activeTutorial == 1 && step == 14) ||
-            (m_activeTutorial == 2 && step == 21) ||
+            (m_activeTutorial == 2 && step == 22) ||
             (m_activeTutorial == 3 && step == 16) ||
             (m_activeTutorial == 4 && step == 26))
             m_tutorialOverlay->advance();
@@ -716,7 +716,7 @@ void MainWindow::buildLayout() {
 
     connect(m_bottomTabs, &QTabWidget::currentChanged, this, [this](int index) {
         if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 2) {
-            if (m_tutorialOverlay->currentStep() == 23 && index == 2) { // Index 2 is Osciloscopio
+            if (m_tutorialOverlay->currentStep() == 24 && index == 2) { // Index 2 is Osciloscopio
                 m_tutorialOverlay->advance();
             }
         }
@@ -1034,6 +1034,11 @@ void MainWindow::buildToolbar() {
         m_multitaskingEnabled = enabled;
         CodeGenerator::setMultitaskingEnabled(enabled);
         compileCode(); // Regenerate C++ preview
+        if (m_tutorialOverlay && m_tutorialOverlay->isVisible() && m_activeTutorial == 2) {
+            if (m_tutorialOverlay->currentStep() == 1 && !enabled) {
+                m_tutorialOverlay->advance();
+            }
+        }
     });
 }
 
@@ -1259,7 +1264,7 @@ void MainWindow::openEventEditor(ComponentItem* comp, const QString& eventName) 
 
     if (m_tutorialOverlay && m_tutorialOverlay->isVisible()) {
         int step = m_tutorialOverlay->currentStep();
-        if ((m_activeTutorial == 1 && step == 9) || (m_activeTutorial == 4 && step == 13)) {
+        if ((m_activeTutorial == 1 && step == 10) || (m_activeTutorial == 4 && step == 14) || (m_activeTutorial == 2 && step == 10)) {
             m_tutorialOverlay->advance();
             checkBlockEditorTutorialSteps();
         }
@@ -5646,11 +5651,11 @@ void MainWindow::startInteractiveTutorial() {
 // TUTORIAL 2: SENSOR DE DISTÂNCIA HC-SR04 + BUZZER
 // ─────────────────────────────────────────────────────────────────────────────
 void MainWindow::startDistanceSensorTutorial() {
-    // Disable multitasking for Distance Sensor tutorial
-    m_multitaskingEnabled = false;
-    CodeGenerator::setMultitaskingEnabled(false);
+    // Enable multitasking initially for Distance Sensor tutorial so user has to disable it
+    m_multitaskingEnabled = true;
+    CodeGenerator::setMultitaskingEnabled(true);
     if (m_multitaskAction) {
-        m_multitaskAction->setChecked(false);
+        m_multitaskAction->setChecked(true);
     }
     compileCode();
 
@@ -5678,9 +5683,19 @@ void MainWindow::startDistanceSensorTutorial() {
         nullptr, QRect(), TutorialStep::None
     });
 
-    // ── Passo 1: Adicionar HC-SR04 ────────────────────────────────────────────
+    // ── Passo 1: Desativar Multitarefa ─────────────────────────────────────────
     steps.append({
-        "1. Dê dois cliques no workspace e adicione um HC-SR04",
+        "1. Desative a opção 'Multitarefa (FreeRTOS)'",
+        "Para este tutorial, a simulação do sensor precisa de tempo real contínuo sem divisões de tarefa (multitarefa).\n\n"
+        "1. Clique no menu 'Ajustes' no topo da tela.\n"
+        "2. Desmarque a opção 'Multitarefa (FreeRTOS)'.",
+        "Clique em 'Ajustes' no topo e desative 'Multitarefa (FreeRTOS)'!",
+        menuBar(), QRect(), TutorialStep::Up, true, "", true
+    });
+
+    // ── Passo 2: Adicionar HC-SR04 ────────────────────────────────────────────
+    steps.append({
+        "2. Dê dois cliques no workspace e adicione um HC-SR04",
         "Vamos adicionar o nosso sensor ultrassônico de distância.\n\n"
         "1. Dê DOIS CLIQUES no workspace (mesa de trabalho).\n"
         "2. Digite \"HC-SR04\" ou \"sensor\" na busca e adicione-o.",
@@ -5688,9 +5703,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 2: VCC → 3V3 ───────────────────────────────────────────────────
+    // ── Passo 3: VCC → 3V3 ───────────────────────────────────────────────────
     steps.append({
-        "2. Conecte o pino VCC do sensor ao pino 3V3 da ESP32",
+        "3. Conecte o pino VCC do sensor ao pino 3V3 da ESP32",
         "Vamos alimentar o sensor com 3.3V.\n\n"
         "1. Dê um clique no pino VCC do HC-SR04.\n"
         "2. Mova o mouse e clique no pino 3V3 da placa ESP32.",
@@ -5698,9 +5713,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 3: GND → GND ───────────────────────────────────────────────────
+    // ── Passo 4: GND → GND ───────────────────────────────────────────────────
     steps.append({
-        "3. Conecte o pino GND do sensor ao pino GND da ESP32",
+        "4. Conecte o pino GND do sensor ao pino GND da ESP32",
         "Feche a alimentação do sensor pelo terra.\n\n"
         "1. Dê um clique no pino GND do HC-SR04.\n"
         "2. Mova o mouse e clique em um pino GND da placa ESP32.",
@@ -5708,9 +5723,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 4: TRIG → GPIO ─────────────────────────────────────────────────
+    // ── Passo 5: TRIG → GPIO ─────────────────────────────────────────────────
     steps.append({
-        "4. Conecte o pino TRIG do sensor ao pino GPIO5 da ESP32",
+        "5. Conecte o pino TRIG do sensor ao pino GPIO5 da ESP32",
         "O pino TRIG envia os pulsos que medem a distância.\n\n"
         "1. Dê um clique no pino TRIG do HC-SR04.\n"
         "2. Mova o mouse e clique no pino GPIO5 da placa ESP32.",
@@ -5718,9 +5733,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // â”€â”€ Passo 5: ECHO â†’ GPIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Passo 6: ECHO → GPIO ─────────────────────────────────────────────────
     steps.append({
-        "5. Conecte o pino ECHO do sensor ao pino GPIO4 da ESP32",
+        "6. Conecte o pino ECHO do sensor ao pino GPIO4 da ESP32",
         "O pino ECHO recebe o eco do pulso e calcula a distância.\n\n"
         "1. Dê um clique no pino ECHO do HC-SR04.\n"
         "2. Mova o mouse e clique no pino GPIO4 da placa ESP32.",
@@ -5728,9 +5743,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // â”€â”€ Passo 6: Adicionar Buzzer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Passo 7: Adicionar Buzzer ────────────────────────────────────────────
     steps.append({
-        "6. Dê dois cliques no workspace e adicione um Buzzer",
+        "7. Dê dois cliques no workspace e adicione um Buzzer",
         "O buzzer vai apitar quando algo se aproximar do sensor.\n\n"
         "1. Dê DOIS CLIQUES no workspace.\n"
         "2. Digite \"buzzer\" na busca e adicione-o.",
@@ -5738,9 +5753,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // â”€â”€ Passo 7: Buzzer + â†’ GPIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Passo 8: Buzzer + → GPIO ─────────────────────────────────────────────
     steps.append({
-        "7. Conecte o pino + (positivo) do Buzzer ao pino GPIO2 da ESP32",
+        "8. Conecte o pino + (positivo) do Buzzer ao pino GPIO2 da ESP32",
         "O pino positivo do buzzer será controlado pelo microcontrolador.\n\n"
         "1. Dê um clique no pino + do Buzzer.\n"
         "2. Mova o mouse e clique no pino GPIO2 da placa ESP32.",
@@ -5748,9 +5763,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 8: Buzzer - → GND ───────────────────────────────────────────────
+    // ── Passo 9: Buzzer - → GND ───────────────────────────────────────────────
     steps.append({
-        "8. Conecte o pino - (negativo) do Buzzer ao GND da ESP32",
+        "9. Conecte o pino - (negativo) do Buzzer ao GND da ESP32",
         "Feche o circuito do buzzer pelo terra.\n\n"
         "1. Dê um clique no pino - do Buzzer.\n"
         "2. Mova o mouse e clique em um pino GND livre da placa ESP32.",
@@ -5758,9 +5773,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 9: Clique direito → Ao Medir ───────────────────────────────────
+    // ── Passo 10: Clique direito → Ao Medir ───────────────────────────────────
     steps.append({
-        "9. Clique com botão direito no HC-SR04 e escolha 'Ao Medir'",
+        "10. Clique com botão direito no HC-SR04 e escolha 'Ao Medir'",
         "Vamos abrir o editor de eventos do sensor.\n\n"
         "1. Clique com o BOTÃO DIREITO sobre o HC-SR04 no workspace.\n"
         "2. Selecione o evento \"Ao Medir\" no menu flutuante.",
@@ -5768,9 +5783,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 10: Adicionar bloco Ação ──────────────────────────────────────
+    // ── Passo 11: Adicionar bloco Ação ──────────────────────────────────────
     steps.append({
-        "10. Dê dois cliques no editor e adicione um bloco de Ação",
+        "11. Dê dois cliques no editor e adicione um bloco de Ação",
         "Vamos programar o buzzer para ligar!\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos à direita.\n"
         "2. Adicione uma AÇÃO na lista que aparecer.",
@@ -5778,9 +5793,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 11: Arrastar variável do Buzzer ao campo Alvo ────────────────────
+    // ── Passo 12: Arrastar variável do Buzzer ao campo Alvo ────────────────────
     steps.append({
-        "11. Arraste a variável do Buzzer ao campo 'Alvo'",
+        "12. Arraste a variável do Buzzer ao campo 'Alvo'",
         "Agora puxe a variável do Buzzer para o bloco de ação.\n\n"
         "1. Na paleta esquerda em 'PINOS E ATUADORES', localize o bloco do Buzzer.\n"
         "2. Clique e segure e arraste até o campo 'Alvo (Pino / Var)' do bloco de Ação.",
@@ -5788,9 +5803,9 @@ void MainWindow::startDistanceSensorTutorial() {
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 12: Adicionar bloco Aguardar ──────────────────────────
+    // ── Passo 13: Adicionar bloco Aguardar ──────────────────────────
     steps.append({
-        "12. Adicione um bloco Aguardar",
+        "13. Adicione um bloco Aguardar",
         "Um pequeno delay entre o buzz ON e OFF cria o efeito de bip.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione um bloco AGUARDAR.",
@@ -5798,18 +5813,18 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 13: Digitar 50ms ──────────────────────────
+    // ── Passo 14: Digitar 50ms ──────────────────────────
     steps.append({
-        "13. Digite 50 no campo de milissegundos",
+        "14. Digite 50 no campo de milissegundos",
         "Esse será o tempo que o buzzer ficará ligado antes de desligar novamente.\n\n"
         "No campo 'Milissegundos (ms)', digite o número 50.",
         "Digite 50 no campo ms!",
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 14: Adicionar bloco Ação (buzzer LOW) ──────────────────────
+    // ── Passo 15: Adicionar bloco Ação (buzzer LOW) ──────────────────────
     steps.append({
-        "14. Adicione mais um bloco de Ação",
+        "15. Adicione mais um bloco de Ação",
         "Agora vamos adicionar o bloco que vai desligar o buzzer após o bip.\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione outra AÇÃO.",
@@ -5817,27 +5832,27 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 15: Arrastar variável do Buzzer ─────────────
+    // ── Passo 16: Arrastar variável do Buzzer ─────────────
     steps.append({
-        "15. Arraste a variável do Buzzer",
+        "16. Arraste a variável do Buzzer",
         "Vamos configurar o segundo bloco para desligar o buzzer.\n\n"
         "Arraste a variável do Buzzer ao campo 'Alvo' deste novo bloco.",
         "Arraste o Buzzer para o campo Alvo!",
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 16: Mudar para LOW ─────────────
+    // ── Passo 17: Mudar para LOW ─────────────
     steps.append({
-        "16. Mude o estado para LOW",
+        "17. Mude o estado para LOW",
         "Agora que o alvo está definido, mude o comando do bloco para desligar o buzzer.\n\n"
         "Clique no campo destacado e mude de HIGH para LOW.",
         "Mude o comando de HIGH para LOW!",
         nullptr, QRect(), TutorialStep::Right, true, "actionCmdCombo"
     });
 
-    // ── Passo 17: Adicionar o bloco Aguardar (delay) ──────────────────────
+    // ── Passo 18: Adicionar o bloco Aguardar (delay) ──────────────────────
     steps.append({
-        "17. Adicione um bloco Aguardar",
+        "18. Adicione um bloco Aguardar",
         "Agora vamos adicionar o delay dinâmico que controla o ritmo dos bips!\n\n"
         "1. Dê DOIS CLIQUES no editor de blocos.\n"
         "2. Adicione um bloco AGUARDAR.",
@@ -5845,9 +5860,9 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 18: Arrastar variável distância ao campo ms ──────────────────
+    // ── Passo 19: Arrastar variável distância ao campo ms ──────────────────
     steps.append({
-        "18. Arraste a variável distância ao campo de milissegundos",
+        "19. Arraste a variável distância ao campo de milissegundos",
         "A variável de distância do HC-SR04 vai controlar o intervalo entre os bips.\n\n"
         "1. Em 'VARIÁVEIS GLOBAIS', localize o bloco de distância.\n"
         "2. Arraste-o até o campo 'Milissegundos (ms)' do bloco Aguardar.",
@@ -5855,9 +5870,9 @@ void MainWindow::startDistanceSensorTutorial() {
         nullptr, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 19: Adicionar *10 após a variável ─────────────────────────
+    // ── Passo 20: Adicionar *10 após a variável ─────────────────────────
     steps.append({
-        "19. Adicione *10 após a variável no campo ms",
+        "20. Adicione *10 após a variável no campo ms",
         "Efeito sonar: quanto mais longe o objeto, maior o intervalo entre os bips!\n\n"
         "No campo de milissegundos, clique no final do texto que apareceu\n"
         "e adicione: *10\n\n"
@@ -5866,27 +5881,27 @@ void MainWindow::startDistanceSensorTutorial() {
         m_blockEditor, QRect(), TutorialStep::Right
     });
 
-    // ── Passo 20: Build ───────────────────────────────────────────────────────
+    // ── Passo 21: Build ───────────────────────────────────────────────────────
     steps.append({
-        "20. Clique no botão de Build para compilar o projeto",
+        "21. Clique no botão de Build para compilar o projeto",
         "Com o circuito montado e a lógica programada, é hora de compilar!\n\n"
         "Clique no botão de Build (ícone de ferramentas na barra superior).",
         "Clique no botão de Build no topo!",
         buildWidget, QRect(), TutorialStep::Up
     });
 
-    // ── Passo 21: Play ────────────────────────────────────────────────────────
+    // ── Passo 22: Play ────────────────────────────────────────────────────────
     steps.append({
-        "21. Clique em Play para iniciar a simulação!",
+        "22. Clique em Play para iniciar a simulação!",
         "Com o código compilado com sucesso, clique no botão de Play!\n\n"
         "Você vai ver o buzzer bipando em tempo real.",
         "Clique no botão de Play no topo!",
         playWidget, QRect(), TutorialStep::Up
     });
 
-    // ── Passo 22: Observe o buzzer e teste a distância ────────────────────────
+    // ── Passo 23: Observe o buzzer e teste a distância ────────────────────────
     steps.append({
-        "22. Clique 2 vezes no sensor e mude a distancia!",
+        "23. Clique 2 vezes no sensor e mude a distancia!",
         "O buzzer está bipando em tempo real!\n\n"
         "Dê DOIS CLIQUES no sensor HC-SR04 para abrir as configurações,\n"
         "mude a distância e feche a janela para ver o ritmo do bip mudar.",
@@ -5894,16 +5909,16 @@ void MainWindow::startDistanceSensorTutorial() {
         m_view, QRect(), TutorialStep::Up, false
     });
 
-    // ── Passo 23: Abrir o Osciloscópio ──────────────────────────────────────
+    // ── Passo 24: Abrir o Osciloscópio ──────────────────────────────────────
     steps.append({
-        "23. Abra o Osciloscópio",
+        "24. Abra o Osciloscópio",
         "Vamos visualizar os pulsos sonoros em formato de gráfico.\n\n"
         "Clique na aba 'Osciloscópio' localizada na parte inferior esquerda da tela.",
         "Clique na aba Osciloscópio!",
         nullptr, QRect(), TutorialStep::Up, true, "oscilloscopeTab"
     });
 
-    // ── Passo 24: Concluído ─────────────────────────────────────────────────
+    // ── Passo 25: Concluído ─────────────────────────────────────────────────
     steps.append({
         "Parabéns! Seu sonar está concluído!",
         "Você montou e simulou um detector de proximidade ultrassônico do zero!\n\n"
@@ -5915,9 +5930,9 @@ void MainWindow::startDistanceSensorTutorial() {
 
     m_activeTutorial = 2;
     m_tutorialOverlay->clearVariableDragSteps();
-    m_tutorialOverlay->addVariableDragStep(11, "BUZZER");            // drag Buzzer to action target (HIGH)
-    m_tutorialOverlay->addVariableDragStep(15, "BUZZER");            // drag Buzzer to action target (LOW)
-    m_tutorialOverlay->addVariableDragStep(18, "distancia", "param"); // drag distancia to delay ms field
+    m_tutorialOverlay->addVariableDragStep(12, "BUZZER");            // drag Buzzer to action target (HIGH)
+    m_tutorialOverlay->addVariableDragStep(16, "BUZZER");            // drag Buzzer to action target (LOW)
+    m_tutorialOverlay->addVariableDragStep(19, "distancia", "param"); // drag distancia to delay ms field
     m_tutorialOverlay->setSteps(steps);
     m_tutorialOverlay->start();
 }
@@ -6461,32 +6476,32 @@ void MainWindow::checkBlockEditorTutorialSteps() {
 
         } else if (m_activeTutorial == 2) {
             // Tutorial 2 — Distance Sensor
-            // Step 10: add first action block (empty target OK)
-            if (step == 10 && actionCount >= 1) {
+            // Step 11: add first action block (empty target OK)
+            if (step == 11 && actionCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 11: drag buzzer variable to that action's target
-            else if (step == 11 && filledCount >= 1) {
+            // Step 12: drag buzzer variable to that action's target
+            else if (step == 12 && filledCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 12: add a DELAY block (empty OK)
-            else if (step == 12 && delayCount >= 1) {
+            // Step 13: add a DELAY block (empty OK)
+            else if (step == 13 && delayCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 13: type 50 in first DELAY block
-            else if (step == 13 && delayParamCount >= 1) {
+            // Step 14: type 50 in first DELAY block
+            else if (step == 14 && delayParamCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 14: add second action block (empty target OK)
-            else if (step == 14 && actionCount >= 2) {
+            // Step 15: add second action block (empty target OK)
+            else if (step == 15 && actionCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 15: drag buzzer variable to second action (target filled)
-            else if (step == 15 && filledCount >= 2) {
+            // Step 16: drag buzzer variable to second action (target filled)
+            else if (step == 16 && filledCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 16: user changes combo to LOW
-            else if (step == 16) {
+            // Step 17: user changes combo to LOW
+            else if (step == 17) {
                 // To check if they set it to LOW, we must verify the last action block
                 int lowCount = 0;
                 for (const auto& b : active) {
@@ -6498,16 +6513,16 @@ void MainWindow::checkBlockEditorTutorialSteps() {
                     m_tutorialOverlay->advance(); advanced = true;
                 }
             }
-            // Step 17: add second DELAY block (empty param OK)
-            else if (step == 17 && delayCount >= 2) {
+            // Step 18: add second DELAY block (empty param OK)
+            else if (step == 18 && delayCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 18: drag distance var to delay param
-            else if (step == 18 && delayParamCount >= 2) {
+            // Step 19: drag distance var to delay param
+            else if (step == 19 && delayParamCount >= 2) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
-            // Step 19: add *10 to param
-            else if (step == 19 && delayMultCount >= 1) {
+            // Step 20: add *10 to param
+            else if (step == 20 && delayMultCount >= 1) {
                 m_tutorialOverlay->advance(); advanced = true;
             }
 
