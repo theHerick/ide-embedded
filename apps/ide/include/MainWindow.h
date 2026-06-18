@@ -96,6 +96,7 @@ private:
     QAction* m_copyAction = nullptr;
     QAction* m_pasteAction = nullptr;
     QAction* m_multitaskAction = nullptr;
+    QMenu* m_adjustsMenu = nullptr;
     TutorialOverlay* m_tutorialOverlay = nullptr;
     int m_activeTutorial = 0; // 0=none, 1=LED/Button, 2=Distance Sensor
     bool m_multitaskingEnabled = true;
