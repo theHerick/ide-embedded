@@ -19,7 +19,9 @@ jobs:
 
       - name: Instalar Cppcheck
         shell: powershell
-        run: choco install cppcheck -y
+        run: |
+          choco install cppcheck -y
+          Add-Content $env:GITHUB_PATH "C:\Program Files\Cppcheck"
 
       - name: Rodar Cppcheck
         shell: powershell
