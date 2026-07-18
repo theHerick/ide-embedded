@@ -254,9 +254,9 @@ ConnectionCable* WorkspaceScene::connectPins(ComponentItem* srcComp, const QStri
     Pin* p2 = tgtComp->getPinByName(tgtPinName);
 
     if (!p1 || !p2) {
-        qDebug() << "[CABLE ERROR] Pino não encontrado:"
-                 << srcPinName << "em" << srcComp->name()
-                 << "ou" << tgtPinName << "em" << tgtComp->name();
+        // qDebug() << "[CABLE ERROR] Pino não encontrado:"
+        //          << srcPinName << "em" << srcComp->name()
+        //          << "ou" << tgtPinName << "em" << tgtComp->name();
         return nullptr;
     }
 
@@ -280,10 +280,10 @@ ConnectionCable* WorkspaceScene::connectPins(ComponentItem* srcComp, const QStri
         p2->connectedToPin       = p1->name;
     }
 
-    qDebug() << "[CABLE] Conectado:" << srcComp->name() << "::" << p1->name
-             << "->" << tgtComp->name() << "::" << p2->name
-             << " | waypoints:" << waypoints.size()
-             << " | srcJunc:" << srcIsJunction << " | tgtJunc:" << tgtIsJunction;
+    // qDebug() << "[CABLE] Conectado:" << srcComp->name() << "::" << p1->name
+    //          << "->" << tgtComp->name() << "::" << p2->name
+    //          << " | waypoints:" << waypoints.size()
+    //          << " | srcJunc:" << srcIsJunction << " | tgtJunc:" << tgtIsJunction;
 
     ConnectionCable* cable = new ConnectionCable(srcComp, p1->name, tgtComp, p2->name, waypoints, startHFirst,
                                                  srcIsJunction, srcJunctionPos, tgtIsJunction, tgtJunctionPos);
@@ -311,7 +311,7 @@ void WorkspaceScene::deleteSelected() {
         if (item->type() == ConnectionCable::Type) {
             ConnectionCable* cable = static_cast<ConnectionCable*>(item);
             m_undoStack->push(new RemoveCableCommand(this, cable));
-            qDebug() << "[CABLE DELETE]" << cable->sourcePinName() << "->" << cable->targetPinName();
+            // qDebug() << "[CABLE DELETE]" << cable->sourcePinName() << "->" << cable->targetPinName();
         }
     }
     for (auto* item : selectedList) {
@@ -329,7 +329,7 @@ void WorkspaceScene::deleteSelected() {
         }
 
         m_undoStack->push(new RemoveComponentCommand(this, comp));
-        qDebug() << "[COMPONENT DELETE]" << comp->name();
+        // qDebug() << "[COMPONENT DELETE]" << comp->name();
     }
     
     m_undoStack->endMacro();
@@ -353,7 +353,7 @@ void WorkspaceScene::clearWorkspace() {
     m_cables.clear();
     for (auto* comp : m_components) { removeItem(comp); delete comp; }
     m_components.clear();
-    qDebug() << "[WORKSPACE] Limpo";
+    // qDebug() << "[WORKSPACE] Limpo";
     emit selectionChanged(nullptr);
 }
 
@@ -432,7 +432,7 @@ void WorkspaceScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
     // ── Right click: cancel routing or pass through ───────────────────────
     if (event->button() == Qt::RightButton) {
         if (m_routing) {
-            qDebug() << "[ROUTING] Cancelado por clique direito";
+            // qDebug() << "[ROUTING] Cancelado por clique direito";
             cancelRouting();
             event->accept();
         } else {
@@ -464,7 +464,7 @@ void WorkspaceScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
                 m_routeWaypoints.clear();
                 m_routeWaypoints.push_back(comp->getPinScenePos(*pin));
 
-                qDebug() << "[ROUTING] Iniciado em" << comp->name() << "::" << pin->name;
+                // qDebug() << "[ROUTING] Iniciado em" << comp->name() << "::" << pin->name;
 
                 if (m_routePreview) { removeItem(m_routePreview); delete m_routePreview; }
                 m_routePreview = new QGraphicsPathItem();
@@ -573,9 +573,9 @@ void WorkspaceScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
     m_routeWaypoints.push_back(snapped);
     m_routeHFirst = !m_routeHFirst; // toggle bend direction for next segment
 
-    qDebug() << "[ROUTING] Waypoint adicionado:" << snapped
-             << "| total wpts=" << m_routeWaypoints.size()
-             << "| próximo hFirst=" << m_routeHFirst;
+    // qDebug() << "[ROUTING] Waypoint adicionado:" << snapped
+    //          << "| total wpts=" << m_routeWaypoints.size()
+    //          << "| próximo hFirst=" << m_routeHFirst;
 
     updateRoutingPreview(scenePos);
     event->accept();
@@ -659,7 +659,7 @@ void WorkspaceScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
 // ─────────────────────────────────────────────────────────────────────────────
 void WorkspaceScene::keyPressEvent(QKeyEvent* event) {
     if (m_routing && event->key() == Qt::Key_Escape) {
-        qDebug() << "[ROUTING] Cancelado por Esc";
+        // qDebug() << "[ROUTING] Cancelado por Esc";
         cancelRouting();
         event->accept();
         return;

@@ -175,16 +175,16 @@ void ConnectionCable::updatePath() {
     Pin* srcPin = m_sourceComp->getPinByName(m_sourcePin);
     Pin* tgtPin = m_targetComp->getPinByName(m_targetPin);
     if (!srcPin || !tgtPin) {
-        qDebug() << "[CABLE ERROR] updatePath: pino não encontrado!"
-                 << m_sourcePin << "ou" << m_targetPin;
+        // qDebug() << "[CABLE ERROR] updatePath: pino não encontrado!"
+        //          << m_sourcePin << "ou" << m_targetPin;
         return;
     }
 
     QPointF p1 = m_sourceIsJunction ? m_sourceJunctionPos : m_sourceComp->getPinScenePos(*srcPin);
     QPointF p2 = m_targetIsJunction ? m_junctionPos : m_targetComp->getPinScenePos(*tgtPin);
 
-    qDebug() << "[CABLE]" << m_sourcePin << "→" << m_targetPin
-             << "| waypoints:" << m_manualWaypoints.size();
+    // qDebug() << "[CABLE]" << m_sourcePin << "→" << m_targetPin
+    //          << "| waypoints:" << m_manualWaypoints.size();
 
     std::vector<QPointF> chain;
     chain.push_back(p1);

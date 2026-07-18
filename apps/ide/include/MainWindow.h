@@ -25,8 +25,11 @@ class CapacitorItem;
 class LEDItem;
 class LdrItem;
 
+class ProjectManager;
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
+    friend class ProjectManager;
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();

@@ -299,7 +299,7 @@ WebPageEditorDialog::WebPageEditorDialog(QJsonObject& data, const QStringList& a
     m_enableSwitch->setStyleSheet(
         "QCheckBox { color: #0F172A; font-weight: bold; font-size: 12px; }"
     );
-    connect(m_enableSwitch, &QCheckBox::stateChanged, this, [this](int state) {
+    connect(m_enableSwitch, &QCheckBox::checkStateChanged, this, [this](int state) {
         if (state == Qt::Checked) {
             if (MainWindow* mainWin = qobject_cast<MainWindow*>(parentWidget())) {
                 if (mainWin->getActiveTutorial() == 3 && mainWin->getTutorialOverlay() && mainWin->getTutorialOverlay()->currentStep() == 13) {
