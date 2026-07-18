@@ -6,10 +6,12 @@ add_executable(ide-embedded WIN32
     include/WebPageEditorDialog.h
     include/WebElementItem.h
     include/TutorialOverlay.h
+    include/AiOptimizer.h
     main.cpp
     src/MainWindow.cpp
     src/ProjectManager.cpp
     src/ToolchainManager.cpp
+    src/AiOptimizer.cpp
     src/OscilloscopePanel.cpp
     src/WebPageEditorDialog.cpp
     src/WebElementItem.cpp

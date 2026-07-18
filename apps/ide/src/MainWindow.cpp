@@ -4,6 +4,8 @@
 #include "CustomComponent.h"
 #include "ComponentCreatorDialog.h"
 #include "WebPageEditorDialog.h"
+#include "AiOptimizer.h"
+#include <QSplitter>
 #include "ComponentItem.h"
 #include <QMenuBar>
 #include <QToolBar>
@@ -195,6 +197,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_view->setObjectName("workspaceScene");
     m_blockEditor = new BlockEditor(this);
     m_simulator = new HardwareSimulator(this);
+    m_aiOptimizer = new AiOptimizer(this);
 
     // Dynamic compilation on block updates
     connect(m_blockEditor, &BlockEditor::blocksChanged, this, &MainWindow::compileCode);
@@ -842,6 +845,15 @@ void MainWindow::buildToolbar() {
             }
         }
     });
+
+    m_adjustsMenu->addSeparator();
+
+    m_aiOptimizationAction = m_adjustsMenu->addAction("Modo Otimização (Copilot)");
+    m_aiOptimizationAction->setCheckable(true);
+    m_aiOptimizationAction->setChecked(false);
+
+    QAction* configureAiAction = m_adjustsMenu->addAction("Configurar Copilot (API Key)");
+    connect(configureAiAction, &QAction::triggered, this, &MainWindow::openAiSettingsDialog);
 }
 
 void MainWindow::applyTheme() {
@@ -1719,6 +1731,47 @@ void MainWindow::buildProject() {
 
     // 2) Generate code
     compileCode();
+
+    if (m_aiOptimizationAction && m_aiOptimizationAction->isChecked()) {
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle("Compilar Otimizado?");
+        msgBox.setText("O Modo Copilot está ativado. Deseja compilar a versão Padrão gerada pelos blocos, ou pedir para a IA Otimizar o código antes de gravar?");
+        auto btnOtimizado = msgBox.addButton("Compilar Otimizado", QMessageBox::AcceptRole);
+        auto btnPadrao = msgBox.addButton("Compilar Padrão", QMessageBox::RejectRole);
+        msgBox.exec();
+
+        if (msgBox.clickedButton() == btnOtimizado) {
+            logMessage("Otimizando código com IA (Copilot)... aguarde...", "SYSTEM");
+            QCoreApplication::processEvents();
+            
+            QEventLoop loop;
+            QString optResult = "";
+            bool success = false;
+            
+            auto conn1 = connect(m_aiOptimizer, &AiOptimizer::optimizationFinished, [&](const QString& optCode) {
+                optResult = optCode;
+                success = true;
+                loop.quit();
+            });
+            auto conn2 = connect(m_aiOptimizer, &AiOptimizer::optimizationError, [&](const QString& err) {
+                logMessage("Erro do Copilot: " + err, "ERROR");
+                loop.quit();
+            });
+            
+            m_aiOptimizer->optimizeCode(m_compiledCode, AiOptimizer::OptimizePerformance);
+            loop.exec();
+            
+            disconnect(conn1);
+            disconnect(conn2);
+            
+            if (success && !optResult.isEmpty()) {
+                m_compiledCode = optResult;
+                logMessage("Código otimizado pela IA com sucesso!", "SYSTEM");
+            } else {
+                logMessage("Falha na otimização. Prosseguindo com código Padrão.", "WARNING");
+            }
+        }
+    }
 
     if (m_compiledCode.startsWith("// ERROR:")) {
         QString errorMsg = m_compiledCode.mid(QString("// ERROR:").length()).trimmed();
@@ -3811,6 +3864,56 @@ void MainWindow::viewCompiledCodeModal() {
     );
 
     auto* codeEditor = new QPlainTextEdit(&dialog);
+
+    // Copilot AI Toolbar
+    auto* copilotLayout = new QHBoxLayout();
+    auto* copilotLabel = new QLabel("✨ Copilot:", &dialog);
+    copilotLabel->setStyleSheet("color: #6366F1; font-weight: bold;");
+    copilotLayout->addWidget(copilotLabel);
+    
+    auto* btnOptPerf = new QPushButton("Otimizar Memória/CPU", &dialog);
+    auto* btnOptSize = new QPushButton("Reduzir Tamanho", &dialog);
+    auto* btnRust = new QPushButton("Emular Rust", &dialog);
+    auto* btnPython = new QPushButton("MicroPython", &dialog);
+
+    QString copilotBtnStyle = "QPushButton { background: #E0E7FF; border: 1px solid #C7D2FE; border-radius: 4px; padding: 4px 10px; color: #4338CA; font-weight: bold; } QPushButton:hover { background: #C7D2FE; }";
+    btnOptPerf->setStyleSheet(copilotBtnStyle);
+    btnOptSize->setStyleSheet(copilotBtnStyle);
+    btnRust->setStyleSheet(copilotBtnStyle);
+    btnPython->setStyleSheet(copilotBtnStyle);
+
+    copilotLayout->addWidget(btnOptPerf);
+    copilotLayout->addWidget(btnOptSize);
+    copilotLayout->addWidget(btnRust);
+    copilotLayout->addWidget(btnPython);
+    copilotLayout->addStretch();
+    layout->addLayout(copilotLayout);
+
+    auto executeOpt = [this, codeEditor](AiOptimizer::OptimizeMode mode) {
+        if (m_aiOptimizer->getApiKey().isEmpty()) {
+            QMessageBox::warning(codeEditor, "Copilot", "Configure sua API Key do Google Gemini no menu Ajustes -> Configurar Copilot.");
+            return;
+        }
+        codeEditor->setPlainText("// ✨ O Copilot está analisando e traduzindo seu código... Aguarde uns segundos...\n");
+        
+        auto conn1 = std::make_shared<QMetaObject::Connection>();
+        auto conn2 = std::make_shared<QMetaObject::Connection>();
+        
+        *conn1 = connect(m_aiOptimizer, &AiOptimizer::optimizationFinished, codeEditor, [codeEditor, conn1, conn2](const QString& res) {
+            codeEditor->setPlainText(res);
+            disconnect(*conn1); disconnect(*conn2);
+        });
+        *conn2 = connect(m_aiOptimizer, &AiOptimizer::optimizationError, codeEditor, [codeEditor, conn1, conn2](const QString& err) {
+            codeEditor->setPlainText("// Erro na IA:\n" + err);
+            disconnect(*conn1); disconnect(*conn2);
+        });
+        m_aiOptimizer->optimizeCode(m_compiledCode, mode);
+    };
+
+    connect(btnOptPerf, &QPushButton::clicked, [&]() { executeOpt(AiOptimizer::OptimizePerformance); });
+    connect(btnOptSize, &QPushButton::clicked, [&]() { executeOpt(AiOptimizer::ReduceSize); });
+    connect(btnRust, &QPushButton::clicked, [&]() { executeOpt(AiOptimizer::TranslateToRust); });
+    connect(btnPython, &QPushButton::clicked, [&]() { executeOpt(AiOptimizer::TranslateToPython); });
     codeEditor->setReadOnly(true);
     codeEditor->setPlainText(m_compiledCode.isEmpty() ? "// Nenhum código gerado ainda. Monte um circuito para gerar." : m_compiledCode);
     codeEditor->setStyleSheet(
@@ -6220,5 +6323,19 @@ void MainWindow::updatePlayActionState() {
         QPixmap disabledPix = QIcon(":/icons/play.svg").pixmap(32, 32, QIcon::Disabled, QIcon::Off);
         QIcon grayIcon(disabledPix);
         m_playAction->setIcon(grayIcon);
+    }
+}
+#include <QInputDialog>
+
+void MainWindow::openAiSettingsDialog() {
+    bool ok;
+    QString currentKey = m_aiOptimizer->getApiKey();
+    QString text = QInputDialog::getText(this, "Configurar AI Copilot (Gemini)",
+                                         "Insira sua API Key do Google Gemini (AI Studio):",
+                                         QLineEdit::Password,
+                                         currentKey, &ok);
+    if (ok) {
+        m_aiOptimizer->setApiKey(text.trimmed());
+        logMessage("Chave de API (Copilot) atualizada com sucesso.", "SYSTEM");
     }
 }

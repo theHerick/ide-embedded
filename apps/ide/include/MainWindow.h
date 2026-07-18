@@ -26,6 +26,7 @@ class LEDItem;
 class LdrItem;
 
 class ProjectManager;
+class AiOptimizer;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -73,6 +74,9 @@ private slots:
     void startDistanceSensorTutorial();
     void startMotorIoTTutorial();
     void startLdrRelayTutorial();
+    
+    // AI Configuration
+    void openAiSettingsDialog();
 
 private:
     // Visual Panels
@@ -80,6 +84,7 @@ private:
     WorkspaceView* m_view;
     BlockEditor* m_blockEditor;
     HardwareSimulator* m_simulator;
+    AiOptimizer* m_aiOptimizer;
     
     QListWidget* m_toolboxList;
     QPlainTextEdit* m_compilerConsole;
@@ -99,6 +104,7 @@ private:
     QAction* m_copyAction = nullptr;
     QAction* m_pasteAction = nullptr;
     QAction* m_multitaskAction = nullptr;
+    QAction* m_aiOptimizationAction = nullptr;
     QMenu* m_adjustsMenu = nullptr;
     TutorialOverlay* m_tutorialOverlay = nullptr;
     int m_activeTutorial = 0; // 0=none, 1=LED/Button, 2=Distance Sensor

@@ -1,0 +1,35 @@
+#pragma once
+#include <QObject>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QString>
+
+class AiOptimizer : public QObject {
+    Q_OBJECT
+public:
+    explicit AiOptimizer(QObject* parent = nullptr);
+    ~AiOptimizer() override;
+
+    void setApiKey(const QString& key);
+    QString getApiKey() const;
+
+    enum OptimizeMode {
+        OptimizePerformance,
+        ReduceSize,
+        TranslateToRust,
+        TranslateToPython
+    };
+
+    void optimizeCode(const QString& originalCode, OptimizeMode mode);
+
+signals:
+    void optimizationFinished(const QString& optimizedCode);
+    void optimizationError(const QString& errorMsg);
+
+private slots:
+    void onReplyFinished(QNetworkReply* reply);
+
+private:
+    QNetworkAccessManager* m_networkManager;
+    QString m_apiKey;
+};
