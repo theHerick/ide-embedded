@@ -3863,18 +3863,52 @@ void MainWindow::viewCompiledCodeModal() {
         m_webPageData
     );
 
-    auto* codeEditor = new QPlainTextEdit(&dialog);
+    // Abas
+    auto* tabWidget = new QTabWidget(&dialog);
+    tabWidget->setStyleSheet(
+        "QTabWidget::pane { border: 1px solid #E2E8F0; border-radius: 4px; background: #FFFFFF; } "
+        "QTabBar::tab { background: #E2E8F0; padding: 8px 16px; margin-right: 2px; color: #475569; border-top-left-radius: 4px; border-top-right-radius: 4px; } "
+        "QTabBar::tab:selected { background: #FFFFFF; font-weight: bold; color: #1D4ED8; border: 1px solid #E2E8F0; border-bottom: none; }"
+    );
+    layout->addWidget(tabWidget);
 
-    // Copilot AI Toolbar
+    // Aba 1: Código Padrão
+    auto* tabOriginal = new QWidget();
+    auto* layoutOriginal = new QVBoxLayout(tabOriginal);
+    layoutOriginal->setContentsMargins(12, 12, 12, 12);
+    
+    auto* codeEditorOriginal = new QPlainTextEdit(tabOriginal);
+    codeEditorOriginal->setReadOnly(true);
+    codeEditorOriginal->setPlainText(m_compiledCode.isEmpty() ? "// Nenhum código gerado ainda. Monte um circuito para gerar." : m_compiledCode);
+    QString editorStyle = 
+        "QPlainTextEdit { "
+        "  background-color: #FAFAFA; "
+        "  border: 1px solid #E2E8F0; "
+        "  border-radius: 4px; "
+        "  color: #0F172A; "
+        "  font-family: 'Fira Code', 'Consolas', 'Courier New', monospace; "
+        "  font-size: 13px; "
+        "  padding: 12px; "
+        "  line-height: 1.5; "
+        "}";
+    codeEditorOriginal->setStyleSheet(editorStyle);
+    layoutOriginal->addWidget(codeEditorOriginal);
+    tabWidget->addTab(tabOriginal, "Código Padrão");
+
+    // Aba 2: Código Otimizado (Copilot)
+    auto* tabCopilot = new QWidget();
+    auto* layoutCopilot = new QVBoxLayout(tabCopilot);
+    layoutCopilot->setContentsMargins(12, 12, 12, 12);
+
     auto* copilotLayout = new QHBoxLayout();
-    auto* copilotLabel = new QLabel("✨ Copilot:", &dialog);
+    auto* copilotLabel = new QLabel("✨ Ações de IA:", tabCopilot);
     copilotLabel->setStyleSheet("color: #6366F1; font-weight: bold;");
     copilotLayout->addWidget(copilotLabel);
     
-    auto* btnOptPerf = new QPushButton("Otimizar Memória/CPU", &dialog);
-    auto* btnOptSize = new QPushButton("Reduzir Tamanho", &dialog);
-    auto* btnRust = new QPushButton("Emular Rust", &dialog);
-    auto* btnPython = new QPushButton("MicroPython", &dialog);
+    auto* btnOptPerf = new QPushButton("Otimizar Memória/CPU", tabCopilot);
+    auto* btnOptSize = new QPushButton("Reduzir Tamanho", tabCopilot);
+    auto* btnRust = new QPushButton("Emular Rust", tabCopilot);
+    auto* btnPython = new QPushButton("MicroPython", tabCopilot);
 
     QString copilotBtnStyle = "QPushButton { background: #E0E7FF; border: 1px solid #C7D2FE; border-radius: 4px; padding: 4px 10px; color: #4338CA; font-weight: bold; } QPushButton:hover { background: #C7D2FE; }";
     btnOptPerf->setStyleSheet(copilotBtnStyle);
@@ -3887,24 +3921,31 @@ void MainWindow::viewCompiledCodeModal() {
     copilotLayout->addWidget(btnRust);
     copilotLayout->addWidget(btnPython);
     copilotLayout->addStretch();
-    layout->addLayout(copilotLayout);
+    layoutCopilot->addLayout(copilotLayout);
 
-    auto executeOpt = [this, codeEditor](AiOptimizer::OptimizeMode mode) {
+    auto* codeEditorCopilot = new QPlainTextEdit(tabCopilot);
+    codeEditorCopilot->setReadOnly(true);
+    codeEditorCopilot->setPlainText("// Clique em uma das ações de IA acima para otimizar ou traduzir o código.");
+    codeEditorCopilot->setStyleSheet(editorStyle);
+    layoutCopilot->addWidget(codeEditorCopilot);
+    tabWidget->addTab(tabCopilot, "✨ Código Otimizado (Copilot)");
+
+    auto executeOpt = [this, codeEditorCopilot](AiOptimizer::OptimizeMode mode) {
         if (m_aiOptimizer->getApiKey().isEmpty()) {
-            QMessageBox::warning(codeEditor, "Copilot", "Configure sua API Key do Google Gemini no menu Ajustes -> Configurar Copilot.");
+            QMessageBox::warning(codeEditorCopilot, "Copilot", "Configure sua API Key do Google Gemini no menu Ajustes -> Configurar Copilot.");
             return;
         }
-        codeEditor->setPlainText("// ✨ O Copilot está analisando e traduzindo seu código... Aguarde uns segundos...\n");
+        codeEditorCopilot->setPlainText("// ✨ O Copilot está analisando e traduzindo seu código... Aguarde uns segundos...\n");
         
         auto conn1 = std::make_shared<QMetaObject::Connection>();
         auto conn2 = std::make_shared<QMetaObject::Connection>();
         
-        *conn1 = connect(m_aiOptimizer, &AiOptimizer::optimizationFinished, codeEditor, [codeEditor, conn1, conn2](const QString& res) {
-            codeEditor->setPlainText(res);
+        *conn1 = connect(m_aiOptimizer, &AiOptimizer::optimizationFinished, codeEditorCopilot, [codeEditorCopilot, conn1, conn2](const QString& res) {
+            codeEditorCopilot->setPlainText(res);
             disconnect(*conn1); disconnect(*conn2);
         });
-        *conn2 = connect(m_aiOptimizer, &AiOptimizer::optimizationError, codeEditor, [codeEditor, conn1, conn2](const QString& err) {
-            codeEditor->setPlainText("// Erro na IA:\n" + err);
+        *conn2 = connect(m_aiOptimizer, &AiOptimizer::optimizationError, codeEditorCopilot, [codeEditorCopilot, conn1, conn2](const QString& err) {
+            codeEditorCopilot->setPlainText("// Erro na IA:\n" + err);
             disconnect(*conn1); disconnect(*conn2);
         });
         m_aiOptimizer->optimizeCode(m_compiledCode, mode);
@@ -3914,21 +3955,6 @@ void MainWindow::viewCompiledCodeModal() {
     connect(btnOptSize, &QPushButton::clicked, [&]() { executeOpt(AiOptimizer::ReduceSize); });
     connect(btnRust, &QPushButton::clicked, [&]() { executeOpt(AiOptimizer::TranslateToRust); });
     connect(btnPython, &QPushButton::clicked, [&]() { executeOpt(AiOptimizer::TranslateToPython); });
-    codeEditor->setReadOnly(true);
-    codeEditor->setPlainText(m_compiledCode.isEmpty() ? "// Nenhum código gerado ainda. Monte um circuito para gerar." : m_compiledCode);
-    codeEditor->setStyleSheet(
-        "QPlainTextEdit { "
-        "  background-color: #FFFFFF; "
-        "  border: 1px solid #E2E8F0; "
-        "  border-radius: 8px; "
-        "  color: #0F172A; "
-        "  font-family: 'Fira Code', 'Consolas', 'Courier New', monospace; "
-        "  font-size: 13px; "
-        "  padding: 12px; "
-        "  line-height: 1.5; "
-        "}"
-    );
-    layout->addWidget(codeEditor);
 
     auto* buttonLayout = new QHBoxLayout();
     buttonLayout->setSpacing(10);
@@ -3948,8 +3974,12 @@ void MainWindow::viewCompiledCodeModal() {
         "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #059669, stop:1 #047857); "
         "}"
     );
-    connect(copyButton, &QPushButton::clicked, this, [codeEditor, copyButton]() {
-        QGuiApplication::clipboard()->setText(codeEditor->toPlainText());
+    connect(copyButton, &QPushButton::clicked, this, [tabWidget, codeEditorOriginal, codeEditorCopilot, copyButton]() {
+        if (tabWidget->currentIndex() == 0) {
+            QGuiApplication::clipboard()->setText(codeEditorOriginal->toPlainText());
+        } else {
+            QGuiApplication::clipboard()->setText(codeEditorCopilot->toPlainText());
+        }
         copyButton->setText("Copiado!");
         copyButton->setStyleSheet(
             "QPushButton { "
