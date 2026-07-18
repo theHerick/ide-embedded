@@ -9,6 +9,7 @@ add_executable(ide-embedded WIN32
     main.cpp
     src/MainWindow.cpp
     src/ProjectManager.cpp
+    src/ToolchainManager.cpp
     src/OscilloscopePanel.cpp
     src/WebPageEditorDialog.cpp
     src/WebElementItem.cpp

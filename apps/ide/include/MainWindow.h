@@ -30,6 +30,7 @@ class ProjectManager;
 class MainWindow : public QMainWindow {
     Q_OBJECT
     friend class ProjectManager;
+    friend class ToolchainManager;
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
@@ -72,7 +73,6 @@ private slots:
     void startDistanceSensorTutorial();
     void startMotorIoTTutorial();
     void startLdrRelayTutorial();
-    void platformIOConfigTriggered();
 
 private:
     // Visual Panels
@@ -122,9 +122,6 @@ private:
     void buildToolbar();
     void updatePlayActionState();
     void applyTheme();
-    void checkAndInstallToolchain();
-    void checkPythonAsync();
-    void parseResourceUsage(const QString& line);
     void openEventEditor(ComponentItem* comp, const QString& eventName);
     void openWebEventEditor(const QString& compId, const QString& eventName);
     void checkBlockEditorTutorialSteps();
@@ -132,16 +129,6 @@ private:
     void readNativeSimOutput();
     void openComponentCreator();
     void loadToolboxItems();
-    void preparePlatformIOProject(bool forNativeSimulation = false);
-    bool platformIOBuild();
-    bool platformIOUpload();
-    bool platformIOIsInstalled();
-    QString getPlatformIOCommand();
-    bool platformIOInstall();
-    QStringList platformIOListBoards();
-    bool showPlatformIOConfigDialog(QString& outBoard, QString& outFramework, QString& outPort, QString& outSpeed);
-    bool isMicrocontrollerConfigured();
-    QJsonArray suggestPinsForBoard(const QString& board);
     // AI pin suggestion removed
     void logMessage(const QString& message, const QString& type = "INFO");
     bool saveProjectToFile(const QString& filePath);
