@@ -45,9 +45,8 @@ void WorkspaceScene::cancelRouting() {
     m_routeWaypoints.clear();
     m_routeHFirst = true;
     if (m_routePreview) {
-        removeItem(m_routePreview);
-        delete m_routePreview;
-        m_routePreview = nullptr;
+        removeItem(m_routePreview.get());
+        m_routePreview.reset();
     }
 }
 
@@ -466,8 +465,11 @@ void WorkspaceScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
 
                 // qDebug() << "[ROUTING] Iniciado em" << comp->name() << "::" << pin->name;
 
-                if (m_routePreview) { removeItem(m_routePreview); delete m_routePreview; }
-                m_routePreview = new QGraphicsPathItem();
+                if (m_routePreview) { 
+                    removeItem(m_routePreview.get()); 
+                    m_routePreview.reset(); 
+                }
+                m_routePreview = std::make_unique<QGraphicsPathItem>();
                 
                 // Determine preview color by pin type
                 QColor baseColor;
@@ -483,10 +485,9 @@ void WorkspaceScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
                     else baseColor = QColor(168, 85, 247);
                 }
 
-                QPen previewPen(baseColor, 2.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-                m_routePreview->setPen(previewPen);
+                m_routePreview->setPen(QPen(baseColor, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
                 m_routePreview->setZValue(100);
-                addItem(m_routePreview);
+                addItem(m_routePreview.get());
 
                 updateRoutingPreview(scenePos);
                 event->accept();

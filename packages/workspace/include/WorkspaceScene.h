@@ -76,7 +76,8 @@ private:
     bool m_routeStartHFirst = true;
     QPointF m_lastMouseScenePos;
 
-    QGraphicsPathItem* m_routePreview = nullptr;
+#include <memory>
+    std::unique_ptr<QGraphicsPathItem> m_routePreview;
 
     QUndoStack* m_undoStack;
     QMap<ComponentItem*, QPointF> m_initialPositions;
