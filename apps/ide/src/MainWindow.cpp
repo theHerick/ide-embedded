@@ -847,7 +847,7 @@ void MainWindow::buildToolbar() {
     });
 
     // Menu dedicado para a IA (Copilot)
-    m_aiMenu = menuBar()->addMenu("✨ IA");
+    m_aiMenu = menuBar()->addMenu("IA");
     m_aiMenu->setStyleSheet(componentsMenu->styleSheet());
 
     QAction* verifyCircuitAction = m_aiMenu->addAction("Verificar Circuito (Linting Físico)");
