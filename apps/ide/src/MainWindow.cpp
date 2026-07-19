@@ -6358,20 +6358,58 @@ void MainWindow::updatePlayActionState() {
 #include <QInputDialog>
 
 void MainWindow::openAiSettingsDialog() {
-    bool ok;
-    
     QString projectDir = "";
     if (!m_currentProjectPath.isEmpty()) {
         projectDir = QFileInfo(m_currentProjectPath).path();
     }
     
     QString currentKey = m_aiOptimizer->getApiKey(projectDir);
-    QString text = QInputDialog::getText(this, "Configurar Copilot (GitHub Models)",
-                                         "Insira seu Personal Access Token (PAT) do GitHub:\nEle será salvo em um arquivo '.api' oculto na pasta do projeto.",
-                                         QLineEdit::Password,
-                                         currentKey, &ok);
-    if (ok) {
-        m_aiOptimizer->setApiKey(text.trimmed(), projectDir);
+
+    QDialog dialog(this);
+    dialog.setWindowTitle("Configurar Copilot (GitHub Models)");
+    dialog.setMinimumWidth(400);
+
+    auto* layout = new QVBoxLayout(&dialog);
+    
+    auto* lblDesc = new QLabel("Insira seu Personal Access Token (PAT) do GitHub:\nEle será salvo em um arquivo '.api' oculto na pasta do projeto.", &dialog);
+    lblDesc->setWordWrap(true);
+    layout->addWidget(lblDesc);
+
+    auto* helpLayout = new QHBoxLayout();
+    auto* lblHelp = new QLabel("<a href=\"https://github.com/settings/tokens\">Como gerar um Token (PAT)? Clique aqui!</a>", &dialog);
+    lblHelp->setOpenExternalLinks(true);
+    lblHelp->setStyleSheet("color: #1D4ED8; font-weight: bold; text-decoration: underline;");
+    helpLayout->addWidget(lblHelp);
+    
+    auto* btnQuestion = new QToolButton(&dialog);
+    btnQuestion->setText("?");
+    btnQuestion->setToolTip("Instruções detalhadas");
+    btnQuestion->setStyleSheet("QToolButton { background: #E2E8F0; border-radius: 10px; font-weight: bold; width: 20px; height: 20px; } QToolButton:hover { background: #CBD5E1; }");
+    connect(btnQuestion, &QToolButton::clicked, this, [this]() {
+        QMessageBox::information(this, "Como gerar o Token do GitHub",
+            "1. Acesse sua conta do GitHub pelo navegador.\n"
+            "2. Vá em Settings -> Developer settings -> Personal access tokens -> Tokens (classic).\n"
+            "3. Clique em 'Generate new token (classic)'.\n"
+            "4. Coloque qualquer nome, marque a caixinha 'repo' ou gere sem escopo mesmo (o Models API aceita).\n"
+            "5. Clique em Generate, copie o código gerado e cole aqui!");
+    });
+    helpLayout->addWidget(btnQuestion);
+    helpLayout->addStretch();
+    layout->addLayout(helpLayout);
+
+    auto* lineEdit = new QLineEdit(&dialog);
+    lineEdit->setEchoMode(QLineEdit::Password);
+    lineEdit->setText(currentKey);
+    layout->addWidget(lineEdit);
+
+    auto* btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    connect(btnBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(btnBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    layout->addWidget(btnBox);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        QString text = lineEdit->text().trimmed();
+        m_aiOptimizer->setApiKey(text, projectDir);
         logMessage("Chave do Copilot (GitHub) atualizada com sucesso.", "SYSTEM");
         
         // Garante que o arquivo .api seja ignorado no Git
@@ -6386,7 +6424,6 @@ void MainWindow::openAiSettingsDialog() {
                 }
                 gitignore.close();
             } else {
-                // If it doesn't exist, create it
                 if (gitignore.open(QIODevice::WriteOnly | QIODevice::Text)) {
                     QTextStream out(&gitignore);
                     out << "# API Keys\n*.api\n";
