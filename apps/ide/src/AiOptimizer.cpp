@@ -65,10 +65,10 @@ void AiOptimizer::optimizeCode(const QString& originalCode, OptimizeMode mode) {
     QString systemPrompt;
     switch(mode) {
         case OptimizePerformance:
-            systemPrompt = "Atue como um Engenheiro de Software Embarcado Sênior. O código abaixo foi gerado automaticamente por blocos. Refatore e otimize este código C++ para Arduino visando máxima performance de CPU e legibilidade, mantendo EXATAMENTE a mesma lógica original. NÃO adicione dependências não-padrão. Retorne APENAS o código puro em C++, sem formatadores markdown (como ```cpp) e sem explicações.";
+            systemPrompt = "Atue como um Tutor e Engenheiro de Software Embarcado. O código abaixo foi criado por um usuário através de blocos. Refatore e otimize este código C++ visando performance, mantendo EXATAMENTE a mesma lógica original. IMPORTANTE: Você NÃO tem permissão para editar a lógica do projeto nem dar ideias a mais do que o usuário está fazendo. Apenas aplique melhores práticas (tipos corretos, remoção de redundâncias) para estimular o aprendizado do usuário, que manterá o controle total. Retorne APENAS o código puro em C++ (sem explicações e sem blocos de markdown ```cpp).";
             break;
         case ReduceSize:
-            systemPrompt = "Atue como um Engenheiro de Software Embarcado Sênior. Reduza o tamanho em bytes (Flash e RAM) do código C++ fornecido para Arduino o máximo possível sem alterar sua lógica original (ex: usar tipos menores, const PROGMEM onde aplicável, evitar strings literais duplicadas). Retorne APENAS o código puro em C++, sem formatadores markdown (como ```cpp) e sem explicações.";
+            systemPrompt = "Atue como um Tutor e Engenheiro Embarcado. Reduza o tamanho em bytes (Flash e RAM) do código C++ fornecido o máximo possível (ex: usar tipos menores, macro PROGMEM). IMPORTANTE: Você NÃO tem poder para editar a lógica nem sugerir funcionalidades a mais. Seu objetivo é apenas otimizar o que existe para estimular o aprendizado do usuário. Retorne APENAS o código puro em C++ (sem explicações e sem blocos de markdown ```cpp).";
             break;
         case TranslateToRust:
             systemPrompt = "Traduza o código C++ de Arduino fornecido para a linguagem Rust, utilizando as crates de emulação embarcada (esp-rs ou similiares). Mantenha a semântica original. Retorne APENAS o código puro em Rust, sem formatadores markdown (como ```rust) e sem explicações.";
@@ -77,7 +77,7 @@ void AiOptimizer::optimizeCode(const QString& originalCode, OptimizeMode mode) {
             systemPrompt = "Traduza o código C++ de Arduino fornecido para MicroPython (para rodar num ESP32 ou Raspberry Pi Pico). Mantenha a semântica. Retorne APENAS o código puro em MicroPython, sem formatadores markdown (como ```python) e sem explicações.";
             break;
         case VerifyCircuit:
-            systemPrompt = "Você é um Engenheiro Eletrônico Sênior (Linting Físico). Vou te enviar um relatório listando os componentes e as ligações de um circuito embarcado criado por um aluno. Sua tarefa é analisar o circuito fisicamente e logicamente e encontrar erros estruturais. Exemplos de erros: LED ligado direto no VCC/GND sem resistor; Motor ligado num pino digital direto (precisa de driver); Curto-circuito óbvio (VCC ligado direto no GND). Se houver erros, liste-os de forma muito direta, curta e clara em português. Se o circuito estiver perfeito, responda APENAS: 'O circuito parece estar correto e seguro para montar.' Não explique como fazer o circuito do zero, apenas analise o que foi enviado.";
+            systemPrompt = "Você é um Tutor de Eletrônica focado em Linting Físico. Vou te enviar a descrição de um circuito desenhado por um aluno. Sua tarefa é analisar fisicamente o circuito e encontrar apenas erros estruturais graves (ex: LED sem resistor, motores sem driver, curto-circuito). IMPORTANTE: Você não tem o poder de editar o circuito, nem deve dar ideias ou sugestões a mais do que o aluno está fazendo. Seu único objetivo é avisar sobre erros elétricos para estimular o aprendizado e manter todo o controle criativo com o usuário. Seja direto e curto. Se estiver correto, responda apenas: 'O circuito está seguro e correto.'";
             break;
     }
 
