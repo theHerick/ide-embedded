@@ -800,6 +800,7 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
 
         ComponentItem* resistor = addComponent("resistor", "", rPos, "", true);
         if (resistor) {
+            if (auto* r = dynamic_cast<ResistorItem*>(resistor)) r->setResistance(220.0);
             QString pEsp = "1", pLed = "2";
             if (Pin* p = esp32->getPinByName(gpio)) { if (p->localPos.x() < 0) { pEsp = "2"; pLed = "1"; } }
             connectPins(esp32, gpio, resistor, pEsp);
@@ -832,6 +833,9 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
         ComponentItem* rB = addComponent("resistor", "", pB, "", true);
 
         if (rR && rG_res && rB) {
+            if (auto* r = dynamic_cast<ResistorItem*>(rR)) r->setResistance(220.0);
+            if (auto* r = dynamic_cast<ResistorItem*>(rG_res)) r->setResistance(220.0);
+            if (auto* r = dynamic_cast<ResistorItem*>(rB)) r->setResistance(220.0);
             QString pEspR = "1", pLedR = "2", pEspG = "1", pLedG = "2", pEspB = "1", pLedB = "2";
             if (Pin* p = esp32->getPinByName(rG)) { if (p->localPos.x() < 0) { pEspR = "2"; pLedR = "1"; } }
             if (Pin* p = esp32->getPinByName(gG)) { if (p->localPos.x() < 0) { pEspG = "2"; pLedG = "1"; } }
@@ -876,6 +880,14 @@ void WorkspaceScene::applySmartConnection(ComponentItem* newComp) {
 
         connectPins(newComp, "1", esp32, "3V3", {}, false);
         connectPins(newComp, "2", esp32, gpio, {}, false);
+        
+        QPointF rPos = newComp->pos() + QPointF(0, 50);
+        ComponentItem* resistor = addComponent("resistor", "", rPos, "", true);
+        if (resistor) {
+            if (auto* r = dynamic_cast<ResistorItem*>(resistor)) r->setResistance(10000.0);
+            connectPins(newComp, "2", resistor, "1", {}, false);
+            connectToGnd(resistor, "2", QPointF(0, 50));
+        }
 
     } else if (type == "dht22") {
         QString gpio = getFreeGpio();
