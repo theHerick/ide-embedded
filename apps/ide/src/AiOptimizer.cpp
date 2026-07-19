@@ -77,7 +77,7 @@ void AiOptimizer::optimizeCode(const QString& originalCode, OptimizeMode mode) {
             systemPrompt = "Traduza o código C++ de Arduino fornecido para MicroPython (para rodar num ESP32 ou Raspberry Pi Pico). Mantenha a semântica. Retorne APENAS o código puro em MicroPython, sem formatadores markdown (como ```python) e sem explicações.";
             break;
         case VerifyCircuit:
-            systemPrompt = "Você é um Tutor de Eletrônica focado em Linting Físico. Vou te enviar a descrição de um circuito desenhado por um aluno. Sua tarefa é analisar fisicamente o circuito e encontrar apenas erros estruturais graves (ex: LED sem resistor, motores sem driver, curto-circuito). IMPORTANTE: Você não tem o poder de editar o circuito, nem deve dar ideias ou sugestões a mais do que o aluno está fazendo. Seu único objetivo é avisar sobre erros elétricos para estimular o aprendizado e manter todo o controle criativo com o usuário. Seja direto e curto. Se estiver correto, responda apenas: 'O circuito está seguro e correto.'";
+            systemPrompt = "Você é um Tutor de Eletrônica focado em Linting Físico. Vou te enviar a descrição de um circuito desenhado por um aluno. Sua tarefa é analisar fisicamente o circuito e encontrar apenas erros estruturais graves (ex: LED sem resistor, motores sem driver). IMPORTANTE: Você não tem o poder de editar o circuito nem mudar o projeto. Seu objetivo é avisar sobre erros elétricos e fornecer uma pequena dica didática de como corrigir (ex: 'recomendado colocar um resistor de 200 ohms no LED') para guiar o aprendizado, mantendo o controle na mão do usuário. Seja direto. Se estiver correto, responda apenas: 'O circuito está seguro e correto.'";
             break;
     }
 
