@@ -3851,7 +3851,7 @@ void MainWindow::viewCompiledCodeModal() {
     QDialog dialog(this);
     dialog.setWindowTitle("Código C++ Gerado - IDE Embedded");
     dialog.resize(800, 600);
-    dialog.setStyleSheet("background-color: #FBFBFB; color: #0F172A;");
+    dialog.setStyleSheet("QDialog { background-color: #FBFBFB; color: #0F172A; }");
 
     auto* layout = new QVBoxLayout(&dialog);
     layout->setContentsMargins(18, 18, 18, 18);
@@ -3998,6 +3998,7 @@ void MainWindow::viewCompiledCodeModal() {
     buttonLayout->addStretch();
 
     auto* closeButton = new QPushButton("Fechar", &dialog);
+    closeButton->setObjectName("cancel");
     closeButton->setCursor(Qt::PointingHandCursor);
     connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
     buttonLayout->addWidget(closeButton);
