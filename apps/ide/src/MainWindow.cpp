@@ -814,7 +814,23 @@ void MainWindow::buildToolbar() {
     viewCodeAction->setToolTip("Visualizar o código C++ gerado em tempo real");
     connect(viewCodeAction, &QAction::triggered, this, &MainWindow::viewCompiledCodeModal);
 
-    // Help menu
+    // Menu dedicado para a IA (Copilot)
+    m_aiMenu = menuBar()->addMenu("IA");
+    m_aiMenu->setStyleSheet(componentsMenu->styleSheet());
+
+    QAction* verifyCircuitAction = m_aiMenu->addAction("Verificar Circuito (Linting Físico)");
+    connect(verifyCircuitAction, &QAction::triggered, this, &MainWindow::verifyCircuitWithAi);
+
+    m_aiMenu->addSeparator();
+
+    m_aiOptimizationAction = m_aiMenu->addAction("Modo Otimização (IA)");
+    m_aiOptimizationAction->setCheckable(true);
+    m_aiOptimizationAction->setChecked(false);
+
+    QAction* configureAiAction = m_aiMenu->addAction("Configurar Token da IA");
+    connect(configureAiAction, &QAction::triggered, this, &MainWindow::openAiSettingsDialog);
+
+    // Help menu (Ajustes)
     m_adjustsMenu = menuBar()->addMenu("Ajustes");
     m_adjustsMenu->setStyleSheet(componentsMenu->styleSheet());
     connect(m_adjustsMenu, &QMenu::aboutToShow, this, [this]() {
@@ -842,22 +858,6 @@ void MainWindow::buildToolbar() {
             }
         }
     });
-
-    // Menu dedicado para a IA (Copilot)
-    m_aiMenu = menuBar()->addMenu("IA");
-    m_aiMenu->setStyleSheet(componentsMenu->styleSheet());
-
-    QAction* verifyCircuitAction = m_aiMenu->addAction("Verificar Circuito (Linting Físico)");
-    connect(verifyCircuitAction, &QAction::triggered, this, &MainWindow::verifyCircuitWithAi);
-
-    m_aiMenu->addSeparator();
-
-    m_aiOptimizationAction = m_aiMenu->addAction("Modo Otimização (IA)");
-    m_aiOptimizationAction->setCheckable(true);
-    m_aiOptimizationAction->setChecked(false);
-
-    QAction* configureAiAction = m_aiMenu->addAction("Configurar Token da IA");
-    connect(configureAiAction, &QAction::triggered, this, &MainWindow::openAiSettingsDialog);
 }
 
 void MainWindow::applyTheme() {
