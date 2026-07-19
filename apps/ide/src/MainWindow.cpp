@@ -6374,24 +6374,76 @@ void MainWindow::openAiSettingsDialog() {
 
     QDialog dialog(this);
     dialog.setWindowTitle("Configurar Copilot (GitHub Models)");
-    dialog.setMinimumWidth(400);
+    dialog.setMinimumWidth(450);
+    
+    // Estética Frutiger Aero para o Dialog inteiro, corrigindo o bug do texto invisível
+    dialog.setStyleSheet(
+        "QDialog { "
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F0F8FF, stop:0.5 #E6F3FF, stop:0.51 #D9EDFF, stop:1 #C4E1FF); "
+        "} "
+        "QLabel { "
+        "   color: #0F172A; "
+        "   font-size: 13px; "
+        "   font-family: 'Segoe UI', Arial; "
+        "} "
+        "QLineEdit { "
+        "   background: #FFFFFF; "
+        "   border: 1px solid #7FA2C9; "
+        "   border-radius: 6px; "
+        "   padding: 6px; "
+        "   color: #0F172A; "
+        "   selection-background-color: #3B82F6; "
+        "} "
+        "QLineEdit:focus { "
+        "   border: 2px solid #3B82F6; "
+        "} "
+        "QPushButton { "
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #E2F0FE, stop:0.46 #B8DCFF, stop:1 #8BBFFF); "
+        "   border: 1px solid #7FA2C9; "
+        "   border-radius: 6px; "
+        "   padding: 6px 16px; "
+        "   color: #0369A1; "
+        "   font-weight: bold; "
+        "} "
+        "QPushButton:hover { "
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F0F8FF, stop:0.46 #D9EDFF, stop:1 #B8DCFF); "
+        "} "
+        "QPushButton:pressed { "
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #8BBFFF, stop:1 #B8DCFF); "
+        "} "
+    );
 
     auto* layout = new QVBoxLayout(&dialog);
+    layout->setSpacing(15);
+    layout->setContentsMargins(20, 20, 20, 20);
     
-    auto* lblDesc = new QLabel("Insira seu Personal Access Token (PAT) do GitHub:\nEle será salvo em um arquivo '.api' oculto na pasta do projeto.", &dialog);
+    auto* lblDesc = new QLabel("Insira seu Personal Access Token (PAT) do GitHub:\nEle será salvo com segurança em um arquivo '.api' na pasta do projeto.", &dialog);
     lblDesc->setWordWrap(true);
     layout->addWidget(lblDesc);
 
     auto* helpLayout = new QHBoxLayout();
     auto* lblHelp = new QLabel("<a href=\"https://github.com/settings/tokens\">Como gerar um Token (PAT)? Clique aqui!</a>", &dialog);
     lblHelp->setOpenExternalLinks(true);
-    lblHelp->setStyleSheet("color: #1D4ED8; font-weight: bold; text-decoration: underline;");
+    lblHelp->setStyleSheet("color: #0284C7; font-weight: bold; text-decoration: none;");
     helpLayout->addWidget(lblHelp);
     
     auto* btnQuestion = new QToolButton(&dialog);
     btnQuestion->setText("?");
     btnQuestion->setToolTip("Instruções detalhadas");
-    btnQuestion->setStyleSheet("QToolButton { background: #E2E8F0; border-radius: 10px; font-weight: bold; width: 20px; height: 20px; } QToolButton:hover { background: #CBD5E1; }");
+    btnQuestion->setStyleSheet(
+        "QToolButton { "
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.5 #E2F0FE, stop:0.51 #B8DCFF, stop:1 #8BBFFF); "
+        "   border: 1px solid #7FA2C9; "
+        "   border-radius: 12px; "
+        "   color: #0369A1; "
+        "   font-weight: bold; "
+        "   width: 24px; "
+        "   height: 24px; "
+        "} "
+        "QToolButton:hover { "
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.5 #F0F8FF, stop:0.51 #D9EDFF, stop:1 #B8DCFF); "
+        "} "
+    );
     connect(btnQuestion, &QToolButton::clicked, this, [this]() {
         QMessageBox::information(this, "Como gerar o Token do GitHub",
             "1. Acesse sua conta do GitHub pelo navegador.\n"
