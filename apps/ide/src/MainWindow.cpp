@@ -3917,7 +3917,21 @@ void MainWindow::viewCompiledCodeModal() {
     auto* btnRust = new QPushButton("Emular Rust", tabCopilot);
     auto* btnPython = new QPushButton("MicroPython", tabCopilot);
 
-    QString copilotBtnStyle = "QPushButton { background: #E0E7FF; border: 1px solid #C7D2FE; border-radius: 4px; padding: 4px 10px; color: #4338CA; font-weight: bold; } QPushButton:hover { background: #C7D2FE; }";
+    QString copilotBtnStyle = 
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #E2F0FE, stop:0.46 #B8DCFF, stop:1 #8BBFFF); "
+        "  border: 1px solid #7FA2C9; "
+        "  border-radius: 6px; "
+        "  padding: 6px 12px; "
+        "  color: #0369A1; "
+        "  font-weight: bold; "
+        "} "
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F0F8FF, stop:0.46 #D9EDFF, stop:1 #B8DCFF); "
+        "} "
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #8BBFFF, stop:1 #B8DCFF); "
+        "} ";
     btnOptPerf->setStyleSheet(copilotBtnStyle);
     btnOptSize->setStyleSheet(copilotBtnStyle);
     btnRust->setStyleSheet(copilotBtnStyle);
@@ -3969,16 +3983,19 @@ void MainWindow::viewCompiledCodeModal() {
     auto* copyButton = new QPushButton("Copiar Código", &dialog);
     copyButton->setStyleSheet(
         "QPushButton { "
-        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #10B981, stop:1 #059669); "
-        "  border: 1px solid #34D399; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #D1FAE5, stop:0.45 #A7F3D0, stop:0.46 #34D399, stop:1 #10B981); "
+        "  border: 1px solid #059669; "
         "  border-radius: 6px; "
         "  padding: 8px 16px; "
         "  font-weight: bold; "
-        "  color: #FFFFFF; "
+        "  color: #064E3B; "
         "  font-size: 12px; "
         "}"
         "QPushButton:hover { "
-        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #059669, stop:1 #047857); "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ECFDF5, stop:0.45 #D1FAE5, stop:0.46 #6EE7B7, stop:1 #34D399); "
+        "}"
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #10B981, stop:1 #34D399); "
         "}"
     );
     connect(copyButton, &QPushButton::clicked, this, [tabWidget, codeEditorOriginal, codeEditorCopilot, copyButton]() {
@@ -4003,16 +4020,19 @@ void MainWindow::viewCompiledCodeModal() {
             copyButton->setText("Copiar Código");
             copyButton->setStyleSheet(
                 "QPushButton { "
-                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #10B981, stop:1 #059669); "
-                "  border: 1px solid #34D399; "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #D1FAE5, stop:0.45 #A7F3D0, stop:0.46 #34D399, stop:1 #10B981); "
+                "  border: 1px solid #059669; "
                 "  border-radius: 6px; "
                 "  padding: 8px 16px; "
                 "  font-weight: bold; "
-                "  color: #FFFFFF; "
+                "  color: #064E3B; "
                 "  font-size: 12px; "
                 "}"
                 "QPushButton:hover { "
-                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #059669, stop:1 #047857); "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ECFDF5, stop:0.45 #D1FAE5, stop:0.46 #6EE7B7, stop:1 #34D399); "
+                "}"
+                "QPushButton:pressed { "
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #10B981, stop:1 #34D399); "
                 "}"
             );
         });
@@ -4024,16 +4044,19 @@ void MainWindow::viewCompiledCodeModal() {
     auto* closeButton = new QPushButton("Fechar", &dialog);
     closeButton->setStyleSheet(
         "QPushButton { "
-        "  background: #1E293B; "
-        "  border: 1px solid #334155; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F1F5F9, stop:0.45 #E2E8F0, stop:0.46 #CBD5E1, stop:1 #94A3B8); "
+        "  border: 1px solid #64748B; "
         "  border-radius: 6px; "
         "  padding: 8px 16px; "
         "  font-weight: bold; "
-        "  color: #E2E8F0; "
+        "  color: #0F172A; "
         "  font-size: 12px; "
         "}"
         "QPushButton:hover { "
-        "  background: #334155; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F8FAFC, stop:0.45 #F1F5F9, stop:0.46 #E2E8F0, stop:1 #CBD5E1); "
+        "}"
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #94A3B8, stop:1 #CBD5E1); "
         "}"
     );
     connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
@@ -6379,7 +6402,7 @@ void MainWindow::openAiSettingsDialog() {
     // Estética Frutiger Aero para o Dialog inteiro, corrigindo o bug do texto invisível
     dialog.setStyleSheet(
         "QDialog { "
-        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F0F8FF, stop:0.5 #E6F3FF, stop:0.51 #D9EDFF, stop:1 #C4E1FF); "
+        "   background: #FFFFFF; "
         "} "
         "QLabel { "
         "   color: #0F172A; "
