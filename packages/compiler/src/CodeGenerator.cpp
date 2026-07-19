@@ -975,7 +975,6 @@ static QString emitPinDefinitions(
     };
 
     QString code;
-    code += "// ── DEFINIÇÃO DOS PINOS ─────────────────────────────────\n";
     if (!esp32) {
         code += "// AVISO: Nenhum ESP32 encontrado na área de trabalho!\n";
     }
@@ -1135,7 +1134,6 @@ static QString emitStateVariables(
     const QHash<ComponentItem*, QString>& sanitized
 ) {
     QString code;
-    code += "// ── VARIÁVEIS DE ESTADO E DEBOUNCING ────────────────────\n";
 
     // 1. Scan for used variables that are NOT components or macros
     QMap<QString, QString> autoDeclared; // Name -> Type ("int" or "bool")
@@ -1559,12 +1557,6 @@ QString CodeGenerator::generateArduinoCode(
     }
 
     QString code;
-    code += "/*\n";
-    code += " *  =======================================================\n";
-    code += " *  CÓDIGO GERADO AUTOMATICAMENTE PELA IDE EMBEDDED\n";
-    code += " *  Paradigma Orientado a Eventos e Roteamento Físico\n";
-    code += " *  =======================================================\n";
-    code += " */\n\n";
 
     // Deduplicate and compile includes for Custom Components
     QStringList includesList;
@@ -3012,7 +3004,6 @@ QString CodeGenerator::generateArduinoCode(
     }
 
     if (!hasButtons) {
-        code += "    // Dica: Adicione botões e conecte-os para criar eventos aoClicar!\n";
         code += "    delay(10);\n";
     }
 
