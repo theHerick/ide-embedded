@@ -3774,24 +3774,27 @@ void MainWindow::logMessage(const QString& message, const QString& type) {
     else if (type == "SYSTEM") color = "#6366F1"; // indigo/blue
 
     QString formattedMessage = message;
+    
+    // Negrito (Markdown: **texto**)
+    QRegularExpression boldRegex("\\*\\*(.*?)\\*\\*");
+    formattedMessage.replace(boldRegex, "<b>\\1</b>");
+
     // Renderização visual de Fórmulas Matemáticas (LaTeX básico para HTML)
-    if (formattedMessage.contains("\\(")) {
-        // Frações: \frac{a}{b} -> <sup>a</sup>&frasl;<sub>b</sub>
-        QRegularExpression fracRegex("\\\\frac\\{([^}]+)\\}\\{([^}]+)\\}");
-        formattedMessage.replace(fracRegex, "<sup>\\1</sup>&frasl;<sub>\\2</sub>");
-        
-        // Subscrito: _{a} -> <sub>a</sub>
-        QRegularExpression subRegex("_\\{([^}]+)\\}");
-        formattedMessage.replace(subRegex, "<sub>\\1</sub>");
-        
-        // Sobrescrito: ^{a} -> <sup>a</sup>
-        QRegularExpression supRegex("\\^\\{([^}]+)\\}");
-        formattedMessage.replace(supRegex, "<sup>\\1</sup>");
-        
-        // Delimitadores de bloco matemático
-        formattedMessage.replace("\\(", "<span style='color: #0EA5E9; font-family: \"Consolas\", monospace; font-size: 13px; font-weight: bold; background: #F1F5F9; padding: 2px 4px; border-radius: 4px; border: 1px solid #E2E8F0; margin: 0 2px;'>");
-        formattedMessage.replace("\\)", "</span>");
-    }
+    // Frações: \frac{a}{b} -> <sup>a</sup>&frasl;<sub>b</sub>
+    QRegularExpression fracRegex("\\\\frac\\{([^}]+)\\}\\{([^}]+)\\}");
+    formattedMessage.replace(fracRegex, "<span style='color: #0EA5E9; font-family: \"Consolas\", monospace; font-size: 13px; font-weight: bold; background: #F1F5F9; padding: 0px 4px; border-radius: 4px; border: 1px solid #E2E8F0; margin: 0 2px;'><sup>\\1</sup>&frasl;<sub>\\2</sub></span>");
+    
+    // Subscrito: _{a} -> <sub>a</sub>
+    QRegularExpression subRegex("_\\{([^}]+)\\}");
+    formattedMessage.replace(subRegex, "<sub>\\1</sub>");
+    
+    // Sobrescrito: ^{a} -> <sup>a</sup>
+    QRegularExpression supRegex("\\^\\{([^}]+)\\}");
+    formattedMessage.replace(supRegex, "<sup>\\1</sup>");
+    
+    // Delimitadores de bloco matemático
+    formattedMessage.replace("\\(", "<span style='color: #0EA5E9; font-family: \"Consolas\", monospace; font-size: 13px; font-weight: bold; background: #F1F5F9; padding: 2px 4px; border-radius: 4px; border: 1px solid #E2E8F0; margin: 0 2px;'>");
+    formattedMessage.replace("\\)", "</span>");
 
     QString logLine = QString("<span style='color: #475569;'>[%1]</span> <span style='color: %2; font-weight: bold;'>[%3]</span> <span style='color: #0F172A;'>%4</span>")
                       .arg(timeStr, color, type, formattedMessage);
