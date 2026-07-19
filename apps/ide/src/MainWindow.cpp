@@ -3901,7 +3901,7 @@ void MainWindow::viewCompiledCodeModal() {
     layoutCopilot->setContentsMargins(12, 12, 12, 12);
 
     auto* copilotLayout = new QHBoxLayout();
-    auto* copilotLabel = new QLabel("✨ Ações de IA:", tabCopilot);
+    auto* copilotLabel = new QLabel("Ações de IA:", tabCopilot);
     copilotLabel->setStyleSheet("color: #6366F1; font-weight: bold;");
     copilotLayout->addWidget(copilotLabel);
     
@@ -3928,14 +3928,14 @@ void MainWindow::viewCompiledCodeModal() {
     codeEditorCopilot->setPlainText("// Clique em uma das ações de IA acima para otimizar ou traduzir o código.");
     codeEditorCopilot->setStyleSheet(editorStyle);
     layoutCopilot->addWidget(codeEditorCopilot);
-    tabWidget->addTab(tabCopilot, "✨ Código Otimizado (Copilot)");
+    tabWidget->addTab(tabCopilot, "Código Otimizado (Copilot)");
 
     auto executeOpt = [this, codeEditorCopilot](AiOptimizer::OptimizeMode mode) {
         if (m_aiOptimizer->getApiKey().isEmpty()) {
             QMessageBox::warning(codeEditorCopilot, "Copilot", "Configure sua API Key do Google Gemini no menu Ajustes -> Configurar Copilot.");
             return;
         }
-        codeEditorCopilot->setPlainText("// ✨ O Copilot está analisando e traduzindo seu código... Aguarde uns segundos...\n");
+        codeEditorCopilot->setPlainText("// O Copilot está analisando e traduzindo seu código... Aguarde uns segundos...\n");
         
         auto conn1 = std::make_shared<QMetaObject::Connection>();
         auto conn2 = std::make_shared<QMetaObject::Connection>();
@@ -6359,13 +6359,40 @@ void MainWindow::updatePlayActionState() {
 
 void MainWindow::openAiSettingsDialog() {
     bool ok;
-    QString currentKey = m_aiOptimizer->getApiKey();
-    QString text = QInputDialog::getText(this, "Configurar AI Copilot (Gemini)",
-                                         "Insira sua API Key do Google Gemini (AI Studio):",
+    
+    QString projectDir = "";
+    if (!m_currentProjectPath.isEmpty()) {
+        projectDir = QFileInfo(m_currentProjectPath).path();
+    }
+    
+    QString currentKey = m_aiOptimizer->getApiKey(projectDir);
+    QString text = QInputDialog::getText(this, "Configurar Copilot (GitHub Models)",
+                                         "Insira seu Personal Access Token (PAT) do GitHub:\nEle será salvo em um arquivo '.api' oculto na pasta do projeto.",
                                          QLineEdit::Password,
                                          currentKey, &ok);
     if (ok) {
-        m_aiOptimizer->setApiKey(text.trimmed());
-        logMessage("Chave de API (Copilot) atualizada com sucesso.", "SYSTEM");
+        m_aiOptimizer->setApiKey(text.trimmed(), projectDir);
+        logMessage("Chave do Copilot (GitHub) atualizada com sucesso.", "SYSTEM");
+        
+        // Garante que o arquivo .api seja ignorado no Git
+        if (!projectDir.isEmpty()) {
+            QFile gitignore(QDir(projectDir).filePath(".gitignore"));
+            if (gitignore.open(QIODevice::ReadWrite | QIODevice::Text)) {
+                QString content = gitignore.readAll();
+                if (!content.contains(".api")) {
+                    QTextStream out(&gitignore);
+                    if (!content.isEmpty() && !content.endsWith("\n")) out << "\n";
+                    out << "\n# API Keys\n*.api\n";
+                }
+                gitignore.close();
+            } else {
+                // If it doesn't exist, create it
+                if (gitignore.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                    QTextStream out(&gitignore);
+                    out << "# API Keys\n*.api\n";
+                    gitignore.close();
+                }
+            }
+        }
     }
 }

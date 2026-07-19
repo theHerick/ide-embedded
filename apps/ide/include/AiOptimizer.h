@@ -10,8 +10,8 @@ public:
     explicit AiOptimizer(QObject* parent = nullptr);
     ~AiOptimizer() override;
 
-    void setApiKey(const QString& key);
-    QString getApiKey() const;
+    void setApiKey(const QString& key, const QString& projectPath = "");
+    QString getApiKey(const QString& projectPath = "") const;
 
     enum OptimizeMode {
         OptimizePerformance,
