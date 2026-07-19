@@ -2686,6 +2686,11 @@ QString CodeGenerator::generateArduinoCode(
         code += "}\n\n";
     }
 
+    code = code.trimmed();
+    if (!code.isEmpty()) {
+        code += "\n\n";
+    }
+
     code += "void setup() {\n";
     code += "    Serial.begin(115200);\n";
     if (hasEeprom) {

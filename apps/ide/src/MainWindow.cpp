@@ -855,7 +855,7 @@ void MainWindow::buildToolbar() {
 
     m_aiMenu->addSeparator();
 
-    m_aiOptimizationAction = m_aiMenu->addAction("Modo Otimização (Copilot)");
+    m_aiOptimizationAction = m_aiMenu->addAction("Modo Otimização (IA)");
     m_aiOptimizationAction->setCheckable(true);
     m_aiOptimizationAction->setChecked(false);
 
@@ -1742,13 +1742,13 @@ void MainWindow::buildProject() {
     if (m_aiOptimizationAction && m_aiOptimizationAction->isChecked()) {
         QMessageBox msgBox(this);
         msgBox.setWindowTitle("Compilar Otimizado?");
-        msgBox.setText("O Modo Copilot está ativado. Deseja compilar a versão Padrão gerada pelos blocos, ou pedir para a IA Otimizar o código antes de gravar?");
+        msgBox.setText("O Modo IA está ativado. Deseja compilar a versão Padrão gerada pelos blocos, ou pedir para a IA Otimizar o código antes de gravar?");
         auto btnOtimizado = msgBox.addButton("Compilar Otimizado", QMessageBox::AcceptRole);
         auto btnPadrao = msgBox.addButton("Compilar Padrão", QMessageBox::RejectRole);
         msgBox.exec();
 
         if (msgBox.clickedButton() == btnOtimizado) {
-            logMessage("Otimizando código com IA (Copilot)... aguarde...", "SYSTEM");
+            logMessage("Otimizando código com IA... aguarde...", "SYSTEM");
             QCoreApplication::processEvents();
             
             QEventLoop loop;
@@ -1761,7 +1761,7 @@ void MainWindow::buildProject() {
                 loop.quit();
             });
             auto conn2 = connect(m_aiOptimizer, &AiOptimizer::optimizationError, [&](const QString& err) {
-                logMessage("Erro do Copilot: " + err, "ERROR");
+                logMessage("Erro da IA: " + err, "ERROR");
                 loop.quit();
             });
             
@@ -3949,14 +3949,14 @@ void MainWindow::viewCompiledCodeModal() {
     codeEditorCopilot->setPlainText("// Clique em uma das ações de IA acima para otimizar ou traduzir o código.");
     codeEditorCopilot->setStyleSheet(editorStyle);
     layoutCopilot->addWidget(codeEditorCopilot);
-    tabWidget->addTab(tabCopilot, "Código Otimizado (Copilot)");
+    tabWidget->addTab(tabCopilot, "Código Otimizado (IA)");
 
     auto executeOpt = [this, codeEditorCopilot](AiOptimizer::OptimizeMode mode) {
         if (m_aiOptimizer->getApiKey().isEmpty()) {
-            QMessageBox::warning(codeEditorCopilot, "Copilot", "Configure sua API Key do Google Gemini no menu Ajustes -> Configurar Copilot.");
+            QMessageBox::warning(codeEditorCopilot, "IA", "Configure o Token da IA no menu IA -> Configurar Token da IA.");
             return;
         }
-        codeEditorCopilot->setPlainText("// O Copilot está analisando e traduzindo seu código... Aguarde uns segundos...\n");
+        codeEditorCopilot->setPlainText("// A IA está analisando e traduzindo seu código... Aguarde uns segundos...\n");
         
         auto conn1 = std::make_shared<QMetaObject::Connection>();
         auto conn2 = std::make_shared<QMetaObject::Connection>();
@@ -3981,23 +3981,7 @@ void MainWindow::viewCompiledCodeModal() {
     buttonLayout->setSpacing(10);
 
     auto* copyButton = new QPushButton("Copiar Código", &dialog);
-    copyButton->setStyleSheet(
-        "QPushButton { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #D1FAE5, stop:0.45 #A7F3D0, stop:0.46 #34D399, stop:1 #10B981); "
-        "  border: 1px solid #059669; "
-        "  border-radius: 6px; "
-        "  padding: 8px 16px; "
-        "  font-weight: bold; "
-        "  color: #064E3B; "
-        "  font-size: 12px; "
-        "}"
-        "QPushButton:hover { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ECFDF5, stop:0.45 #D1FAE5, stop:0.46 #6EE7B7, stop:1 #34D399); "
-        "}"
-        "QPushButton:pressed { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #10B981, stop:1 #34D399); "
-        "}"
-    );
+    copyButton->setCursor(Qt::PointingHandCursor);
     connect(copyButton, &QPushButton::clicked, this, [tabWidget, codeEditorOriginal, codeEditorCopilot, copyButton]() {
         if (tabWidget->currentIndex() == 0) {
             QGuiApplication::clipboard()->setText(codeEditorOriginal->toPlainText());
@@ -4005,36 +3989,8 @@ void MainWindow::viewCompiledCodeModal() {
             QGuiApplication::clipboard()->setText(codeEditorCopilot->toPlainText());
         }
         copyButton->setText("Copiado!");
-        copyButton->setStyleSheet(
-            "QPushButton { "
-            "  background: #312E81; "
-            "  border: 1px solid #4F46E5; "
-            "  border-radius: 6px; "
-            "  padding: 8px 16px; "
-            "  font-weight: bold; "
-            "  color: #38BDF8; "
-            "  font-size: 12px; "
-            "}"
-        );
         QTimer::singleShot(2000, copyButton, [copyButton]() {
             copyButton->setText("Copiar Código");
-            copyButton->setStyleSheet(
-                "QPushButton { "
-                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #D1FAE5, stop:0.45 #A7F3D0, stop:0.46 #34D399, stop:1 #10B981); "
-                "  border: 1px solid #059669; "
-                "  border-radius: 6px; "
-                "  padding: 8px 16px; "
-                "  font-weight: bold; "
-                "  color: #064E3B; "
-                "  font-size: 12px; "
-                "}"
-                "QPushButton:hover { "
-                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ECFDF5, stop:0.45 #D1FAE5, stop:0.46 #6EE7B7, stop:1 #34D399); "
-                "}"
-                "QPushButton:pressed { "
-                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #10B981, stop:1 #34D399); "
-                "}"
-            );
         });
     });
     buttonLayout->addWidget(copyButton);
@@ -4042,23 +3998,7 @@ void MainWindow::viewCompiledCodeModal() {
     buttonLayout->addStretch();
 
     auto* closeButton = new QPushButton("Fechar", &dialog);
-    closeButton->setStyleSheet(
-        "QPushButton { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F1F5F9, stop:0.45 #E2E8F0, stop:0.46 #CBD5E1, stop:1 #94A3B8); "
-        "  border: 1px solid #64748B; "
-        "  border-radius: 6px; "
-        "  padding: 8px 16px; "
-        "  font-weight: bold; "
-        "  color: #0F172A; "
-        "  font-size: 12px; "
-        "}"
-        "QPushButton:hover { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F8FAFC, stop:0.45 #F1F5F9, stop:0.46 #E2E8F0, stop:1 #CBD5E1); "
-        "}"
-        "QPushButton:pressed { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #94A3B8, stop:1 #CBD5E1); "
-        "}"
-    );
+    closeButton->setCursor(Qt::PointingHandCursor);
     connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
     buttonLayout->addWidget(closeButton);
 
@@ -6396,7 +6336,7 @@ void MainWindow::openAiSettingsDialog() {
     QString currentKey = m_aiOptimizer->getApiKey(projectDir);
 
     QDialog dialog(this);
-    dialog.setWindowTitle("Configurar Copilot (GitHub Models)");
+    dialog.setWindowTitle("Configurar IA (GitHub Models)");
     dialog.setMinimumWidth(450);
     
     // Estética Frutiger Aero para o Dialog inteiro, corrigindo o bug do texto invisível
@@ -6492,7 +6432,7 @@ void MainWindow::openAiSettingsDialog() {
     if (dialog.exec() == QDialog::Accepted) {
         QString text = lineEdit->text().trimmed();
         m_aiOptimizer->setApiKey(text, projectDir);
-        logMessage("Chave do Copilot (GitHub) atualizada com sucesso.", "SYSTEM");
+        logMessage("Chave da IA (GitHub) atualizada com sucesso.", "SYSTEM");
         
         // Garante que o arquivo .api seja ignorado no Git
         if (!projectDir.isEmpty()) {
