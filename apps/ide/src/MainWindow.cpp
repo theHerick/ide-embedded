@@ -437,7 +437,6 @@ void MainWindow::buildLayout() {
 
     auto* modelarBtn = new QPushButton("+ Modelar", headerWidget);
     modelarBtn->setStyleSheet(
-        "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F0F9FF, stop:0.45 #E0F2FE, stop:0.46 #BAE6FD, stop:1 #7DD3FC); "
         "  border: 1.5px solid #0284C7; "
         "  border-radius: 6px; "
@@ -446,12 +445,10 @@ void MainWindow::buildLayout() {
         "  color: #0369A1; "
         "  font-size: 10px; "
         "} "
-        "QPushButton:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E0F2FE, stop:0.45 #BAE6FD, stop:0.46 #7DD3FC, stop:1 #38BDF8); "
         "  border-color: #0369A1; "
         "  color: #075985; "
         "} "
-        "QPushButton:pressed { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #7DD3FC, stop:1 #0284C7); "
         "  color: white; "
         "}"
@@ -865,7 +862,7 @@ void MainWindow::buildToolbar() {
 
 void MainWindow::applyTheme() {
     // Clean, light professional IDE theme
-    setStyleSheet(
+    qApp->setStyleSheet(
         "QMainWindow { background: #EAF0F6; }"
         "QMenuBar { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:1 #E7EEF6); color: #111827; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: 600; border-bottom: 1px solid #CAD6E2; }"
         "QMenuBar::item { background: transparent; padding: 6px 14px; border-radius: 5px; color: #111827; }"
@@ -1934,7 +1931,6 @@ void MainWindow::exportLaserPNG() {
         "QDoubleSpinBox { background: rgba(255,255,255,0.7); border: 1.5px solid rgba(255,255,255,0.8); border-radius: 8px;"
         "  color: #0F172A; padding: 9px 12px; font-size: 13px; font-weight: 600; }"
         "QDoubleSpinBox:focus { border-color: #0EA5E9; background: #FFFFFF; }"
-        "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #93C5FD, stop:0.45 #3B82F6, stop:0.46 #2563EB, stop:1 #1D4ED8); "
         "  border: 1.5px solid #2563EB; "
         "  border-radius: 8px; "
@@ -1943,14 +1939,11 @@ void MainWindow::exportLaserPNG() {
         "  font-weight: 700; "
         "  font-size: 13px; "
         "} "
-        "QPushButton:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #3B82F6, stop:0.45 #2563EB, stop:0.46 #1D4ED8, stop:1 #1E40AF); "
         "  border-color: #1D4ED8; "
         "} "
-        "QPushButton:pressed { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1D4ED8, stop:1 #1E3A8A); "
         "} "
-        "QPushButton#cancel { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F8FAFC, stop:0.46 #F1F5F9, stop:1 #E2E8F0); "
         "  border: 1.5px solid #CBD5E1; "
         "  border-radius: 8px; "
@@ -1959,12 +1952,10 @@ void MainWindow::exportLaserPNG() {
         "  font-weight: 700; "
         "  font-size: 13px; "
         "} "
-        "QPushButton#cancel:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F8FAFC, stop:0.45 #F1F5F9, stop:0.46 #E2E8F0, stop:1 #CBD5E1); "
         "  border-color: #94A3B8; "
         "  color: #0F172A; "
         "} "
-        "QPushButton#cancel:pressed { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E2E8F0, stop:1 #94A3B8); "
         "}"
     );
@@ -2059,7 +2050,6 @@ void MainWindow::exportLaserPNG() {
         "QLabel#badge { background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.8); border-radius: 6px;"
         "  color: #0369A1; font-size: 11px; font-family: 'Segoe UI', Arial;"
         "  padding: 4px 10px; font-weight: bold; }"
-        "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #93C5FD, stop:0.45 #3B82F6, stop:0.46 #2563EB, stop:1 #1D4ED8); "
         "  border: 1.5px solid #2563EB; "
         "  border-radius: 8px; "
@@ -2069,27 +2059,21 @@ void MainWindow::exportLaserPNG() {
         "  font-size: 13px; "
         "  font-family: 'Segoe UI', Arial; "
         "} "
-        "QPushButton:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #3B82F6, stop:0.45 #2563EB, stop:0.46 #1D4ED8, stop:1 #1E40AF); "
         "  border-color: #1D4ED8; "
         "} "
-        "QPushButton:pressed { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1D4ED8, stop:1 #1E3A8A); "
         "} "
-        "QPushButton#discard { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F8FAFC, stop:0.46 #F1F5F9, stop:1 #E2E8F0); "
         "  border: 1.5px solid #CBD5E1; "
         "  color: #475569; "
         "} "
-        "QPushButton#discard:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F8FAFC, stop:0.45 #F1F5F9, stop:0.46 #E2E8F0, stop:1 #CBD5E1); "
         "  border-color: #94A3B8; "
         "  color: #0F172A; "
         "} "
-        "QPushButton#discard:pressed { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E2E8F0, stop:1 #94A3B8); "
         "} "
-        "QPushButton#toolBtn { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F8FAFC, stop:0.46 #F1F5F9, stop:1 #E2E8F0); "
         "  border: 1.5px solid #CBD5E1; "
         "  color: #334155; "
@@ -2099,14 +2083,11 @@ void MainWindow::exportLaserPNG() {
         "  border-radius: 6px; "
         "  font-family: 'Segoe UI', Arial; "
         "} "
-        "QPushButton#toolBtn:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #F8FAFC, stop:0.45 #F1F5F9, stop:0.46 #E2E8F0, stop:1 #CBD5E1); "
         "  border-color: #94A3B8; "
         "} "
-        "QPushButton#toolBtn:pressed { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #E2E8F0, stop:1 #94A3B8); "
         "} "
-        "QPushButton#toolBtn:checked { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFF1F2, stop:1 #FFE4E6); "
         "  border-color: #FECDD3; "
         "  color: #E11D48; "
@@ -2382,10 +2363,6 @@ void MainWindow::editCapacitorProperties(CapacitorItem* capacitor) {
         "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QComboBox:focus { border-color: #93C5FD; }"
         "QComboBox QAbstractItemView { background-color: #FFFFFF; color: #0F172A; selection-background-color: #DBEAFE; selection-color: #0F172A; border: 1px solid #E6EEF3; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #1E40AF; }"
-        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -2531,10 +2508,6 @@ void MainWindow::editLEDProperties(LEDItem* led) {
         "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QComboBox:focus { border-color: #93C5FD; }"
         "QComboBox QAbstractItemView { background-color: #FFFFFF; color: #0F172A; selection-background-color: #DBEAFE; selection-color: #0F172A; border: 1px solid #E6EEF3; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #1E40AF; }"
-        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -2633,10 +2606,6 @@ void MainWindow::editResistorValue(ResistorItem* resistor) {
         "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
         "QComboBox:focus { border-color: #93C5FD; }"
         "QComboBox QAbstractItemView { background-color: #FFFFFF; color: #0F172A; selection-background-color: #DBEAFE; selection-color: #0F172A; border: 1px solid #E6EEF3; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #1E40AF; }"
-        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -2778,10 +2747,6 @@ void MainWindow::editPotentiometerValue(PotentiometerItem* potentiometer) {
         "QSlider::sub-page:horizontal { background: #2563EB; border-radius: 3px; }"
         "QSlider::handle:horizontal { background: #1E40AF; border: 1px solid #93C5FD; width: 14px; margin-top: -4px; margin-bottom: -4px; border-radius: 7px; }"
         "QSlider::handle:horizontal:hover { background: #1D4ED8; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #1E40AF; }"
-        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -2875,10 +2840,6 @@ void MainWindow::editLdrValue(LdrItem* ldr) {
         "QSlider::sub-page:horizontal { background: #10B981; border-radius: 3px; }"
         "QSlider::handle:horizontal { background: #047857; border: 1px solid #A7F3D0; width: 14px; margin-top: -4px; margin-bottom: -4px; border-radius: 7px; }"
         "QSlider::handle:horizontal:hover { background: #065F46; }"
-        "QPushButton { background: #10B981; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #065F46; }"
-        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -2972,10 +2933,6 @@ void MainWindow::editDHT22Properties(DHT22Item* dht) {
         "QSlider::sub-page:horizontal { background: #2563EB; border-radius: 3px; }"
         "QSlider::handle:horizontal { background: #1E40AF; border: 1px solid #93C5FD; width: 14px; margin-top: -4px; margin-bottom: -4px; border-radius: 7px; }"
         "QSlider::handle:horizontal:hover { background: #1D4ED8; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #1E40AF; }"
-        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -3068,10 +3025,6 @@ void MainWindow::editHCSR04Properties(HCSR04Item* hcsr) {
         "QSlider::sub-page:horizontal { background: #2563EB; border-radius: 3px; }"
         "QSlider::handle:horizontal { background: #1E40AF; border: 1px solid #93C5FD; width: 14px; margin-top: -4px; margin-bottom: -4px; border-radius: 7px; }"
         "QSlider::handle:horizontal:hover { background: #1D4ED8; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #1E40AF; }"
-        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -3135,10 +3088,6 @@ void MainWindow::editMotorProperties(MotorItem* motor) {
         "QComboBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 6px; font-size: 12px; font-weight: bold; selection-background-color: #DBEAFE; }"
         "QComboBox QAbstractItemView { background: #FFFFFF; color: #0F172A; selection-background-color: #DBEAFE; selection-color: #1D4ED8; outline: none; }"
         "QDoubleSpinBox { background: #FFFFFF; border: 1px solid #E6EEF3; border-radius: 6px; color: #0F172A; padding: 8px; font-size: 12px; font-weight: bold; selection-background-color: #DBEAFE; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #1E40AF; }"
-        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -3402,10 +3351,6 @@ void MainWindow::editCustomPotentiometerValue(CustomComponentItem* custom) {
         "QSlider::sub-page:horizontal { background: #2563EB; border-radius: 3px; }"
         "QSlider::handle:horizontal { background: #1E40AF; border: 1px solid #93C5FD; width: 14px; margin-top: -4px; margin-bottom: -4px; border-radius: 7px; }"
         "QSlider::handle:horizontal:hover { background: #1D4ED8; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 18px; font-weight: bold; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #1E40AF; }"
-        "QPushButton#cancelBtn { background: rgba(15, 23, 42, 0.04); border: 1px solid #E6EEF3; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: rgba(15, 23, 42, 0.06); color: #0F172A; }"
     );
 
     auto* layout = new QVBoxLayout(&dialog);
@@ -3521,13 +3466,6 @@ void MainWindow::editMicrocontroller(ComponentItem* comp) {
         "QTableWidget::item { padding: 6px; }"
         "QTableWidget::item:selected { background: #DBEAFE; color: #1E40AF; }"
         "QHeaderView::section { background: #F8FAFC; border: none; border-bottom: 1px solid #E2E8F0; color: #475569; font-weight: 600; font-size: 11px; padding: 6px; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: #FFFFFF; padding: 8px 16px; font-weight: 600; font-size: 12px; }"
-        "QPushButton:hover { background: #1D4ED8; }"
-        "QPushButton:pressed { background: #1E40AF; }"
-        "QPushButton#cancelBtn { background: #F1F5F9; border: 1px solid #E2E8F0; color: #475569; }"
-        "QPushButton#cancelBtn:hover { background: #E2E8F0; color: #0F172A; }"
-        "QPushButton#secondaryBtn { background: #F1F5F9; border: 1px solid #E2E8F0; color: #475569; }"
-        "QPushButton#secondaryBtn:hover { background: #E2E8F0; color: #0F172A; }"
     );
 
     auto* mainLayout = new QVBoxLayout(&dialog);
@@ -3548,7 +3486,6 @@ void MainWindow::editMicrocontroller(ComponentItem* comp) {
     searchBoardBtn->setIconSize(QSize(18, 18));
     searchBoardBtn->setToolTip("Buscar placa no PlatformIO");
     searchBoardBtn->setFixedWidth(36);
-    searchBoardBtn->setStyleSheet("QPushButton { background-color: #E2E8F0; border: 1px solid #CBD5E1; border-radius: 6px; padding: 5px; } QPushButton:hover { background-color: #CBD5E1; }");
     topLayout->addWidget(searchBoardBtn);
 
     auto* coreLabel = new QLabel("Framework:");
@@ -3698,11 +3635,6 @@ void MainWindow::editMicrocontroller(ComponentItem* comp) {
                     "QDialog { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; }"
                     "QPlainTextEdit { background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; color: #0F172A; font-family: Consolas, 'Courier New', monospace; font-size: 11px; padding: 8px; }"
                     "QPlainTextEdit:focus { border-color: #3B82F6; }"
-                    "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: #FFFFFF; padding: 8px 16px; font-weight: 600; font-size: 12px; }"
-                    "QPushButton:hover { background: #1D4ED8; }"
-                    "QPushButton:pressed { background: #1E40AF; }"
-                    "QPushButton#cancel { background: #F1F5F9; border: 1px solid #E2E8F0; color: #475569; }"
-                    "QPushButton#cancel:hover { background: #E2E8F0; color: #0F172A; }"
                 );
                 auto* lay = new QVBoxLayout(&d);
                 auto* txt = new QPlainTextEdit(&d);
@@ -3918,7 +3850,6 @@ void MainWindow::viewCompiledCodeModal() {
     auto* btnPython = new QPushButton("MicroPython", tabCopilot);
 
     QString copilotBtnStyle = 
-        "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #E2F0FE, stop:0.46 #B8DCFF, stop:1 #8BBFFF); "
         "  border: 1px solid #7FA2C9; "
         "  border-radius: 6px; "
@@ -3926,10 +3857,8 @@ void MainWindow::viewCompiledCodeModal() {
         "  color: #0369A1; "
         "  font-weight: bold; "
         "} "
-        "QPushButton:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F0F8FF, stop:0.46 #D9EDFF, stop:1 #B8DCFF); "
         "} "
-        "QPushButton:pressed { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #8BBFFF, stop:1 #B8DCFF); "
         "} ";
     btnOptPerf->setStyleSheet(copilotBtnStyle);
@@ -4049,7 +3978,6 @@ void MainWindow::showFirmwareInfo() {
         "  color: #2563EB; "
         "  background: #F1F5F9; "
         "}"
-        "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
         "    stop:0 #60A5FA, stop:0.4 #3B82F6, stop:0.5 #2563EB, stop:1 #1D4ED8); "
         "  border: 1.5px solid rgba(255, 255, 255, 0.7); "
@@ -4060,12 +3988,10 @@ void MainWindow::showFirmwareInfo() {
         "  font-size: 12px; "
         "  font-family: 'Segoe UI', Arial, sans-serif; "
         "}"
-        "QPushButton:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
         "    stop:0 #93C5FD, stop:0.3 #60A5FA, stop:0.6 #3B82F6, stop:1 #1E40AF); "
         "  border-color: #FFFFFF; "
         "}"
-        "QPushButton#sec { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
         "    stop:0 #FFFFFF, stop:0.4 #F1F5F9, stop:0.5 #E2E8F0, stop:1 #CBD5E1); "
         "  border: 1px solid #94A3B8; "
@@ -4076,7 +4002,6 @@ void MainWindow::showFirmwareInfo() {
         "  font-size: 12px; "
         "  font-family: 'Segoe UI', Arial, sans-serif; "
         "}"
-        "QPushButton#sec:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
         "    stop:0 #FFFFFF, stop:0.3 #F8FAFC, stop:0.6 #E2E8F0, stop:1 #94A3B8); "
         "  border-color: #64748B; "
@@ -4147,11 +4072,9 @@ void MainWindow::showFirmwareInfo() {
         btnStart1->setCursor(Qt::PointingHandCursor);
         btnStart1->setFixedSize(200, 42);
         btnStart1->setStyleSheet(
-            "QPushButton { "
             "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #34D399, stop:0.4 #10B981, stop:0.5 #059669, stop:1 #047857); "
             "  border: 1.5px solid rgba(255, 255, 255, 0.85); border-radius: 6px; color: white; font-weight: bold; font-size: 13px; "
             "}"
-            "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #6EE7B7, stop:0.3 #34D399, stop:0.6 #10B981, stop:1 #065F46); }"
         );
         l1->addWidget(btnStart1, 0, Qt::AlignHCenter);
 
@@ -4185,11 +4108,9 @@ void MainWindow::showFirmwareInfo() {
         btnStart2->setCursor(Qt::PointingHandCursor);
         btnStart2->setFixedSize(200, 42);
         btnStart2->setStyleSheet(
-            "QPushButton { "
             "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #C084FC, stop:0.4 #A855F7, stop:0.5 #9333EA, stop:1 #7E22CE); "
             "  border: 1.5px solid rgba(255, 255, 255, 0.85); border-radius: 6px; color: white; font-weight: bold; font-size: 13px; "
             "}"
-            "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #DDD6FE, stop:0.3 #C084FC, stop:0.6 #A855F7, stop:1 #6B21A8); }"
         );
         l2->addWidget(btnStart2, 0, Qt::AlignHCenter);
 
@@ -4223,11 +4144,9 @@ void MainWindow::showFirmwareInfo() {
         btnStart3->setCursor(Qt::PointingHandCursor);
         btnStart3->setFixedSize(200, 42);
         btnStart3->setStyleSheet(
-            "QPushButton { "
             "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FBBF24, stop:0.4 #F59E0B, stop:0.5 #D97706, stop:1 #B45309); "
             "  border: 1.5px solid rgba(255, 255, 255, 0.85); border-radius: 6px; color: white; font-weight: bold; font-size: 13px; "
             "}"
-            "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FDE68A, stop:0.3 #FBBF24, stop:0.6 #F59E0B, stop:1 #D97706); }"
         );
         l3->addWidget(btnStart3, 0, Qt::AlignHCenter);
 
@@ -4261,11 +4180,9 @@ void MainWindow::showFirmwareInfo() {
         btnStart4->setCursor(Qt::PointingHandCursor);
         btnStart4->setFixedSize(200, 42);
         btnStart4->setStyleSheet(
-            "QPushButton { "
             "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #4ADE80, stop:0.4 #22C55E, stop:0.5 #16A34A, stop:1 #15803D); "
             "  border: 1.5px solid rgba(255, 255, 255, 0.85); border-radius: 6px; color: white; font-weight: bold; font-size: 13px; "
             "}"
-            "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #86EFAC, stop:0.3 #4ADE80, stop:0.6 #22C55E, stop:1 #166534); }"
         );
         l4->addWidget(btnStart4, 0, Qt::AlignHCenter);
 
@@ -5911,9 +5828,6 @@ void MainWindow::showComponentModeling(ComponentItem* comp) {
         "QDialog { background-color: #F8FAFC; border: 1px solid #E2E8F0; }"
         "QLabel#dialogTitle { color: #0F172A; font-family: 'Segoe UI', -apple-system, sans-serif; font-size: 20px; font-weight: 700; }"
         "QTextBrowser { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; font-family: 'Segoe UI', -apple-system, sans-serif; font-size: 13px; line-height: 1.6; color: #334155; }"
-        "QPushButton { background: #2563EB; border: none; border-radius: 6px; color: white; padding: 10px 24px; font-weight: 600; font-size: 13px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #1D4ED8; }"
-        "QPushButton:pressed { background: #1E40AF; }"
     );
 
     auto* mainLayout = new QVBoxLayout(&dialog);
@@ -6294,11 +6208,7 @@ void MainWindow::showComponentModeling(ComponentItem* comp) {
     auto* footer = new QHBoxLayout();
     
     auto* copyBtn = new QPushButton("Copiar Funções", &dialog);
-    copyBtn->setStyleSheet(
-        "QPushButton { background: #0EA5E9; border: none; border-radius: 6px; color: white; padding: 10px 20px; font-weight: 600; font-size: 13px; font-family: 'Segoe UI', Arial, sans-serif; }"
-        "QPushButton:hover { background: #0284C7; }"
-        "QPushButton:pressed { background: #0369A1; }"
-    );
+    
     connect(copyBtn, &QPushButton::clicked, &dialog, [codeEditor]() {
         QGuiApplication::clipboard()->setText(codeEditor->toPlainText());
     });
@@ -6361,7 +6271,6 @@ void MainWindow::openAiSettingsDialog() {
         "QLineEdit:focus { "
         "   border: 2px solid #3B82F6; "
         "} "
-        "QPushButton { "
         "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #E2F0FE, stop:0.46 #B8DCFF, stop:1 #8BBFFF); "
         "   border: 1px solid #7FA2C9; "
         "   border-radius: 6px; "
@@ -6369,10 +6278,8 @@ void MainWindow::openAiSettingsDialog() {
         "   color: #0369A1; "
         "   font-weight: bold; "
         "} "
-        "QPushButton:hover { "
         "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FFFFFF, stop:0.45 #F0F8FF, stop:0.46 #D9EDFF, stop:1 #B8DCFF); "
         "} "
-        "QPushButton:pressed { "
         "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #8BBFFF, stop:1 #B8DCFF); "
         "} "
     );

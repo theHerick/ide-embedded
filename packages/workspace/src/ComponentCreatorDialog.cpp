@@ -130,27 +130,12 @@ void ComponentCreatorDialog::setupUI() {
     auto* bottomRow = new QHBoxLayout();
     bottomRow->addStretch();
     auto* cancel = new QPushButton("Cancelar", this);
+    cancel->setObjectName("cancel");
     connect(cancel, &QPushButton::clicked, this, &QDialog::reject);
     bottomRow->addWidget(cancel);
 
     auto* save = new QPushButton("Salvar Componente", this);
-    save->setStyleSheet(
-        "QPushButton { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #93C5FD, stop:0.45 #3B82F6, stop:0.46 #2563EB, stop:1 #1D4ED8); "
-        "  border: 1.5px solid #2563EB; "
-        "  border-radius: 8px; "
-        "  color: white; "
-        "  font-weight: bold; "
-        "  padding: 10px 24px; "
-        "} "
-        "QPushButton:hover { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #3B82F6, stop:0.45 #2563EB, stop:0.46 #1D4ED8, stop:1 #1E40AF); "
-        "  border-color: #1D4ED8; "
-        "} "
-        "QPushButton:pressed { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1D4ED8, stop:1 #1E3A8A); "
-        "}"
-    );
+    // Estilo Frutiger Aero herdado globalmente
     connect(save, &QPushButton::clicked, this, &ComponentCreatorDialog::validateAndSave);
     bottomRow->addWidget(save);
 

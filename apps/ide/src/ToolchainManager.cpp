@@ -851,7 +851,7 @@ bool ToolchainManager::showPlatformIOConfigDialog(QString& outBoard, QString& ou
     searchBoardBtn->setIconSize(QSize(18, 18));
     searchBoardBtn->setToolTip("Buscar placa no PlatformIO");
     searchBoardBtn->setFixedWidth(36);
-    searchBoardBtn->setStyleSheet("QPushButton { background-color: #E2E8F0; border: 1px solid #CBD5E1; border-radius: 6px; padding: 5px; } QPushButton:hover { background-color: #CBD5E1; }");
+    searchBoardBtn->setObjectName("cancel");
     boardLayout->addWidget(searchBoardBtn);
 
     formLayout->addRow("Placa (Board):", boardLayout);
@@ -950,11 +950,9 @@ bool ToolchainManager::showPlatformIOConfigDialog(QString& outBoard, QString& ou
     auto* buttonLayout = new QHBoxLayout();
     buttonLayout->setSpacing(10);
     auto* cancelBtn = new QPushButton("Cancelar", &dialog);
-    cancelBtn->setObjectName("cancelBtn");
-    cancelBtn->setStyleSheet("QPushButton { background-color: #E2E8F0; border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px 12px; font-weight: bold; color: #475569; } QPushButton:hover { background-color: #CBD5E1; }");
+    cancelBtn->setObjectName("cancel");
     
     auto* confirmBtn = new QPushButton("Confirmar", &dialog);
-    confirmBtn->setStyleSheet("QPushButton { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #2563EB, stop:1 #1D4ED8); border: 1px solid #3B82F6; border-radius: 6px; padding: 6px 12px; font-weight: bold; color: #FFFFFF; } QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #1D4ED8, stop:1 #1E3A8A); }");
     
     buttonLayout->addWidget(cancelBtn);
     buttonLayout->addWidget(confirmBtn);

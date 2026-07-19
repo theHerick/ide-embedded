@@ -324,10 +324,7 @@ OscilloscopePanel::OscilloscopePanel(QWidget* parent) : QWidget(parent) {
 
     m_clearBtn = new QPushButton("Limpar", toolbar);
     m_clearBtn->setFixedHeight(22);
-    m_clearBtn->setStyleSheet(
-        "QPushButton { background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 4px; "
-        "  color: #475569; font-size: 9px; padding: 0 10px; font-family: 'Segoe UI', Arial; }"
-        "QPushButton:hover { background: #EEF2FF; border-color: #6366F1; color: #4338CA; }");
+    m_clearBtn->setObjectName("cancel");
     connect(m_clearBtn, &QPushButton::clicked, this, &OscilloscopePanel::clearChannels);
     toolbarLayout->addWidget(m_clearBtn);
 
