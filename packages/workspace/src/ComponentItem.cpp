@@ -1190,6 +1190,16 @@ void LEDItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
         painter->drawLine(-10, 10, -10, 30);
         painter->setPen(QPen(QColor(156, 163, 175), 2));
         painter->drawLine(10,  10, 10,  30);
+        
+        QFont font = painter->font();
+        font.setPixelSize(11);
+        font.setBold(true);
+        painter->setFont(font);
+        painter->setPen(QColor(239, 68, 68));
+        painter->drawText(QRectF(-20, 32, 20, 15), Qt::AlignCenter, "+");
+        painter->setPen(QColor(100, 116, 139));
+        painter->drawText(QRectF(0, 32, 20, 15), Qt::AlignCenter, "-");
+
         painter->setBrush(QColor(234, 179, 8)); 
         painter->setPen(QPen(QColor(161, 98, 7), 1));
         painter->drawEllipse(QPointF(-10, 30), 3, 3);
