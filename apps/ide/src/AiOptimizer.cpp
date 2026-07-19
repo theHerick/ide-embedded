@@ -76,6 +76,9 @@ void AiOptimizer::optimizeCode(const QString& originalCode, OptimizeMode mode) {
         case TranslateToPython:
             systemPrompt = "Traduza o código C++ de Arduino fornecido para MicroPython (para rodar num ESP32 ou Raspberry Pi Pico). Mantenha a semântica. Retorne APENAS o código puro em MicroPython, sem formatadores markdown (como ```python) e sem explicações.";
             break;
+        case VerifyCircuit:
+            systemPrompt = "Você é um Engenheiro Eletrônico Sênior (Linting Físico). Vou te enviar um relatório listando os componentes e as ligações de um circuito embarcado criado por um aluno. Sua tarefa é analisar o circuito fisicamente e logicamente e encontrar erros estruturais. Exemplos de erros: LED ligado direto no VCC/GND sem resistor; Motor ligado num pino digital direto (precisa de driver); Curto-circuito óbvio (VCC ligado direto no GND). Se houver erros, liste-os de forma muito direta, curta e clara em português. Se o circuito estiver perfeito, responda APENAS: 'O circuito parece estar correto e seguro para montar.' Não explique como fazer o circuito do zero, apenas analise o que foi enviado.";
+            break;
     }
 
     QJsonObject systemMsg;

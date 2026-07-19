@@ -77,6 +77,7 @@ private slots:
     
     // AI Configuration
     void openAiSettingsDialog();
+    void verifyCircuitWithAi();
 
 private:
     // Visual Panels
@@ -106,6 +107,7 @@ private:
     QAction* m_multitaskAction = nullptr;
     QAction* m_aiOptimizationAction = nullptr;
     QMenu* m_adjustsMenu = nullptr;
+    QMenu* m_aiMenu = nullptr;
     TutorialOverlay* m_tutorialOverlay = nullptr;
     int m_activeTutorial = 0; // 0=none, 1=LED/Button, 2=Distance Sensor
     bool m_multitaskingEnabled = true;

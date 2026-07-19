@@ -846,13 +846,20 @@ void MainWindow::buildToolbar() {
         }
     });
 
-    m_adjustsMenu->addSeparator();
+    // Menu dedicado para a IA (Copilot)
+    m_aiMenu = menuBar()->addMenu("✨ IA");
+    m_aiMenu->setStyleSheet(componentsMenu->styleSheet());
 
-    m_aiOptimizationAction = m_adjustsMenu->addAction("Modo Otimização (Copilot)");
+    QAction* verifyCircuitAction = m_aiMenu->addAction("Verificar Circuito (Linting Físico)");
+    connect(verifyCircuitAction, &QAction::triggered, this, &MainWindow::verifyCircuitWithAi);
+
+    m_aiMenu->addSeparator();
+
+    m_aiOptimizationAction = m_aiMenu->addAction("Modo Otimização (Copilot)");
     m_aiOptimizationAction->setCheckable(true);
     m_aiOptimizationAction->setChecked(false);
 
-    QAction* configureAiAction = m_adjustsMenu->addAction("Configurar Copilot (API Key)");
+    QAction* configureAiAction = m_aiMenu->addAction("Configurar Token da IA");
     connect(configureAiAction, &QAction::triggered, this, &MainWindow::openAiSettingsDialog);
 }
 
@@ -6432,4 +6439,40 @@ void MainWindow::openAiSettingsDialog() {
             }
         }
     }
+}
+
+void MainWindow::verifyCircuitWithAi() {
+    if (m_scene->components().isEmpty()) {
+        logMessage("O circuito está vazio. Adicione componentes antes de verificar.", "WARNING");
+        return;
+    }
+    
+    QString report = "RELATÓRIO DE CIRCUITO ELETRÔNICO:\n\nCOMPONENTES:\n";
+    for (auto* comp : m_scene->components()) {
+        report += "- " + comp->name() + " (Tipo: " + comp->componentType() + ")\n";
+    }
+    
+    report += "\nCONEXÕES:\n";
+    for (auto* cable : m_scene->cables()) {
+        QString srcName = cable->sourceComponent() ? cable->sourceComponent()->name() : "Desconhecido";
+        QString tgtName = cable->targetComponent() ? cable->targetComponent()->name() : "Desconhecido";
+        report += "- " + srcName + " [" + cable->sourcePinName() + "] LIGADO EM " + tgtName + " [" + cable->targetPinName() + "]\n";
+    }
+    
+    logMessage("Enviando circuito para avaliação da Inteligência Artificial... Aguarde.", "SYSTEM");
+    
+    auto conn1 = std::make_shared<QMetaObject::Connection>();
+    auto conn2 = std::make_shared<QMetaObject::Connection>();
+    
+    *conn1 = connect(m_aiOptimizer, &AiOptimizer::optimizationFinished, this, [this, conn1, conn2](const QString& res) {
+        logMessage("===============================\nRESULTADO DA AVALIAÇÃO (IA):\n" + res + "\n===============================", "SUCCESS");
+        disconnect(*conn1); disconnect(*conn2);
+    });
+    
+    *conn2 = connect(m_aiOptimizer, &AiOptimizer::optimizationError, this, [this, conn1, conn2](const QString& err) {
+        logMessage("Erro na Avaliação da IA: " + err, "ERROR");
+        disconnect(*conn1); disconnect(*conn2);
+    });
+    
+    m_aiOptimizer->optimizeCode(report, AiOptimizer::VerifyCircuit);
 }

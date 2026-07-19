@@ -17,7 +17,8 @@ public:
         OptimizePerformance,
         ReduceSize,
         TranslateToRust,
-        TranslateToPython
+        TranslateToPython,
+        VerifyCircuit
     };
 
     void optimizeCode(const QString& originalCode, OptimizeMode mode);
